@@ -6,3 +6,4 @@ You can download these apps and use them on your own computer, or use these inst
 
 
 - [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
+- [Facsimile reader](./va-facsimile.html): browse page images of the Venetus A, hover over indexed page to see textual edition
