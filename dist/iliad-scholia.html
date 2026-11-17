@@ -560,18 +560,9 @@ async function readReleaseFile(file) {
 <script>
 // @ts-check
 /**
- * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
- * and scholia attached to passages through the `commentary` data model.
- * Pure functions over an `HmtRelease`; no DOM access.
- *
+ * Shared lookup of CTS passage text in a release.  Used by several apps.
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
-
-/** Data model whose relation sets link scholia to the passages they comment on. */
-const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
-
-/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
-const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
 
 /**
  * Passages of one text (a version or exemplar), in the order of the release.
@@ -581,6 +572,15 @@ const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
  * @property {string[]} texts                 Passage text, parallel to `refs`.
  * @property {Map<string, number>} pos        Reference -> position in `refs`.
  */
+
+/** Preferred order of exemplar kinds when listing the texts of a version. */
+const KIND_ORDER = ['normalized', 'diplomatic'];
+
+/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
+function exemplarName(workUrn) {
+  const parts = workUrn.split(':')[3].split('.');
+  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+}
 
 /**
  * Index every text in the release by work-component URN.  The order of
@@ -604,13 +604,83 @@ function buildTextIndex(release) {
   return map;
 }
 
-/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
-function exemplarName(workUrn) {
-  const parts = workUrn.split(':')[3].split('.');
-  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+/** @type {WeakMap<Map<string, TextIndex>, Map<string, {urn: string, kind: string}[]>>} */
+const versionTexts = new WeakMap();
+
+/**
+ * The texts (exemplars, or the version itself) available for a version URN,
+ * `normalized` first.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} versionUrn  e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`
+ * @returns {{urn: string, kind: string}[]}
+ */
+function textsOfVersion(textIndex, versionUrn) {
+  let byVersion = versionTexts.get(textIndex);
+  if (!byVersion) {
+    byVersion = new Map();
+    for (const key of textIndex.keys()) {
+      const v = ctsVersionOf(key);
+      if (!v) continue;
+      const list = byVersion.get(v) ?? [];
+      list.push({ urn: key, kind: exemplarName(key) });
+      byVersion.set(v, list);
+    }
+    const rank = (/** @type {string} */ k) => KIND_ORDER.indexOf(k) + 1 || 99;
+    for (const list of byVersion.values()) list.sort((a, b) => rank(a.kind) - rank(b.kind));
+    versionTexts.set(textIndex, byVersion);
+  }
+  return byVersion.get(versionUrn) ?? [];
 }
 
-const KIND_ORDER = ['normalized', 'diplomatic'];
+/**
+ * Text of a passage, from the exemplar of the requested kind when the version
+ * has one (otherwise the first available).  A passage with its own text gives
+ * one part with an empty `part` name; a scholion, whose text is stored as
+ * `<ref>.lemma` and `<ref>.comment`, gives those parts.  Nothing found gives
+ * no parts.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} urn   Passage URN at version level, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} kind  `diplomatic` or `normalized`.
+ * @returns {{parts: {part: string, text: string}[]}}
+ */
+function passageText(textIndex, urn, kind) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+  if (!m) return { parts: [] };
+  const version = ctsVersionOf(m[1]);
+  const texts = version ? textsOfVersion(textIndex, version) : [];
+  const pick = texts.find(t => t.kind === kind) ?? texts[0];
+  const t = pick ? textIndex.get(pick.urn) : undefined;
+  if (!t) return { parts: [] };
+  const direct = t.pos.get(m[2]);
+  if (direct !== undefined) return { parts: [{ part: '', text: t.texts[direct] }] };
+  /** @type {{part: string, text: string}[]} */
+  const parts = [];
+  for (const part of ['lemma', 'comment']) {
+    const i = t.pos.get(m[2] + '.' + part);
+    if (i !== undefined) parts.push({ part, text: t.texts[i] });
+  }
+  return { parts };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
+ * and scholia attached to passages through the `commentary` data model.
+ * Pure functions over an `HmtRelease`; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+/** Data model whose relation sets link scholia to the passages they comment on. */
+const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
+
+/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
+const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
+
+/** @typedef {import('./text-index.js').TextIndex} TextIndex */
 
 /**
  * All Iliad versions listed in the CTS catalog, with the texts available for each.
@@ -799,16 +869,9 @@ function annotateRange(text, range, spans) {
  */
 function scholionPassage(textIndex, scholionUrn, kind) {
   const m = /^(urn:cts:[^:]+:)([^:]+):(.*)$/.exec(scholionUrn);
-  const empty = { label: scholionUrn, lemma: '', comment: '' };
-  if (!m) return empty;
-  const version = m[1] + m[2] + ':';
-  const keys = [...textIndex.keys()].filter(k => ctsVersionOf(k) === version);
-  const key = keys.find(k => exemplarName(k) === kind) ?? keys[0];
-  const t = key ? textIndex.get(key) : undefined;
-  const get = (/** @type {string} */ part) => {
-    const i = t?.pos.get(m[3] + '.' + part);
-    return i === undefined || !t ? '' : t.texts[i];
-  };
+  if (!m) return { label: scholionUrn, lemma: '', comment: '' };
+  const { parts } = passageText(textIndex, scholionUrn, kind);
+  const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
   return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
 }
 

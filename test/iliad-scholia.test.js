@@ -2,8 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
+import { buildTextIndex } from '../src/text-index.js';
 import {
-  buildTextIndex, iliadVersions, splitReference, resolveRange,
+  iliadVersions, splitReference, resolveRange,
   commentaryPairs, commentarySpans, annotateRange, scholionPassage,
 } from '../src/iliad-scholia.js';
 

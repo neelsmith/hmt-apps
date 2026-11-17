@@ -7,6 +7,7 @@
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
 import { ctsVersionOf } from './hmt-release.js';
+import { exemplarName, KIND_ORDER, passageText } from './text-index.js';
 
 /** Data model whose relation sets link scholia to the passages they comment on. */
 export const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
@@ -14,44 +15,7 @@ export const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
 /** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
 const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
 
-/**
- * Passages of one text (a version or exemplar), in the order of the release.
- * @typedef {Object} TextIndex
- * @property {string} urn                     Work-component URN, ending in ":".
- * @property {string[]} refs                  Passage references, in order.
- * @property {string[]} texts                 Passage text, parallel to `refs`.
- * @property {Map<string, number>} pos        Reference -> position in `refs`.
- */
-
-/**
- * Index every text in the release by work-component URN.  The order of
- * passages in the release is the order of the text (references like
- * `1.title` or `6.386del` do not sort numerically).
- * @param {import('./hmt-release.js').HmtRelease} release
- * @returns {Map<string, TextIndex>}
- */
-export function buildTextIndex(release) {
-  /** @type {Map<string, TextIndex>} */
-  const map = new Map();
-  for (const { urn, text } of release.ctsData()) {
-    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
-    if (!m) continue;
-    let t = map.get(m[1]);
-    if (!t) { t = { urn: m[1], refs: [], texts: [], pos: new Map() }; map.set(m[1], t); }
-    if (!t.pos.has(m[2])) t.pos.set(m[2], t.refs.length);
-    t.refs.push(m[2]);
-    t.texts.push(text);
-  }
-  return map;
-}
-
-/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
-function exemplarName(workUrn) {
-  const parts = workUrn.split(':')[3].split('.');
-  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
-}
-
-const KIND_ORDER = ['normalized', 'diplomatic'];
+/** @typedef {import('./text-index.js').TextIndex} TextIndex */
 
 /**
  * All Iliad versions listed in the CTS catalog, with the texts available for each.
@@ -240,15 +204,8 @@ export function annotateRange(text, range, spans) {
  */
 export function scholionPassage(textIndex, scholionUrn, kind) {
   const m = /^(urn:cts:[^:]+:)([^:]+):(.*)$/.exec(scholionUrn);
-  const empty = { label: scholionUrn, lemma: '', comment: '' };
-  if (!m) return empty;
-  const version = m[1] + m[2] + ':';
-  const keys = [...textIndex.keys()].filter(k => ctsVersionOf(k) === version);
-  const key = keys.find(k => exemplarName(k) === kind) ?? keys[0];
-  const t = key ? textIndex.get(key) : undefined;
-  const get = (/** @type {string} */ part) => {
-    const i = t?.pos.get(m[3] + '.' + part);
-    return i === undefined || !t ? '' : t.texts[i];
-  };
+  if (!m) return { label: scholionUrn, lemma: '', comment: '' };
+  const { parts } = passageText(textIndex, scholionUrn, kind);
+  const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
   return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
 }

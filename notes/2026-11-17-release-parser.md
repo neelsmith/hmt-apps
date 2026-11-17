@@ -70,3 +70,45 @@ Single-page app: menu of all Iliad versions in the release; user enters a passag
 - Rendering is capped at 2,000 passages per query (a whole book is ~600).
 - Scholia for versions other than msA/msB/e3 would show only if they gain online text; Iliad passages in `e4`, `u4`, `gen4`, `laur32_3` are indexed in other relation sets but not in `commentary`.
 - Possible next steps: link scholia to their manuscript pages/images via the `hmtdse` relation set; copy/export of results; share `file://` fallback UI as a reusable component for future apps.
+
+---
+
+# Session summary (continued): second app — Venetus A facsimile (`dist/va-facsimile.html`)
+
+## What was asked
+Light-table view of the pages of the Venetus A from the IIIF manifest
+(`.../hmt-archive/.../iiif/venetusA.json`); selecting an image opens a pannable/zoomable view; draw a rectangle for every `hmtdse.v1:all` item (`passage|imageroi|surface`) belonging to the image, keeping rectangles registered with the image as the display changes; hovering a rectangle shows the passage text.
+
+## What was built
+Shared modules (all inlined by `scripts/build.js`; no dependencies):
+- `src/text-index.js` — **new shared module**: `buildTextIndex`, `textsOfVersion`, `passageText(textIndex, urn, kind)` (diplomatic/normalized; scholia come back as lemma + comment parts). Moved out of `iliad-scholia.js`, which now imports it (and `scholionPassage` is built on `passageText`).
+- `src/iiif.js` — IIIF Presentation 3 manifest parsing (`parseManifest`), image URN from the service path (`hmt/vaimg/2017a/VA012RN_0013.tif` → `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`), IIIF Image URLs, http→https when the page is https.
+- `src/dse.js` — `indexDse(release)` (regions grouped by image URN), `parseRoi` / `parseImageRoi`, `passageKind` (iliad / scholia / other), `passageLabel`.
+- `src/pan-zoom.js` — pure geometry for the view transform, zoom-at-point, clamping, tile level and visible tiles, ROI → image pixels.
+- `src/image-viewer.js` — `IiifViewer`: canvas drawn from IIIF tile requests (region + size), with an SVG overlay group in **image pixel coordinates**; the same transform drives canvas and overlay, which is what keeps rectangles registered. Drag, wheel, pinch, double-click, keys (+ − 0, arrows).
+- App: `src/apps/va-facsimile/index.html` + `app.js`.
+
+## Behaviour
+- Light table: all canvases as lazy-loaded thumbnails (240 px wide), find box (`12r`, `12`, `cover`…), "only pages with indexed text", size slider, a count badge per page. Opens at `#page=<canvas id>` (shareable; browser Back returns to the table).
+- Viewer: Iliad regions red, scholia blue, other (Greek Anthology) green; layer checkboxes; hover shows every passage under the pointer (up to 4) with label and text; diplomatic (default) / normalized switch; prev/next (`[` `]`), Esc back, Fit.
+- Tap shows the tooltip on touch devices.
+- Loads manifest and release independently; either failing shows a message and a drop zone/file picker (accepts `venetusA.json` and `hmt-current.cex`).
+
+## Data facts (2024c)
+- Manifest: ~660 canvases, all 5428×7230; back matter files named `VAMSFlyleaf_…`, `VAMSInside_back_cover_…` (no index regions).
+- DSE set: 26,666 rows; 24,318 on 631 Venetus A pages (the rest are Escorial `e3bifolio` images, ignored). Passage kinds on VA: Iliad ≈15.6k, scholia ≈8.7k (six zones), anthology 31.
+- Another relation set (`pagerois.v1:msA`) also uses `vaimg…@` URNs (one whole-page region each): not drawn.
+- Skipped row: `tlg5026.msA.hmt:7.4` has no region (just a page URN).
+- Region quirks: whitespace inside values (`0.6663 ,0.2089`) is tolerated; `msAim.hmt:14.D6` overshoots the image edge by 0.4% (x+w = 1.004) → clipped (up to 2% accepted).
+- 93 indexed passages have no text in `ctsdata` (e.g. scholia of types `msAmeta`, `msAimLater`); the tooltip says "Text not available in this release."
+
+## Verification
+- 37 Node tests (`npm test`), incl. real-release checks (631 images, 48 regions on `VA012RN_0013`, 1 skipped row).
+- Browser tests (Playwright/Chromium) against a **stubbed IIIF server** that serves generated images with a grid and cyan markers drawn at the corners of a real region (1.1 on `VA012RN_0013`). The overlay rectangle's corners matched the markers within 0.8 px at fit, after wheel zoom, after drag-pan, at maximum zoom, after pressing `0` and after a window resize. Badge counts matched independent counts from the release text. 38 checks pass, no console errors; 660-page manifest: grid built in ~1.2 s, filters < 70 ms.
+- **Not verified:** the real image server (`www.homermultitext.org/iipsrv`) was unreachable from this environment. The viewer requests standard IIIF Image API 2 region requests `…tif/x,y,w,h/256,/0/default.jpg` (size `w,`, as the manifest's own `full/2000,` URLs do). If the server rejects them, the 1000 px base image still shows and the overlay is unaffected; tile failures retry after 10 s.
+- **Not verified:** when the app is served from https, http image services are rewritten to https; this assumes `https://www.homermultitext.org/iipsrv` works.
+
+## Open items / ideas
+- Check on a real machine: tile loading from the live server; the https assumption.
+- No libraries are used for the viewer; if deep-zoom needs outgrow it (rotation, smoother tile blending), OpenSeadragon could be inlined instead.
+- Possible next steps: list of passages on the current page (keyboard accessible); jump to the page for a given Iliad line (via the same DSE index); show hover text from `hmt-current.cex` for e3/msB images too.
