@@ -2,4 +2,7 @@
 title: "Apps for working with data from the Homer Multitext project"
 ---
 
-*TBA*
+You can download these apps and use them on your own computer, or use these installations on github pages:
+
+
+- [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
