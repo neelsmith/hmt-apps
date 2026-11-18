@@ -112,3 +112,46 @@ Shared modules (all inlined by `scripts/build.js`; no dependencies):
 - Check on a real machine: tile loading from the live server; the https assumption.
 - No libraries are used for the viewer; if deep-zoom needs outgrow it (rotation, smoother tile blending), OpenSeadragon could be inlined instead.
 - Possible next steps: list of passages on the current page (keyboard accessible); jump to the page for a given Iliad line (via the same DSE index); show hover text from `hmt-current.cex` for e3/msB images too.
+
+---
+
+# Session summary (2026-11-18): third app — editorial view (`dist/editorial.html`)
+
+## What was asked
+Same as `iliad-scholia.html`, except no choice of diplomatic vs normalized: one interwoven display, diplomatic text as the base, with the normalized reading added in parentheses, visually less strong, wherever it differs.
+
+## What was built
+- `src/interweave.js` — `weave(base, alt)`: word-by-word comparison (common prefix/suffix trimmed, then longest-common-subsequence) returning segments `{text}` (same) or `{base, alt}` (differ; either side may be empty). Identical texts are returned verbatim. Very different long texts (word-count product > 2.5M) become one block rather than risk a slow comparison. Helpers `baseOf`, `altOf`, `hasDifference`.
+- `src/apps/editorial/index.html` — the page (no text choice; legend explaining the notation). `<body data-text="interwoven">` switches the shared app code into interwoven mode.
+- **Shared code, not a copy:** `src/apps/iliad-scholia/app.js` serves both apps (the `WOVEN` flag); the CSS moved to `src/apps/iliad-scholia/style.css`, shared via a new build marker `<!-- @inline-style path -->` (`scripts/build.js`). The Iliad scholia app's built output was byte-identical after the CSS move, and its browser regression gives the same results as before.
+- `test/interweave.test.js`, `test/build.test.js`.
+
+## Behaviour
+- Base text: diplomatic. Where normalized differs: `χοώμενος (χωόμενος)`. A word only the normalized text has: `(οϋ)`. A diplomatic word the normalized text leaves out: `χοώμενος (∅)`-style marker `(∅)` after the omitted word, with a hover title ("omitted in the normalized text" / "added in the normalized text" / "normalized text"). **Styling (revised 2026-11-18):** the parenthesised text is the same size as the base text, in a contrasting blue (`--alt` in `src/apps/editorial/index.html`: `#1a5bb8` on light, `#7fb2ff` on dark; 6.2:1 and 8.2:1 against the page background). The parentheses remain a second, non-colour cue. The diplomatic word that has a normalized counterpart (`.dip`) gets a faint tint of the same blue (13% light / 24% dark) and a thin inset underline, so each pair reads together; text on the tint keeps 12:1 / 14.8:1 contrast. (First version used smaller muted grey text; judged too weak.)
+- Scholia (lemma + comment) are interwoven the same way, since they also exist in both editions.
+- Versions with only one edition show plain text. When texts differ only in spacing nothing is marked. When a line differs, spacing is normalized to single spaces.
+- Counts, ranges, errors, loading fallbacks: unchanged from the Iliad scholia app.
+
+## Facts (2024c, Venetus A)
+- 505 Iliad lines and 1,687 scholia parts differ between the editions; Iliad lines have 20 additions and 7 omissions (e.g. 2.56 `ξιφος` omitted), book 1 has 16 differing lines. 80 scholia parts have omissions (e.g. msA 1.423, comment on 1.137).
+- The release stores Greek in decomposed Unicode (not NFC); the apps show it exactly as stored. (Tests that compare typed Greek must normalize.)
+
+## Verification
+- 47 Node tests pass, incl. a check over every diplomatic/normalized pair in the release (25k+) that weaving loses nothing.
+- Browser (Playwright): all 611 lines of book 1 checked against the raw data — text outside the parentheses equals the diplomatic text on every line, and parentheses appear on exactly the 16 lines where the editions differ; 44 scholia in 1.1–1.20 checked the same way; substitution (1.44), addition (1.124), omission (2.56) and a scholion omission checked; Escorial works; no horizontal overflow on a phone; no console errors.
+
+## Open ideas
+- Option to hide the parentheses (read-only diplomatic) — would reintroduce a control, so not added.
+
+## Home link and version display (all three apps)
+
+- Request: every app links to https://neelsmith.github.io/hmt-apps/ and shows an app-specific version.
+- The user said `versions.txt`; that file does not exist. The existing `version.txt` (user-owned, read-only) holds the per-app versions and was used.
+- `scripts/build.js` now parses `version.txt` (`parseVersions`), substitutes `@@VERSION@@` per app (`buildApp`), and fails the build if an app has no entry. The build log prints the version.
+- Each app template has `<meta name="app-version">` and an `.appmeta` bar with "← HMT apps home" and "Version X".
+  - iliad-scholia and editorial: bar above the h1, styled in the shared `style.css`.
+  - va-facsimile: bar in the header, right-aligned, with its own CSS.
+- Fixed a 360 px horizontal overflow in va-facsimile's error-state drop zone (`#drop input[type=file] { max-width: 100%; }`).
+- Built versions: va-facsimile 0.1.1, iliad-scholia 0.1.1, editorial 0.1.0.
+- Verification: 50 unit tests pass. Playwright header/version checks (33) pass at desktop and phone width, and the three UI regression suites pass with no page errors.
+- Nothing committed.

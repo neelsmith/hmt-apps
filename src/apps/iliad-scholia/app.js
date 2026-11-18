@@ -1,7 +1,13 @@
-// Browser UI for the Iliad-scholia app.  Uses the shared parser and the
+// Browser UI for the Iliad-scholia apps.  Uses the shared parser and the
 // Iliad-scholia logic, which the build inlines ahead of this file.
+//
+// Two pages use this file.  By default the reader chooses one text (diplomatic
+// or normalized).  With <body data-text="interwoven"> (the editorial view) the
+// diplomatic text is shown, and wherever the normalized text differs it follows
+// in parentheses (styled by the page); there is no choice of text.
 (function () {
   const MAX_ROWS = 2000;
+  const WOVEN = document.body.dataset.text === 'interwoven';
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -43,6 +49,7 @@
   function currentVersion() { return versions.find(v => v.urn === $('version').value); }
 
   function renderKinds() {
+    if (WOVEN) return;
     const v = currentVersion();
     const box = $('kinds');
     box.textContent = '';
@@ -78,6 +85,16 @@
   function currentText() {
     const v = currentVersion();
     if (!v) return null;
+    if (WOVEN) {
+      // Base: the diplomatic text (or whatever the version has); other: the normalized text.
+      const base = v.texts.find(t => t.kind === 'diplomatic') || v.texts[0];
+      if (!base) return null;
+      const other = v.texts.find(t => t.kind === 'normalized' && t !== base);
+      return {
+        version: v, kind: base.kind, text: textIndex.get(base.urn),
+        other: other ? textIndex.get(other.urn) : null, otherKind: other ? other.kind : null,
+      };
+    }
     const checked = document.querySelector('input[name=kind]:checked');
     const urn = checked ? checked.value : (v.texts[0] && v.texts[0].urn);
     return urn ? { version: v, kind: v.texts.find(t => t.urn === urn).kind, text: textIndex.get(urn) } : null;
@@ -117,12 +134,36 @@
     const box = $('passages');
     box.textContent = '';
     const frag = document.createDocumentFragment();
-    for (const line of shown) frag.appendChild(renderPassage(line, cur.kind));
+    for (const line of shown) frag.appendChild(renderPassage(line, cur));
     box.appendChild(frag);
     $('results').hidden = false;
   }
 
-  function renderPassage(line, kind) {
+  /**
+   * Add text to an element.  In the interwoven view, where `alt` (the
+   * normalized text) differs from `base` it follows the differing words in
+   * parentheses: `χοώμενος (χωόμενος)`.  A word the normalized text
+   * adds is shown as `(word)`; one it omits is followed by `(∅)`.
+   */
+  function appendText(el, base, alt) {
+    if (!WOVEN || alt === undefined || alt === base) { el.append(base); return; }
+    weave(base, alt).forEach((seg, i) => {
+      if (i) el.append(' ');
+      if ('text' in seg) { el.append(seg.text); return; }
+      if (seg.base) {
+        const d = document.createElement('span');
+        d.className = 'dip'; d.textContent = seg.base;
+        el.append(d, ' ');
+      }
+      const a = document.createElement('span');
+      a.className = 'alt';
+      a.textContent = `(${seg.alt || '∅'})`;
+      a.title = !seg.base ? 'added in the normalized text' : !seg.alt ? 'omitted in the normalized text' : 'normalized text';
+      el.append(a);
+    });
+  }
+
+  function renderPassage(line, cur) {
     const div = document.createElement('div');
     div.className = 'passage';
     const head = document.createElement('div');
@@ -130,7 +171,9 @@
     const ref = document.createElement('span');
     ref.className = 'ref'; ref.textContent = line.ref;
     const txt = document.createElement('span');
-    txt.className = 'greek'; txt.lang = 'grc'; txt.textContent = line.text;
+    txt.className = 'greek'; txt.lang = 'grc';
+    const alt = cur.other ? cur.other.texts[cur.other.pos.get(line.ref)] : undefined;
+    appendText(txt, line.text, alt);
     head.append(ref, txt);
     div.appendChild(head);
 
@@ -148,7 +191,7 @@
         if (!panel) {
           panel = document.createElement('div');
           panel.className = 'scholia';
-          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, kind));
+          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
           div.appendChild(panel);
         }
         panel.hidden = open;
@@ -158,8 +201,9 @@
     return div;
   }
 
-  function renderScholion(urn, kind) {
-    const s = scholionPassage(textIndex, urn, kind);
+  function renderScholion(urn, cur) {
+    const s = scholionPassage(textIndex, urn, cur.kind);
+    const s2 = cur.other ? scholionPassage(textIndex, urn, cur.otherKind) : null;
     const d = document.createElement('div');
     d.className = 'scholion';
     const id = document.createElement('div');
@@ -169,10 +213,12 @@
     body.className = 'greek'; body.lang = 'grc';
     if (s.lemma) {
       const l = document.createElement('span');
-      l.className = 'lemma'; l.textContent = s.lemma;
+      l.className = 'lemma';
+      appendText(l, s.lemma, s2 ? s2.lemma : undefined);
       body.append(l, ' ');
     }
-    body.append(s.comment || (s.lemma ? '' : '(text not available in this release)'));
+    if (s.comment) appendText(body, s.comment, s2 ? s2.comment : undefined);
+    else body.append(s.lemma ? '' : '(text not available in this release)');
     d.appendChild(body);
     return d;
   }
@@ -203,7 +249,7 @@
 
   $('form').addEventListener('submit', e => { e.preventDefault(); show(); });
   $('version').addEventListener('change', () => { renderKinds(); updateCoverage(); if (!$('results').hidden) show(); });
-  $('kinds').addEventListener('change', () => { if (!$('results').hidden) show(); });
+  if (!WOVEN) $('kinds').addEventListener('change', () => { if (!$('results').hidden) show(); });
   for (const b of document.querySelectorAll('.examples button')) {
     b.addEventListener('click', () => { $('ref').value = b.textContent; $('ref').focus(); });
   }
