@@ -4,6 +4,6 @@
     "href": "index.html",
     "title": "Apps for working with data from the Homer Multitext project",
     "section": "",
-    "text": "You can download these apps and use them on your own computer, or use these installations on github pages:\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses."
+    "text": "You can download these apps and use them on your own computer, or use these installations on github pages:\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
   }
 ]
