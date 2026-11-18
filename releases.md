@@ -1,6 +1,20 @@
 # Release notes
 
-Current version:  **0.1.0**
+## Repository version tag
 
+Current version:  **0.2.0**
+
+
+**0.2.0**, *Nov. 18, 2026*: adds `editorial.html` app. Adds links and version info to all apps.
 
 **0.1.0**, *Nov. 17, 2026*: initial release. Shared code to parse a release of the HMT archive, and two initial apps, an *Iliad* + *scholia* reader, and a Venetus A facsimile reader.
+
+
+## `iliad-scholia.html`
+
+**0.1.0**, *Nov. 17, 2026*: select passage of *Iliad* to read in a particular version. Optionally view scholia on the passage.
+
+
+## `va-facsimile.html`
+
+**0.1.0**, *Nov. 17, 2026*: from a lightbox view of Venetus A images, choose individual page to view, see text on hovering over highlighted area.

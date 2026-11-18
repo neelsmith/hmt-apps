@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="0.1.1">
 <title>Iliad scholia</title>
 <style>
   :root {
@@ -66,10 +67,13 @@
     .passage .badge { grid-column: 2; justify-self: start; }
     .scholia { margin-left: .5rem; }
   }
+  .appmeta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); margin: 0 0 .75rem; }
+  .appmeta a { color: var(--accent); }
 </style>
 </head>
 <body>
 <main>
+  <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.1</span></p>
   <h1>Iliad scholia</h1>
   <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line.</p>
 
@@ -560,18 +564,9 @@ async function readReleaseFile(file) {
 <script>
 // @ts-check
 /**
- * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
- * and scholia attached to passages through the `commentary` data model.
- * Pure functions over an `HmtRelease`; no DOM access.
- *
+ * Shared lookup of CTS passage text in a release.  Used by several apps.
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
-
-/** Data model whose relation sets link scholia to the passages they comment on. */
-const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
-
-/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
-const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
 
 /**
  * Passages of one text (a version or exemplar), in the order of the release.
@@ -581,6 +576,15 @@ const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
  * @property {string[]} texts                 Passage text, parallel to `refs`.
  * @property {Map<string, number>} pos        Reference -> position in `refs`.
  */
+
+/** Preferred order of exemplar kinds when listing the texts of a version. */
+const KIND_ORDER = ['normalized', 'diplomatic'];
+
+/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
+function exemplarName(workUrn) {
+  const parts = workUrn.split(':')[3].split('.');
+  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+}
 
 /**
  * Index every text in the release by work-component URN.  The order of
@@ -604,13 +608,83 @@ function buildTextIndex(release) {
   return map;
 }
 
-/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
-function exemplarName(workUrn) {
-  const parts = workUrn.split(':')[3].split('.');
-  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+/** @type {WeakMap<Map<string, TextIndex>, Map<string, {urn: string, kind: string}[]>>} */
+const versionTexts = new WeakMap();
+
+/**
+ * The texts (exemplars, or the version itself) available for a version URN,
+ * `normalized` first.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} versionUrn  e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`
+ * @returns {{urn: string, kind: string}[]}
+ */
+function textsOfVersion(textIndex, versionUrn) {
+  let byVersion = versionTexts.get(textIndex);
+  if (!byVersion) {
+    byVersion = new Map();
+    for (const key of textIndex.keys()) {
+      const v = ctsVersionOf(key);
+      if (!v) continue;
+      const list = byVersion.get(v) ?? [];
+      list.push({ urn: key, kind: exemplarName(key) });
+      byVersion.set(v, list);
+    }
+    const rank = (/** @type {string} */ k) => KIND_ORDER.indexOf(k) + 1 || 99;
+    for (const list of byVersion.values()) list.sort((a, b) => rank(a.kind) - rank(b.kind));
+    versionTexts.set(textIndex, byVersion);
+  }
+  return byVersion.get(versionUrn) ?? [];
 }
 
-const KIND_ORDER = ['normalized', 'diplomatic'];
+/**
+ * Text of a passage, from the exemplar of the requested kind when the version
+ * has one (otherwise the first available).  A passage with its own text gives
+ * one part with an empty `part` name; a scholion, whose text is stored as
+ * `<ref>.lemma` and `<ref>.comment`, gives those parts.  Nothing found gives
+ * no parts.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} urn   Passage URN at version level, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} kind  `diplomatic` or `normalized`.
+ * @returns {{parts: {part: string, text: string}[]}}
+ */
+function passageText(textIndex, urn, kind) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+  if (!m) return { parts: [] };
+  const version = ctsVersionOf(m[1]);
+  const texts = version ? textsOfVersion(textIndex, version) : [];
+  const pick = texts.find(t => t.kind === kind) ?? texts[0];
+  const t = pick ? textIndex.get(pick.urn) : undefined;
+  if (!t) return { parts: [] };
+  const direct = t.pos.get(m[2]);
+  if (direct !== undefined) return { parts: [{ part: '', text: t.texts[direct] }] };
+  /** @type {{part: string, text: string}[]} */
+  const parts = [];
+  for (const part of ['lemma', 'comment']) {
+    const i = t.pos.get(m[2] + '.' + part);
+    if (i !== undefined) parts.push({ part, text: t.texts[i] });
+  }
+  return { parts };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
+ * and scholia attached to passages through the `commentary` data model.
+ * Pure functions over an `HmtRelease`; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+/** Data model whose relation sets link scholia to the passages they comment on. */
+const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
+
+/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
+const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
+
+/** @typedef {import('./text-index.js').TextIndex} TextIndex */
 
 /**
  * All Iliad versions listed in the CTS catalog, with the texts available for each.
@@ -799,25 +873,24 @@ function annotateRange(text, range, spans) {
  */
 function scholionPassage(textIndex, scholionUrn, kind) {
   const m = /^(urn:cts:[^:]+:)([^:]+):(.*)$/.exec(scholionUrn);
-  const empty = { label: scholionUrn, lemma: '', comment: '' };
-  if (!m) return empty;
-  const version = m[1] + m[2] + ':';
-  const keys = [...textIndex.keys()].filter(k => ctsVersionOf(k) === version);
-  const key = keys.find(k => exemplarName(k) === kind) ?? keys[0];
-  const t = key ? textIndex.get(key) : undefined;
-  const get = (/** @type {string} */ part) => {
-    const i = t?.pos.get(m[3] + '.' + part);
-    return i === undefined || !t ? '' : t.texts[i];
-  };
+  if (!m) return { label: scholionUrn, lemma: '', comment: '' };
+  const { parts } = passageText(textIndex, scholionUrn, kind);
+  const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
   return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
 }
 
 </script>
 <script>
-// Browser UI for the Iliad-scholia app.  Uses the shared parser and the
+// Browser UI for the Iliad-scholia apps.  Uses the shared parser and the
 // Iliad-scholia logic, which the build inlines ahead of this file.
+//
+// Two pages use this file.  By default the reader chooses one text (diplomatic
+// or normalized).  With <body data-text="interwoven"> (the editorial view) the
+// diplomatic text is shown, and wherever the normalized text differs it follows
+// in parentheses (styled by the page); there is no choice of text.
 (function () {
   const MAX_ROWS = 2000;
+  const WOVEN = document.body.dataset.text === 'interwoven';
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -859,6 +932,7 @@ function scholionPassage(textIndex, scholionUrn, kind) {
   function currentVersion() { return versions.find(v => v.urn === $('version').value); }
 
   function renderKinds() {
+    if (WOVEN) return;
     const v = currentVersion();
     const box = $('kinds');
     box.textContent = '';
@@ -894,6 +968,16 @@ function scholionPassage(textIndex, scholionUrn, kind) {
   function currentText() {
     const v = currentVersion();
     if (!v) return null;
+    if (WOVEN) {
+      // Base: the diplomatic text (or whatever the version has); other: the normalized text.
+      const base = v.texts.find(t => t.kind === 'diplomatic') || v.texts[0];
+      if (!base) return null;
+      const other = v.texts.find(t => t.kind === 'normalized' && t !== base);
+      return {
+        version: v, kind: base.kind, text: textIndex.get(base.urn),
+        other: other ? textIndex.get(other.urn) : null, otherKind: other ? other.kind : null,
+      };
+    }
     const checked = document.querySelector('input[name=kind]:checked');
     const urn = checked ? checked.value : (v.texts[0] && v.texts[0].urn);
     return urn ? { version: v, kind: v.texts.find(t => t.urn === urn).kind, text: textIndex.get(urn) } : null;
@@ -933,12 +1017,36 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     const box = $('passages');
     box.textContent = '';
     const frag = document.createDocumentFragment();
-    for (const line of shown) frag.appendChild(renderPassage(line, cur.kind));
+    for (const line of shown) frag.appendChild(renderPassage(line, cur));
     box.appendChild(frag);
     $('results').hidden = false;
   }
 
-  function renderPassage(line, kind) {
+  /**
+   * Add text to an element.  In the interwoven view, where `alt` (the
+   * normalized text) differs from `base` it follows the differing words in
+   * parentheses: `χοώμενος (χωόμενος)`.  A word the normalized text
+   * adds is shown as `(word)`; one it omits is followed by `(∅)`.
+   */
+  function appendText(el, base, alt) {
+    if (!WOVEN || alt === undefined || alt === base) { el.append(base); return; }
+    weave(base, alt).forEach((seg, i) => {
+      if (i) el.append(' ');
+      if ('text' in seg) { el.append(seg.text); return; }
+      if (seg.base) {
+        const d = document.createElement('span');
+        d.className = 'dip'; d.textContent = seg.base;
+        el.append(d, ' ');
+      }
+      const a = document.createElement('span');
+      a.className = 'alt';
+      a.textContent = `(${seg.alt || '∅'})`;
+      a.title = !seg.base ? 'added in the normalized text' : !seg.alt ? 'omitted in the normalized text' : 'normalized text';
+      el.append(a);
+    });
+  }
+
+  function renderPassage(line, cur) {
     const div = document.createElement('div');
     div.className = 'passage';
     const head = document.createElement('div');
@@ -946,7 +1054,9 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     const ref = document.createElement('span');
     ref.className = 'ref'; ref.textContent = line.ref;
     const txt = document.createElement('span');
-    txt.className = 'greek'; txt.lang = 'grc'; txt.textContent = line.text;
+    txt.className = 'greek'; txt.lang = 'grc';
+    const alt = cur.other ? cur.other.texts[cur.other.pos.get(line.ref)] : undefined;
+    appendText(txt, line.text, alt);
     head.append(ref, txt);
     div.appendChild(head);
 
@@ -964,7 +1074,7 @@ function scholionPassage(textIndex, scholionUrn, kind) {
         if (!panel) {
           panel = document.createElement('div');
           panel.className = 'scholia';
-          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, kind));
+          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
           div.appendChild(panel);
         }
         panel.hidden = open;
@@ -974,8 +1084,9 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     return div;
   }
 
-  function renderScholion(urn, kind) {
-    const s = scholionPassage(textIndex, urn, kind);
+  function renderScholion(urn, cur) {
+    const s = scholionPassage(textIndex, urn, cur.kind);
+    const s2 = cur.other ? scholionPassage(textIndex, urn, cur.otherKind) : null;
     const d = document.createElement('div');
     d.className = 'scholion';
     const id = document.createElement('div');
@@ -985,10 +1096,12 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     body.className = 'greek'; body.lang = 'grc';
     if (s.lemma) {
       const l = document.createElement('span');
-      l.className = 'lemma'; l.textContent = s.lemma;
+      l.className = 'lemma';
+      appendText(l, s.lemma, s2 ? s2.lemma : undefined);
       body.append(l, ' ');
     }
-    body.append(s.comment || (s.lemma ? '' : '(text not available in this release)'));
+    if (s.comment) appendText(body, s.comment, s2 ? s2.comment : undefined);
+    else body.append(s.lemma ? '' : '(text not available in this release)');
     d.appendChild(body);
     return d;
   }
@@ -1019,7 +1132,7 @@ function scholionPassage(textIndex, scholionUrn, kind) {
 
   $('form').addEventListener('submit', e => { e.preventDefault(); show(); });
   $('version').addEventListener('change', () => { renderKinds(); updateCoverage(); if (!$('results').hidden) show(); });
-  $('kinds').addEventListener('change', () => { if (!$('results').hidden) show(); });
+  if (!WOVEN) $('kinds').addEventListener('change', () => { if (!$('results').hidden) show(); });
   for (const b of document.querySelectorAll('.examples button')) {
     b.addEventListener('click', () => { $('ref').value = b.textContent; $('ref').focus(); });
   }
