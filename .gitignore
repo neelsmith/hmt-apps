@@ -1,3 +1,6 @@
 .DS_Store
 scratch/
 quarto_build/
+
+/.quarto/
+**/*.quarto_ipynb
