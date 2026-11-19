@@ -2,7 +2,9 @@
 
 ## Repository version tag
 
-Current version:  **0.4.0**
+Current version:  **0.5.0**
+
+**0.5.0**, *?*: adds `codices.html` app.
 
 
 **0.4.0**, *Nov. 19, 2026*: utilities for constructing IIIF manifests and URN maps; new `all-scholia.html` app.

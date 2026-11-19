@@ -225,3 +225,17 @@ Findings on the current release: 26,666 records; 2,747 passages missing from DSE
 Tests: `test/dse-check.test.js` (fixture + real release). Needs `dse-check.html  0.1.0` in version.txt (user-owned; not edited).
 
 Update: records in group 2 have a "show image" button that shows the image (IIIF, 1000 px wide) with the RoI outlined in place; "open full image" link; error note if the image server cannot be reached. Uses src/iiif.js (inlined) and imageService from src/images.js. Verified in browser with a stub image server only; real server not reachable from the sandbox.
+
+## codices.html (2026-11-19)
+
+Choose a codex (collections with the `urn:cite2:hmt:datamodels.v1:codexmodel` data model: 7, 4,254 pages), then a page; the page image is shown in the shared IIIF viewer with a rectangle over each DSE-indexed passage; hovering shows the diplomatic text (same tooltip as va-facsimile). Deep link: `#urn=<page URN>`.
+
+- Image: the one named by the page's DSE records (most frequent among catalog images), because it can differ from the catalog's page image (e.g. msA 83r: VA083RN_0255 vs VA083RN_0084; e3 pages use `E3_97bisv_98r` style bifolio images). Pages with no usable records show the catalog's image without rectangles.
+- Only Venetus A (630 pages) and Escorial Y 1.1 (71 pages) have DSE records; the other five codices show images only. The menus say so.
+- Records whose image is not an image of the catalog (e.g. msA.v1:91r used as an image) are not drawn; a count of regions on another image is noted.
+- Files: `src/codices.js` (`codices`, `indexRegionsBySurface`, `pageView`), `src/apps/codices/`, `test/codices.test.js`. Needs `codices.html  0.1.0` in version.txt.
+- Image URLs for non-`hmt` namespaces (citebl, citelaur) are the unverified server layout; tested with a stub server only.
+
+Update: pages with indexed text are marked "● " in the page menu, followed by the number of drawn passages; others get blank padding. Counts are of regions that are drawn (on a catalog image): Escorial Y 1.1 has 69 such pages (71 pages have DSE records, 2 only on non-catalog images).
+
+Update: clicking a rectangle copies the full diplomatic text of the topmost passage under the pointer (scholion: lemma and comment joined by a space) to the clipboard, with a short confirmation; falls back to a hidden textarea + execCommand where navigator.clipboard is missing. A drag does not copy. A tap on touch shows the text and copies.

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Codices</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
+    --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
+    --c-iliad: #e0452c; --c-scholia: #2f7de1; --c-other: #2fa36b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --accent-fg: #1a1816; --focus: #8fb0ff; --err: #ff8a80;
+            --table: #121110; --cell: #23211f; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  [hidden] { display: none !important; }
+
+  /* ---- viewer ---- */
+  #viewer-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #viewer-bar { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; padding: .5rem 1rem;
+         border-bottom: 1px solid var(--line); background: var(--bg); }
+  #viewer-title { font-weight: 600; flex: 1 1 12rem; min-width: 0; }
+  .group { display: inline-flex; gap: .4rem; align-items: center; }
+  .group label { display: inline-flex; gap: .3rem; align-items: center; font-size: .875rem; }
+  .chip { width: .8rem; height: .8rem; border-radius: 2px; display: inline-block; border: 2px solid; }
+  .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
+  .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
+  .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
+  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
+  #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
+  #viewer.dragging { cursor: grabbing; }
+  #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; }
+  .roi.iliad { fill: var(--c-iliad); stroke: var(--c-iliad); }
+  .roi.scholia { fill: var(--c-scholia); stroke: var(--c-scholia); }
+  .roi.other { fill: var(--c-other); stroke: var(--c-other); }
+  .roi.hot { fill-opacity: .38; stroke-width: 3px; }
+  #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
+  #rois.hide-all .roi { display: none; }
+  #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
+         background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+         padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }
+  #tip .item + .item { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
+  #tip .what { font: .8125rem ui-monospace, monospace; color: var(--muted); }
+  #tip .what b { font-weight: 700; color: var(--fg); }
+  .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.1rem; line-height: 1.5; }
+  #tip .lemma { font-weight: 700; }
+  #tip .none { color: var(--muted); font-style: italic; }
+
+  #controls label.sel { display: inline-flex; gap: .4rem; align-items: center; min-width: 0; }
+  #controls select { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; max-width: 100%; min-width: 0; }
+  .roi { cursor: pointer; }
+  #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  #copied.bad { background: #a3201a; }
+  #controls { flex-wrap: wrap; }
+  #codex { width: 16rem; } #page { width: 15rem; }
+  #intro { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #d8d2c8; }
+  #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
+
+  /* ---- loading / errors ---- */
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted);
+          background: var(--bg); }
+  body.dragging #drop { border-color: var(--accent); }
+  #drop input[type=file] { max-width: 100%; }
+  #problem { color: var(--err); }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar { padding: .5rem .75rem; } #controls { width: 100%; } #controls label.sel { flex: 1 1 100%; } #codex, #page { flex: 1; width: auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Codices</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<section id="viewer-view">
+  <div id="viewer-bar">
+    <span id="controls" class="group">
+      <label class="sel">Codex <select id="codex" disabled></select></label>
+      <label class="sel">Page <select id="page" disabled title="● marks pages with indexed text; the number is how many passages"></select></label>
+      <button class="btn" id="prev" title="Previous page ([)" aria-label="Previous page" disabled>‹</button>
+      <button class="btn" id="next" title="Next page (])" aria-label="Next page" disabled>›</button>
+    </span>
+    <span class="group" role="group" aria-label="Regions shown">
+      <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
+      <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
+      <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
+    <span class="group">
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
+    </span>
+  </div>
+  <div id="viewer-wrap">
+    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom."></div>
+    <p id="intro">Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.</p>
+    <div id="viewer-note" hidden></div>
+    <div id="viewer-error" role="alert" hidden></div>
+    <div id="tip" hidden></div>
+    <div id="copied" role="status" hidden></div>
+  </div>
+</section>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/iiif.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/pan-zoom.js -->
+<!-- @inline src/image-viewer.js -->
+<!-- @inline src/apps/codices/app.js -->
+</body>
+</html>
