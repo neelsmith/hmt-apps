@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>DSE check</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --ok: #1f6b3a; --okbg: #e3f2e7; --warnbg: #fbe9e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --ok: #7fd49a; --okbg: #1e3326; --warnbg: #3a211d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta a, a { color: var(--accent); }
+  button { font: inherit; cursor: pointer; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
+  .btn:hover { border-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  main { max-width: 64rem; margin: 0 auto; padding: 1rem; }
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { padding: .3rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  td.bad { color: var(--err); font-weight: 600; }
+  section.group { margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  section.group > .gh { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; padding: .6rem .9rem; }
+  .badge { font-size: .8rem; border-radius: 999px; padding: .05rem .6rem; }
+  .badge.ok { background: var(--okbg); color: var(--ok); }
+  .badge.warn { background: var(--warnbg); color: var(--err); }
+  .gdesc { padding: 0 .9rem .5rem; color: var(--muted); font-size: .875rem; margin: 0; }
+  .entry { border-top: 1px solid var(--line); padding: .4rem .9rem; }
+  .entry summary { cursor: pointer; }
+  .entry .n { color: var(--muted); font-size: .875rem; }
+  .flag { color: var(--err); font-size: .875rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .25rem; padding: .5rem 0; }
+  .chip { border: 1px solid var(--line); border-radius: 4px; padding: 0 .4rem; font: .8125rem ui-monospace, Menlo, monospace; }
+  .rec { font: .8125rem ui-monospace, Menlo, monospace; padding: .15rem 0; overflow-wrap: anywhere; }
+  .rec .row { color: var(--muted); }
+  .more { margin: .25rem 0 .5rem; }
+  footer { color: var(--muted); font-size: .8125rem; padding: 0 0 2rem; }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } main { padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>DSE check</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="report" hidden>
+  <p id="intro"></p>
+  <p><button class="btn" id="csv">Download report as CSV</button></p>
+  <h2>By text</h2>
+  <div class="tablewrap"><table id="summary"></table></div>
+  <div id="groups"></div>
+  <footer>
+    Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar
+    (diplomatic or normalized); a scholion's lemma and comment are one passage. Subreferences (<code>1.1@word</code>) are ignored.
+    Physical surfaces (pages) are not checked here. Findings are warnings only.
+  </footer>
+</main>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/dse-check.js -->
+<!-- @inline src/apps/dse-check/app.js -->
+</body>
+</html>

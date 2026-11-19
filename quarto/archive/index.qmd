@@ -1,5 +1,24 @@
 ---
-title: "The HMT archive"
+title: "Where should I start?"
 ---
 
-*TBA*
+The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, my approach is to experiment with numerous small, focused apps. Here are some ideas about how you might start exploring the HMT archive.
+
+## Major components of the archive
+
+The HMT archive includes (among other things):
+
+- collections of digital images of Homeric manuscripts
+- cataloged data about manuscripts of the *Iliad*
+- editions of texts of the *Iliad* and *scholia*
+- indexes associating texts, manuscript pages, and images
+- other indexes including proper nouns and adjectives
+
+
+## Choose this first
+
+
+- if you want to browse images:
+- if you want to read editions of the *Iliad* and *scholia*:
+- if you want a fascimile view relating textual editions to pages images:
+- if you want to find out about the editorial status of HMT work: 

@@ -209,3 +209,19 @@ Same as `iliad-scholia.html`, except no choice of diplomatic vs normalized: one 
 - "Version" here is the version the scholion is indexed to (the relation's target), not the manuscript the scholion text comes from (siglum such as `msAil`, `msB`), which the scholion label still shows.
 - Logic: spans now carry `version`; `annotateRange` lines gain `byVersion` (version URN to scholia); new `shortVersionLabel`. `iliad-scholia` and `editorial` are unchanged in what they show (they do not render the breakdown); their dist files were rebuilt because the shared script and CSS changed.
 - Tests: byVersion groups on the fixture and on the real release (9.1: msA 2, msB 2, e3 2), `shortVersionLabel`; browser checks for chips, tooltips, panel headings, 1.1 (single version), no breakdown on a line without scholia, phone width. 73 unit tests pass except the known `images.html` version entry. Nothing committed.
+
+## dse-check.html (2026-11-19)
+
+Checks the relational integrity of the DSE records (`urn:cite2:hmt:hmtdse.v1:all`, `passage|imageroi|surface`) of a release, in three groups:
+
+1. **Text passage missing from DSE** — passages of the editions that no record names. (The request said "message"; read as "missing".)
+2. **DSE record for text passage not in textual editions** — including records for versions the release has no text of (`msAmeta`, `msAimLater`) and passages that are not CTS URNs.
+3. **Reference to image not in catalog** — image (before `@`) is not an item of any collection with the image data model. Reasons: no such item in an image collection; not an image collection; no image.
+
+Design: `src/dse-check.js` (`checkDse`, `reportCsv`), `src/apps/dse-check/`. Passages are compared per version: any exemplar (diplomatic/normalized) counts; scholion `.lemma`/`.comment` are one passage; `@subref` ignored. Surfaces are NOT checked (could be added). Warnings only. CSV download of the whole report.
+
+Findings on the current release: 26,666 records; 2,747 passages missing from DSE (Venetus A Iliad 43; all 710 Venetus B Iliad and 324 Venetus B scholia have no records at all); 120 records for passages not in the text; 70 records with images not in the catalog (69 for `e3bifolio.v1:E3_120v_121r`, 1 for `msA.v1:91r` used as an image).
+
+Tests: `test/dse-check.test.js` (fixture + real release). Needs `dse-check.html  0.1.0` in version.txt (user-owned; not edited).
+
+Update: records in group 2 have a "show image" button that shows the image (IIIF, 1000 px wide) with the RoI outlined in place; "open full image" link; error note if the image server cannot be reached. Uses src/iiif.js (inlined) and imageService from src/images.js. Verified in browser with a stub image server only; real server not reachable from the sandbox.
