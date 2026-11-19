@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="0.1.0">
+<title>Images</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
+    --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --accent-fg: #1a1816; --focus: #8fb0ff; --err: #ff8a80;
+            --table: #121110; --cell: #23211f; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  select, input[type=number] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; }
+  [hidden] { display: none !important; }
+
+  /* ---- light box ---- */
+  #table-view { flex: 1; overflow: auto; background: var(--table); color: var(--table-fg); display: flex; flex-direction: column; }
+  #controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center;
+         padding: .6rem 1rem; background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); }
+  #controls label { display: inline-flex; gap: .4rem; align-items: center; }
+  #controls .coll { flex: 1 1 20rem; min-width: 0; }
+  #collection { flex: 1; min-width: 0; width: 100%; }
+  .pager { display: inline-flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
+  .pager input { width: 4.5rem; text-align: right; }
+  #shown { color: var(--muted); font-size: .875rem; }
+  #intro, #note { padding: 2rem 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
+  #note { padding: .75rem 1rem 0; color: #ffb4a8; opacity: 1; }
+  #grid { --cell-w: 170px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), 1fr));
+          gap: .75rem; padding: 1rem; }
+  .cell { display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
+          border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
+  .cell:hover { border-color: var(--accent); }
+  .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
+  .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cell .thumb.missing img { display: none; }
+  .cell .thumb.missing::after { content: "no image"; font-size: .75rem; opacity: .6; }
+  .cell .lbl { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pager-bottom { justify-content: center; padding: 0 1rem 1.25rem; color: var(--table-fg); }
+  #pager-bottom .btn { background: var(--cell); color: var(--table-fg); border-color: transparent; }
+
+  /* ---- viewer ---- */
+  #viewer-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #viewer-bar { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; padding: .5rem 1rem;
+         border-bottom: 1px solid var(--line); background: var(--bg); }
+  #viewer-title { font-weight: 600; flex: 1 1 10rem; min-width: 0; }
+  #viewer-count { color: var(--muted); font-size: .875rem; }
+  .group { display: inline-flex; gap: .4rem; align-items: center; }
+  #rights { padding: .5rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel); font-size: .875rem; color: var(--muted); }
+  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
+  #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
+  #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; }
+
+  /* ---- loading / errors ---- */
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted);
+          background: var(--bg); }
+  body.dragging #drop { border-color: var(--accent); }
+  #drop input[type=file] { max-width: 100%; }
+  #problem { color: var(--err); }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #controls { padding: .5rem .75rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Images</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.0</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Collection <select id="collection" disabled></select></label>
+    <label>Per page
+      <select id="page-size">
+        <option>12</option><option selected>24</option><option>48</option><option>96</option>
+      </select>
+    </label>
+    <span class="pager" id="pager-top" hidden></span>
+    <span id="shown"></span>
+  </div>
+  <p id="intro">Choose a collection of images.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <div class="pager" id="pager-bottom" hidden></div>
+</main>
+
+<section id="viewer-view" hidden>
+  <div id="viewer-bar">
+    <button class="btn" id="back" title="Back to the light box (Esc)">← Images</button>
+    <span class="group">
+      <button class="btn" id="prev" title="Previous image ([)" aria-label="Previous image">‹</button>
+      <button class="btn" id="next" title="Next image (])" aria-label="Next image">›</button>
+    </span>
+    <span id="viewer-title"></span>
+    <span id="viewer-count"></span>
+    <button class="btn" id="rights-toggle" aria-expanded="false" aria-controls="rights">Rights</button>
+    <span class="group">
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="fit" title="Fit image (0)">Fit</button>
+    </span>
+  </div>
+  <div id="rights" hidden></div>
+  <div id="viewer-wrap">
+    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer-note"></div>
+    <div id="viewer-error" role="alert" hidden></div>
+  </div>
+</section>
+
+<script>
+// @ts-check
+/**
+ * Parsing of an HMT data release (a single CEX text file).
+ *
+ * Design notes
+ * - No imports and no dependencies, so this file runs unchanged in Node
+ *   (tests) and in a browser, and can later be inlined into a single-file app
+ *   by stripping the leading `export` keywords.
+ * - Parsing never throws on irregular data.  Irregularities are collected as
+ *   warnings: see `HmtRelease.validate()`.
+ */
+
+/** Block labels recognised in a release, in the order given in CLAUDE.md. */
+const BLOCK_TYPES = [
+  'cexversion', 'citelibrary', 'citecollections', 'citeproperties',
+  'citedata', 'datamodels', 'ctscatalog', 'ctsdata', 'citerelationset',
+];
+
+/** Default location of the current release. */
+const DEFAULT_RELEASE_URL =
+  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/releases-cex/hmt-current.cex';
+
+/** Block types whose repeated blocks each start with the same header line. */
+const FIXED_HEADER_TYPES = new Set(['citecollections', 'citeproperties', 'datamodels', 'ctscatalog']);
+
+// ---------------------------------------------------------------------------
+// Step 1: split text into labelled blocks
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} Block
+ * @property {string} type       Label without the `#!` prefix.
+ * @property {number} startLine  1-based line number of the header line.
+ * @property {string[]} lines    Data lines: comments and blank lines removed.
+ */
+
+/**
+ * Split CEX text into blocks.  Lines starting with `//` and empty lines are
+ * dropped.  Everything between a `#!` header line and the next belongs to the
+ * first.
+ * @param {string} text
+ * @returns {{blocks: Block[], warnings: string[]}}
+ */
+function splitBlocks(text) {
+  /** @type {Block[]} */
+  const blocks = [];
+  /** @type {string[]} */
+  const warnings = [];
+  /** @type {Block | null} */
+  let current = null;
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('#!')) {
+      const type = line.slice(2).trim();
+      if (!BLOCK_TYPES.includes(type)) {
+        warnings.push(`line ${i + 1}: unrecognized block type "${type}"`);
+      }
+      current = { type, startLine: i + 1, lines: [] };
+      blocks.push(current);
+      continue;
+    }
+    if (line.startsWith('//') || line.trim() === '') continue;
+    if (current === null) {
+      warnings.push(`line ${i + 1}: content before the first block header ignored`);
+      continue;
+    }
+    current.lines.push(line);
+  }
+  return { blocks, warnings };
+}
+
+// ---------------------------------------------------------------------------
+// URN helpers (CITE2 and CTS)
+// ---------------------------------------------------------------------------
+
+/** True for a collection-level CITE2 URN, e.g. `urn:cite2:hmt:e3pages.v1:`. */
+function isCollectionUrn(urn) {
+  return /^urn:cite2:[^:]+:[^:]+:$/.test(urn);
+}
+
+/** Collection-level URN for an object URN, or null if `urn` is not CITE2. */
+function collectionOfObject(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/**
+ * Collection-level URN for a property-level URN, e.g.
+ * `urn:cite2:citebl:burney86pages.v1.sequence:` gives
+ * `urn:cite2:citebl:burney86pages.v1:`.  Null if not property-level.
+ */
+function collectionOfProperty(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+)\.[^.:]+:$/.exec(urn);
+  return m ? m[1] + ':' : null;
+}
+
+/** Property-level URN for a property name in a collection. */
+function propertyUrn(collectionUrn, name) {
+  return collectionUrn.slice(0, -1) + '.' + name + ':';
+}
+
+/**
+ * Work-component prefix of a CTS URN (`urn:cts:ns:group.work.version[.exemplar]:`),
+ * which is version-level or exemplar-level depending on the URN.
+ */
+function ctsWorkOf(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/** Version-level CTS URN (`urn:cts:ns:group.work.version:`): drops any exemplar part. */
+function ctsVersionOf(urn) {
+  const m = /^(urn:cts:[^:]+:)([^:]+):/.exec(urn);
+  return m ? m[1] + m[2].split('.').slice(0, 3).join('.') + ':' : null;
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: typed access
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse lines of delimited text into objects keyed by `fields`.  Rows with the
+ * wrong number of values are still returned (padded or truncated); they are
+ * reported through `warn` as one summary message per table.
+ * @param {string[]} lines
+ * @param {string[]} fields
+ * @param {(msg: string) => void} warn
+ * @param {string} label  used in warnings
+ * @returns {Record<string, string>[]}
+ */
+function rowsToObjects(lines, fields, warn, label) {
+  let ragged = 0;
+  let firstBad = 0;
+  const out = lines.map((line, i) => {
+    const vals = line.split('|');
+    if (vals.length !== fields.length) {
+      if (!ragged) firstBad = i + 1;
+      ragged++;
+    }
+    /** @type {Record<string, string>} */
+    const obj = {};
+    fields.forEach((f, j) => { obj[f] = vals[j] ?? ''; });
+    return obj;
+  });
+  if (ragged) {
+    warn(`${label}: ${ragged} of ${lines.length} rows do not have ${fields.length} values (first: row ${firstBad})`);
+  }
+  return out;
+}
+
+class HmtRelease {
+  /** @param {string} text  Full text of a CEX release. */
+  constructor(text) {
+    const { blocks, warnings } = splitBlocks(text);
+    /** @type {Block[]} */
+    this.blocks = blocks;
+    /** @type {string[]} */
+    this._warnings = [...warnings];
+    /** @type {Map<string, any>} */
+    this._cache = new Map();
+  }
+
+  /** @param {string} msg */
+  _warn(msg) { if (!this._warnings.includes(msg)) this._warnings.push(msg); }
+
+  /**
+   * @template T
+   * @param {string} key
+   * @param {() => T} compute
+   * @returns {T}
+   */
+  _memo(key, compute) {
+    if (!this._cache.has(key)) this._cache.set(key, compute());
+    return this._cache.get(key);
+  }
+
+  /** Block types actually present, in order of first appearance. */
+  blockTypes() {
+    return [...new Set(this.blocks.map(b => b.type))];
+  }
+
+  /**
+   * Data lines of all blocks of one type, composited into a single array.
+   * For types with one fixed header line (citecollections, citeproperties,
+   * datamodels, ctscatalog) the first line of each repeated block is treated
+   * as its header and dropped, so the result has a single header line at the
+   * start.  For `citedata` and
+   * `citerelationset` the composite is a plain concatenation; use `citeData()`
+   * or `relationSets()` to get the per-block structure.
+   * @param {string} type
+   * @returns {string[]}
+   */
+  getBlock(type) {
+    return this._memo('block:' + type, () => {
+      const same = this.blocks.filter(b => b.type === type);
+      if (!FIXED_HEADER_TYPES.has(type)) return same.flatMap(b => b.lines);
+      /** @type {string[]} */
+      const out = [];
+      for (const b of same) {
+        if (out.length === 0) { out.push(...b.lines); continue; }
+        // Later blocks repeat the header line; drop it.
+        if (b.lines[0] !== out[0]) {
+          this._warn(`${type} (line ${b.startLine}): header "${b.lines[0]}" differs from first header "${out[0]}"`);
+        }
+        out.push(...b.lines.slice(1));
+      }
+      return out;
+    });
+  }
+
+  /** The CEX version string, or null if absent. */
+  get cexVersion() {
+    const lines = this.getBlock('cexversion');
+    if (this.blocks.filter(b => b.type === 'cexversion').length > 1) {
+      this._warn('more than one #!cexversion block');
+    }
+    return lines.length ? lines[0].trim() : null;
+  }
+
+  /**
+   * Library metadata from the `#!citelibrary` block.
+   * @returns {{name: string, urn: string, license: string,
+   *            namespaces: {abbreviation: string, uri: string}[]}}
+   */
+  get library() {
+    return this._memo('library', () => {
+      if (this.blocks.filter(b => b.type === 'citelibrary').length > 1) {
+        this._warn('more than one #!citelibrary block');
+      }
+      const lib = { name: '', urn: '', license: '', namespaces: /** @type {{abbreviation: string, uri: string}[]} */ ([]) };
+      for (const line of this.getBlock('citelibrary')) {
+        const [key, ...rest] = line.split('|');
+        if (key === 'namespace') {
+          if (rest.length !== 2) this._warn(`citelibrary: malformed namespace line "${line}"`);
+          lib.namespaces.push({ abbreviation: rest[0] ?? '', uri: rest[1] ?? '' });
+        } else if (key === 'name' || key === 'urn' || key === 'license') {
+          lib[key] = rest.join('|');
+        } else {
+          this._warn(`citelibrary: unrecognized key "${key}"`);
+        }
+      }
+      return lib;
+    });
+  }
+
+  /** @returns {{urn: string, description: string, labellingProperty: string, orderingProperty: string, license: string}[]} */
+  collections() {
+    return this._memo('collections', () => {
+      const [, ...rows] = this.getBlock('citecollections');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'description', 'labellingProperty', 'orderingProperty', 'license'],
+        m => this._warn(m), 'citecollections'));
+    });
+  }
+
+  /** @returns {{urn: string, label: string, type: string, authorityList: string}[]} */
+  properties() {
+    return this._memo('properties', () => {
+      const [, ...rows] = this.getBlock('citeproperties');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'label', 'type', 'authorityList'], m => this._warn(m), 'citeproperties'));
+    });
+  }
+
+  /** @returns {{collection: string, model: string, label: string, description: string}[]} */
+  dataModels() {
+    return this._memo('datamodels', () => {
+      const [, ...rows] = this.getBlock('datamodels');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['collection', 'model', 'label', 'description'], m => this._warn(m), 'datamodels'));
+    });
+  }
+
+  /** @returns {Record<string, string>[]}  Keys: urn, citationScheme, groupName, workTitle, versionLabel, exemplarLabel, online, language. */
+  ctsCatalog() {
+    return this._memo('ctscatalog', () => {
+      const [, ...rows] = this.getBlock('ctscatalog');
+      return rowsToObjects(rows,
+        ['urn', 'citationScheme', 'groupName', 'workTitle', 'versionLabel', 'exemplarLabel', 'online', 'language'],
+        m => this._warn(m), 'ctscatalog');
+    });
+  }
+
+  /**
+   * Passages of all `#!ctsdata` blocks.  Each line is split at its first `|`.
+   * @returns {{urn: string, text: string}[]}
+   */
+  ctsData() {
+    return this._memo('ctsdata', () => {
+      /** @type {{urn: string, text: string}[]} */
+      const out = [];
+      for (const line of this.getBlock('ctsdata')) {
+        const i = line.indexOf('|');
+        if (i < 0) { this._warn(`ctsdata: line without "|": "${line.slice(0, 60)}"`); continue; }
+        if (line.indexOf('|', i + 1) >= 0) this._warn(`ctsdata: extra "|" in passage ${line.slice(0, i)}`);
+        out.push({ urn: line.slice(0, i), text: line.slice(i + 1) });
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Tables of all `#!citedata` blocks.  Each block has its own header.
+   * `collections` lists the distinct collection URNs of the rows' `urn` values.
+   * @returns {{header: string[], rows: Record<string, string>[], collections: string[], startLine: number}[]}
+   */
+  citeData() {
+    return this._memo('citedata', () => this.blocks.filter(b => b.type === 'citedata').map(b => {
+      const header = (b.lines[0] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(1), header, m => this._warn(m), `citedata (line ${b.startLine})`);
+      const cols = new Set();
+      const urnField = header.find(h => h.toLowerCase() === 'urn');
+      if (urnField !== undefined) {
+        for (const r of rows) {
+          const c = collectionOfObject(r[urnField]);
+          if (c) cols.add(c);
+        }
+      } else if (b.lines.length) {
+        this._warn(`citedata (line ${b.startLine}): no "urn" column, collection unknown`);
+      }
+      return { header, rows, collections: [...cols], startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Relation sets, one per `#!citerelationset` block: `urn` and `label`
+   * key-value lines, then a header line, then rows.
+   * @returns {{urn: string, label: string, header: string[], rows: Record<string, string>[], startLine: number}[]}
+   */
+  relationSets() {
+    return this._memo('relationsets', () => this.blocks.filter(b => b.type === 'citerelationset').map(b => {
+      let urn = '', label = '';
+      let i = 0;
+      for (; i < b.lines.length; i++) {
+        const [key, ...rest] = b.lines[i].split('|');
+        if (key === 'urn' && rest.length === 1 && !urn) urn = rest[0];
+        else if (key === 'label' && !label) label = rest.join('|');
+        else break;
+      }
+      if (!urn) this._warn(`citerelationset (line ${b.startLine}): no urn`);
+      const header = (b.lines[i] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(i + 1), header, m => this._warn(m), `citerelationset ${urn || b.startLine}`);
+      return { urn, label, header, rows, startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Check the release for consistency.  Never throws; returns warnings
+   * (including any irregularities noticed while parsing), empty if none.
+   * @returns {string[]}
+   */
+  validate() {
+    // Run every typed parser so their warnings are collected.
+    this.cexVersion; this.library; this.ctsData();
+    const collections = this.collections();
+    const properties = this.properties();
+    const models = this.dataModels();
+    const catalog = this.ctsCatalog();
+    const citeData = this.citeData();
+    const relSets = this.relationSets();
+    const warn = (/** @type {string} */ m) => this._warn(m);
+
+    const collUrns = new Set(collections.map(c => c.urn));
+    const propUrns = new Set(properties.map(p => p.urn));
+    const propLower = new Set(properties.map(p => p.urn.toLowerCase()));
+
+    for (const c of collections) {
+      if (!isCollectionUrn(c.urn)) warn(`citecollections: "${c.urn}" is not a collection-level CITE2 URN`);
+      if (!propUrns.has(c.labellingProperty)) {
+        warn(`citecollections: labelling property "${c.labellingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+      if (c.orderingProperty && !propUrns.has(c.orderingProperty)) {
+        warn(`citecollections: ordering property "${c.orderingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+    }
+    for (const p of properties) {
+      const c = collectionOfProperty(p.urn);
+      if (!c) warn(`citeproperties: "${p.urn}" is not a property-level CITE2 URN`);
+      else if (!collUrns.has(c)) warn(`citeproperties: collection ${c} of property ${p.urn} is not documented in citecollections`);
+    }
+    for (const t of citeData) {
+      for (const c of t.collections) {
+        if (!collUrns.has(c)) warn(`citedata (line ${t.startLine}): collection ${c} is not documented in citecollections`);
+        const undocumented = t.header.filter(name => !propUrns.has(propertyUrn(c, name)))
+          .map(name => propLower.has(propertyUrn(c, name).toLowerCase()) ? `${name} (documented with different capitalization)` : name);
+        if (undocumented.length) {
+          warn(`citedata (line ${t.startLine}): ${undocumented.length} of ${t.header.length} properties of ${c} not documented in citeproperties: ${undocumented.join(', ')}`);
+        }
+      }
+    }
+    for (const m of models) {
+      if (!collUrns.has(m.collection) && !relSets.some(r => r.urn === m.collection)) {
+        warn(`datamodels: ${m.collection} is neither a documented collection nor a relation set`);
+      }
+    }
+    const modelled = new Set(models.map(m => m.collection));
+    for (const r of relSets) {
+      if (r.urn && !modelled.has(r.urn)) warn(`citerelationset: ${r.urn} has no entry in datamodels`);
+    }
+    const versions = new Set(catalog.map(c => c.urn));
+    const missing = new Set();
+    for (const p of this.ctsData()) {
+      const w = ctsWorkOf(p.urn);
+      const v = ctsVersionOf(p.urn);
+      if (!(w && versions.has(w)) && !(v && versions.has(v))) missing.add(w ?? p.urn);
+    }
+    for (const v of missing) warn(`ctsdata: no ctscatalog entry for version ${v}`);
+
+    return [...this._warnings];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+/** Parse release text. */
+function parseRelease(text) {
+  return new HmtRelease(text);
+}
+
+/**
+ * Fetch and parse a release.  Works when the page is served over http(s);
+ * browsers block fetch from file:// pages, where apps should instead use
+ * `readReleaseFile` with a file picker or drop target.
+ * @param {string} [url]
+ */
+async function fetchRelease(url = DEFAULT_RELEASE_URL) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Could not load ${url}: HTTP ${resp.status}`);
+  return parseRelease(await resp.text());
+}
+
+/** Parse a release from a `File`/`Blob` (file picker or drag-and-drop). */
+async function readReleaseFile(file) {
+  return parseRelease(await file.text());
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Reading an IIIF Presentation 3 manifest of a manuscript, and building IIIF
+ * Image API URLs.  No DOM access.
+ */
+
+/** Manifest of the Venetus A images in the HMT archive. */
+const VA_MANIFEST_URL =
+  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/iiif/venetusA.json';
+
+/**
+ * @typedef {Object} Canvas
+ * @property {string} id         Last part of the canvas id, e.g. `12r` or `insidefrontcover`.
+ * @property {string} label      Label with the manuscript-wide prefix removed, e.g. `folio 12, recto`.
+ * @property {string} fullLabel  Label as given in the manifest.
+ * @property {string} gridLabel  Short label for a grid: `12r` for folios, otherwise `label`.
+ * @property {number} width      Image width in pixels.
+ * @property {number} height     Image height in pixels.
+ * @property {string} service    IIIF Image API base URL (without region/size/...).
+ * @property {string | null} imageUrn  CITE2 URN of the image, e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`, or null.
+ */
+
+/**
+ * CITE2 image URN for an image service URL whose path ends in
+ * `hmt/<collection>/<version>/<image>.tif`.  For example
+ * `.../hmt/vaimg/2017a/VA012RN_0013.tif` gives
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`.
+ * @param {string} service
+ * @returns {string | null}
+ */
+function imageUrnFromService(service) {
+  const m = /\/hmt\/([^/?#]+)\/([^/?#]+)\/([^/?#]+?)\.tif$/i.exec(service);
+  return m ? `urn:cite2:hmt:${m[1]}.${m[2]}:${m[3]}` : null;
+}
+
+/** First string of an IIIF language map (`{"en": ["..."]}`) or a plain string. */
+function firstLabel(label) {
+  if (typeof label === 'string') return label;
+  if (label && typeof label === 'object') {
+    const first = Object.values(label)[0];
+    if (Array.isArray(first) && first.length) return String(first[0]);
+    if (typeof first === 'string') return first;
+  }
+  return '';
+}
+
+/** Longest prefix shared by all labels, cut after the last ", ". */
+function commonLabelPrefix(labels) {
+  if (labels.length < 2) return '';
+  let p = labels[0];
+  for (const l of labels) { while (p && !l.startsWith(p)) p = p.slice(0, -1); }
+  const cut = p.lastIndexOf(', ');
+  return cut < 0 ? '' : p.slice(0, cut + 2);
+}
+
+/**
+ * Canvases of a manifest, in order.  Canvases without a usable image service
+ * are skipped; their number is returned as `skipped`.
+ * @param {any} manifest  Parsed JSON.
+ * @returns {{label: string, canvases: Canvas[], skipped: number}}
+ */
+function parseManifest(manifest) {
+  const items = Array.isArray(manifest?.items) ? manifest.items : [];
+  const raw = [];
+  let skipped = 0;
+  for (const c of items) {
+    const anno = c?.items?.[0]?.items?.[0];
+    const body = anno?.body;
+    const svc = [].concat(anno?.service ?? body?.service ?? [])[0];
+    const service = svc?.id ?? svc?.['@id'];
+    const width = Number(body?.width ?? c?.width);
+    const height = Number(body?.height ?? c?.height);
+    if (typeof service !== 'string' || !(width > 0) || !(height > 0)) { skipped++; continue; }
+    raw.push({
+      id: String(c.id ?? '').split('/').pop() || String(raw.length),
+      fullLabel: firstLabel(c.label),
+      width, height, service,
+    });
+  }
+  const prefix = commonLabelPrefix(raw.map(r => r.fullLabel));
+  const canvases = raw.map(r => {
+    const label = r.fullLabel.slice(prefix.length) || r.fullLabel;
+    return {
+      ...r,
+      label,
+      gridLabel: /^\d+[rv]$/.test(r.id) ? r.id : label,
+      imageUrn: imageUrnFromService(r.service),
+    };
+  });
+  return { label: firstLabel(manifest?.label), canvases, skipped };
+}
+
+/**
+ * IIIF Image API URL.
+ * @param {string} service  Image service base URL.
+ * @param {string} region   `full` or `x,y,w,h` in pixels.
+ * @param {string} size     e.g. `256,` (width 256, height by aspect ratio).
+ */
+function iiifImageUrl(service, region, size) {
+  return `${service}/${region}/${size}/0/default.jpg`;
+}
+
+/**
+ * Use https for an http image service when the page itself is served over
+ * https, since browsers block mixed content.  Other pages keep the URL as is.
+ * @param {string} url
+ * @param {string} pageProtocol  `location.protocol`, e.g. `https:`.
+ */
+function matchProtocol(url, pageProtocol) {
+  return pageProtocol === 'https:' ? url.replace(/^http:\/\//i, 'https://') : url;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the images app: the image collections of a release, their items,
+ * where the pictures are served, paging, and the location hash.
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** Data model of image collections. */
+const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
+
+/**
+ * Base of the HMT IIIF image server.  The release lists images by CITE2 URN
+ * only, so their location follows the server's convention:
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013` is the image
+ * `<base>hmt/vaimg/2017a/VA012RN_0013.tif`.  (Verified for the `hmt` namespace
+ * from the Venetus A manifest; the other namespaces assume the same layout.)
+ */
+const IMAGE_SERVICE_BASE =
+  'http://www.homermultitext.org/iipsrv?IIIF=/project/homer/pyramidal/deepzoom/';
+
+/**
+ * @typedef {Object} ImageItem
+ * @property {string} urn      Image URN.
+ * @property {string} id       Object part of the URN, e.g. `VA012RN_0013`.
+ * @property {string} caption
+ * @property {string} rights
+ * @property {string} label    Short label for a grid cell, e.g. `folio 12, recto`.
+ */
+
+/**
+ * @typedef {Object} ImageCollection
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:vaimg.2017a:`.
+ * @property {string} label
+ * @property {string} license
+ * @property {ImageItem[]} items  In the order of the release.
+ */
+
+/**
+ * Short label for an image: the part of its caption that says which page it
+ * is (`folio 12, recto`, `front cover`, `page 7`), else the whole caption's
+ * tail, else the id.
+ * @param {string} caption
+ * @param {string} id
+ */
+function cellLabel(caption, id) {
+  const m = /\b(?:bifolio|folio|page|front|inside|back|rear|spine|cover|fly)\b.*$/i.exec(caption);
+  const s = (m ? m[0] : '').replace(/[\s.]+$/, '').trim();
+  return s && s.length <= 48 ? s : id;
+}
+
+/**
+ * Every collection documented in `datamodels` as following the image model,
+ * with its items, ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {ImageCollection[]}
+ */
+function imageCollections(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === IMAGE_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, ImageCollection>} */
+  const out = new Map();
+  for (const urn of wanted) {
+    const c = info.get(urn);
+    out.set(urn, { urn, label: c?.description || urn, license: c?.license || '', items: [] });
+  }
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const coll = out.get(collectionOfObject(urn) ?? '');
+      if (!coll) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const caption = row.caption ?? '';
+      coll.items.push({ urn, id, caption, rights: row.rights ?? '', label: cellLabel(caption, id) });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * IIIF Image API base URL of an image.
+ * @param {string} imageUrn  e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`
+ * @param {string} [base]
+ * @returns {string | null}
+ */
+function imageService(imageUrn, base = IMAGE_SERVICE_BASE) {
+  const m = /^urn:cite2:([^:]+):([^:.]+)\.([^:]+):([^:]+)$/.exec(imageUrn);
+  return m ? `${base}${m[1]}/${m[2]}/${m[3]}/${m[4]}.tif` : null;
+}
+
+/**
+ * Width and height from an IIIF Image API `info.json` (any version).
+ * @param {any} info
+ * @returns {{width: number, height: number} | null}
+ */
+function parseInfo(info) {
+  const width = Number(info?.width), height = Number(info?.height);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/**
+ * One page of a list.  Out-of-range pages are clamped.
+ * @param {number} total
+ * @param {number} pageSize
+ * @param {number} page  1-based
+ * @returns {{page: number, pages: number, start: number, end: number}}  `start`..`end` is a half-open index range.
+ */
+function paginate(total, pageSize, page) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages);
+  const start = (p - 1) * pageSize;
+  return { page: p, pages, start, end: Math.min(total, start + pageSize) };
+}
+
+/**
+ * Location hash for a collection page or one image.
+ * @param {{urn: string, page?: number}} where
+ */
+function formatHash(where) {
+  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
+  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+}
+
+/**
+ * Read a location hash written by `formatHash`.
+ * @param {string} hash
+ * @returns {{urn: string, page: number} | null}
+ */
+function parseHash(hash) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const urn = params.get('urn');
+  if (!urn || !/^urn:cite2:/.test(urn)) return null;
+  const page = parseInt(params.get('page') ?? '', 10);
+  return { urn, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Geometry for a pannable, zoomable, tiled image view.  Pure functions.
+ *
+ * A view transform maps image pixels to screen (CSS) pixels:
+ *     screen = image * sc + (tx, ty)
+ * Anything drawn in image coordinates under this transform, including
+ * overlay rectangles, keeps its position relative to the image.
+ */
+
+/** Largest zoom: CSS pixels per image pixel. */
+const MAX_SCALE = 1.5;
+
+/** Tile size (output pixels) requested from the image server. */
+const TILE = 256;
+
+/** @typedef {{sc: number, tx: number, ty: number}} Transform */
+
+/**
+ * Transform that fits the whole image in the view, centred.
+ * @returns {Transform}
+ */
+function fitTransform(viewW, viewH, imgW, imgH, margin = 8) {
+  const sc = Math.min((viewW - 2 * margin) / imgW, (viewH - 2 * margin) / imgH);
+  return { sc, tx: (viewW - imgW * sc) / 2, ty: (viewH - imgH * sc) / 2 };
+}
+
+const clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Keep the scale in range and the image on screen: an image smaller than
+ * the view is centred; a larger one may be dragged until only `slack` pixels
+ * of it remain beyond an edge.
+ * @param {Transform} t
+ * @returns {Transform}
+ */
+function clampTransform(t, viewW, viewH, imgW, imgH, minScale, maxScale, slack = 80) {
+  const sc = clamp(t.sc, minScale, maxScale);
+  const w = imgW * sc, h = imgH * sc;
+  const tx = w <= viewW ? (viewW - w) / 2 : clamp(t.tx, viewW - w - slack, slack);
+  const ty = h <= viewH ? (viewH - h) / 2 : clamp(t.ty, viewH - h - slack, slack);
+  return { sc, tx, ty };
+}
+
+/**
+ * Zoom by `factor` keeping the image point under screen point (px, py) fixed.
+ * The resulting scale is limited to [minScale, maxScale].
+ * @param {Transform} t
+ * @returns {Transform}
+ */
+function zoomAt(t, factor, px, py, minScale, maxScale) {
+  const sc = clamp(t.sc * factor, minScale, maxScale);
+  const f = sc / t.sc;
+  return { sc, tx: px - (px - t.tx) * f, ty: py - (py - t.ty) * f };
+}
+
+/** Number of zoom levels above full resolution needed for the whole image to fit one tile. */
+function maxLevel(imgW, imgH, tile = TILE) {
+  return Math.max(0, Math.ceil(Math.log2(Math.max(imgW, imgH) / tile)));
+}
+
+/**
+ * Tile level for a scale: level k tiles show 2^k image pixels per tile pixel.
+ * The level is chosen so tile pixels are at least as dense as device pixels.
+ */
+function chooseLevel(scale, dpr, maxLvl) {
+  const f = 1 / (scale * dpr);
+  return clamp(Math.floor(Math.log2(f) + 1e-9), 0, maxLvl);
+}
+
+/**
+ * @typedef {Object} Tile
+ * @property {number} level
+ * @property {number} i
+ * @property {number} j
+ * @property {number} x      Left edge in image pixels.
+ * @property {number} y
+ * @property {number} w      Width in image pixels (smaller at the right edge).
+ * @property {number} h
+ * @property {number} outW   Width to request, in output pixels.
+ */
+
+/**
+ * Tiles of one level that intersect the view.
+ * @param {Transform} t
+ * @returns {Tile[]}
+ */
+function visibleTiles(t, viewW, viewH, imgW, imgH, level, tile = TILE) {
+  const span = tile * 2 ** level;
+  const ix0 = -t.tx / t.sc, iy0 = -t.ty / t.sc;
+  const ix1 = (viewW - t.tx) / t.sc, iy1 = (viewH - t.ty) / t.sc;
+  const cols = Math.ceil(imgW / span), rows = Math.ceil(imgH / span);
+  const i0 = clamp(Math.floor(ix0 / span), 0, cols - 1), i1 = clamp(Math.floor(ix1 / span), 0, cols - 1);
+  const j0 = clamp(Math.floor(iy0 / span), 0, rows - 1), j1 = clamp(Math.floor(iy1 / span), 0, rows - 1);
+  /** @type {Tile[]} */
+  const out = [];
+  if (ix1 < 0 || iy1 < 0 || ix0 > imgW || iy0 > imgH) return out;
+  for (let j = j0; j <= j1; j++) {
+    for (let i = i0; i <= i1; i++) {
+      const x = i * span, y = j * span;
+      const w = Math.min(span, imgW - x), h = Math.min(span, imgH - y);
+      out.push({ level, i, j, x, y, w, h, outW: Math.max(1, Math.round(w / 2 ** level)) });
+    }
+  }
+  return out;
+}
+
+/**
+ * A region of interest (fractions of the image) in image pixels.
+ * @param {{x: number, y: number, w: number, h: number}} roi
+ */
+function roiToRect(roi, imgW, imgH) {
+  return { x: roi.x * imgW, y: roi.y * imgH, w: roi.w * imgW, h: roi.h * imgH };
+}
+
+/** Screen position of an image point under a transform. */
+function imageToScreen(t, x, y) {
+  return { x: x * t.sc + t.tx, y: y * t.sc + t.ty };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * A pannable, zoomable viewer for one IIIF image, drawn on a canvas from
+ * tiles requested with IIIF region/size URLs.  Overlay shapes go in an SVG
+ * group (`viewer.overlay`) in IMAGE pixel coordinates; the viewer applies the
+ * same transform to the canvas and the group, so overlays stay registered with
+ * the image however it is panned or zoomed.
+ *
+ * Needs no libraries.  Geometry lives in pan-zoom.js (loaded before this file
+ * when inlined).  Browser only.
+ *
+ * Controls: drag to pan, wheel / pinch / double-click to zoom, + - 0 and arrow
+ * keys when the viewer has focus.
+ */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const MAX_INFLIGHT = 6;
+const MAX_CACHED_TILES = 300;
+const RETRY_MS = 10000;
+const BASE_WIDTH = 1000;
+
+/**
+ * @typedef {Object} OpenOptions
+ * @property {number} width    Image width in pixels.
+ * @property {number} height   Image height in pixels.
+ * @property {(region: string, size: string) => string} urlFor  Image URL for an IIIF region and size.
+ * @property {string[]} [placeholders]  Small images (e.g. a thumbnail) to show until tiles load.
+ */
+
+class IiifViewer {
+  /** @param {HTMLElement} root  Positioned element that will hold the viewer. */
+  constructor(root) {
+    this.root = root;
+    root.classList.add('iiif-viewer');
+    root.tabIndex = 0;
+    root.style.touchAction = 'none';
+    root.style.overflow = 'hidden';
+    if (getComputedStyle(root).position === 'static') root.style.position = 'relative';
+
+    this.canvas = document.createElement('canvas');
+    this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+    this.svg = /** @type {SVGSVGElement} */ (document.createElementNS(SVG_NS, 'svg'));
+    this.svg.setAttribute('class', 'iiif-overlay');
+    this.svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:hidden';
+    /** Group for overlay shapes, in image pixel coordinates. */
+    this.overlay = /** @type {SVGGElement} */ (document.createElementNS(SVG_NS, 'g'));
+    this.svg.appendChild(this.overlay);
+    root.append(this.canvas, this.svg);
+    this.ctx = /** @type {CanvasRenderingContext2D} */ (this.canvas.getContext('2d'));
+
+    /** @type {OpenOptions | null} */ this.image = null;
+    this.t = { sc: 1, tx: 0, ty: 0 };
+    this.minScale = 0.01;
+    this.gen = 0;
+    /** True while the pointer is being dragged to pan; hover handlers should ignore events then. */
+    this.dragging = false;
+    /** @type {Map<number, {x: number, y: number}>} */ this.pointers = new Map();
+    this.pinchDist = 0;
+    this.downAt = { x: 0, y: 0 };
+    this.moved = false;
+    /** @type {HTMLImageElement[]} */ this.layers = [];
+    /** @type {Map<string, {img: HTMLImageElement, state: string, at: number}>} */ this.tiles = new Map();
+    /** @type {{key: string, tile: any}[]} */ this.wanted = [];
+    this.inflight = 0;
+    this.raf = 0;
+    this.size = { w: 0, h: 0, dpr: 1 };
+
+    this.ro = new ResizeObserver(() => this.onResize());
+    this.ro.observe(root);
+    this.bind();
+  }
+
+  /** Show an image, fitted to the view. */
+  open(/** @type {OpenOptions} */ image) {
+    this.gen++;
+    this.image = image;
+    this.tiles.clear();
+    this.wanted = [];
+    this.inflight = 0;
+    this.layers = [];
+    this.overlay.textContent = '';
+    for (const url of [...(image.placeholders ?? []), image.urlFor('full', `${BASE_WIDTH},`)]) {
+      const gen = this.gen;
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => { if (gen === this.gen) { this.layers.push(img); this.schedule(); } };
+      img.src = url;
+    }
+    this.measure();
+    this.fit();
+  }
+
+  /** Stop showing the image and drop pending work. */
+  close() {
+    this.gen++;
+    this.image = null;
+    this.tiles.clear();
+    this.wanted = [];
+    this.layers = [];
+    this.overlay.textContent = '';
+    this.draw();
+  }
+
+  /** Fit the whole image in the view. */
+  fit() {
+    if (!this.image) return;
+    const { w, h } = this.measure();
+    const t = fitTransform(w, h, this.image.width, this.image.height);
+    this.minScale = t.sc;
+    this.set(t);
+  }
+
+  /** Zoom by a factor around the view centre (or a given screen point). */
+  zoomBy(/** @type {number} */ factor, /** @type {number} */ px = this.size.w / 2, /** @type {number} */ py = this.size.h / 2) {
+    this.set(zoomAt(this.t, factor, px, py, this.minScale, MAX_SCALE));
+  }
+
+  /** Pan by screen pixels. */
+  panBy(/** @type {number} */ dx, /** @type {number} */ dy) {
+    this.set({ sc: this.t.sc, tx: this.t.tx + dx, ty: this.t.ty + dy });
+  }
+
+  /** Screen point (relative to the viewer) of an image point. */
+  toScreen(/** @type {number} */ x, /** @type {number} */ y) {
+    return imageToScreen(this.t, x, y);
+  }
+
+  destroy() {
+    this.ro.disconnect();
+    cancelAnimationFrame(this.raf);
+    this.root.textContent = '';
+  }
+
+  // --- internals -----------------------------------------------------------
+
+  measure() {
+    const r = this.root.getBoundingClientRect();
+    this.size.w = r.width;
+    this.size.h = r.height;
+    this.size.dpr = window.devicePixelRatio || 1;
+    return this.size;
+  }
+
+  onResize() {
+    const before = { w: this.size.w, h: this.size.h };
+    this.measure();
+    if (!this.image) return;
+    const atFit = Math.abs(this.t.sc - this.minScale) < 1e-9;
+    const fitNow = fitTransform(this.size.w, this.size.h, this.image.width, this.image.height);
+    this.minScale = fitNow.sc;
+    if (atFit || before.w === 0) this.set(fitNow);
+    else this.set(this.t);
+  }
+
+  set(/** @type {{sc: number, tx: number, ty: number}} */ t) {
+    if (!this.image) { this.t = t; return; }
+    this.t = clampTransform(t, this.size.w, this.size.h, this.image.width, this.image.height, this.minScale, MAX_SCALE);
+    this.overlay.setAttribute('transform', `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`);
+    this.schedule();
+  }
+
+  schedule() {
+    if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; this.draw(); });
+  }
+
+  draw() {
+    const { w, h, dpr } = this.size;
+    const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+    if (this.canvas.width !== cw || this.canvas.height !== ch) { this.canvas.width = cw; this.canvas.height = ch; }
+    const ctx = this.ctx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    if (!this.image) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const { sc, tx, ty } = this.t;
+    const { width: W, height: H } = this.image;
+
+    for (const img of this.layers) ctx.drawImage(img, tx, ty, W * sc, H * sc);
+
+    const level = chooseLevel(sc, dpr, maxLevel(W, H));
+    const tiles = visibleTiles(this.t, w, h, W, H, level);
+    /** @type {{key: string, tile: any}[]} */
+    const wanted = [];
+    const now = Date.now();
+    for (const tile of tiles) {
+      const key = `${tile.level}/${tile.i}/${tile.j}`;
+      const entry = this.tiles.get(key);
+      if (entry && entry.state === 'loaded') {
+        ctx.drawImage(entry.img, tx + tile.x * sc, ty + tile.y * sc, tile.w * sc, tile.h * sc);
+        this.tiles.delete(key); this.tiles.set(key, entry);      // mark recently used
+      } else if (!entry || (entry.state === 'error' && now - entry.at > RETRY_MS)) {
+        wanted.push({ key, tile });
+      }
+    }
+    const cx = (w / 2 - tx) / sc, cy = (h / 2 - ty) / sc;
+    wanted.sort((a, b) =>
+      Math.hypot(a.tile.x + a.tile.w / 2 - cx, a.tile.y + a.tile.h / 2 - cy) -
+      Math.hypot(b.tile.x + b.tile.w / 2 - cx, b.tile.y + b.tile.h / 2 - cy));
+    this.wanted = wanted;
+    this.pump();
+  }
+
+  pump() {
+    const image = this.image;
+    if (!image) return;
+    while (this.inflight < MAX_INFLIGHT && this.wanted.length) {
+      const next = this.wanted.shift();
+      if (!next) break;
+      const { key, tile } = next;
+      if (this.tiles.get(key)?.state === 'loading') continue;
+      const img = new Image();
+      const entry = { img, state: 'loading', at: Date.now() };
+      this.tiles.set(key, entry);
+      const gen = this.gen;
+      this.inflight++;
+      const done = (/** @type {string} */ state) => {
+        if (gen !== this.gen) return;
+        this.inflight--;
+        entry.state = state; entry.at = Date.now();
+        this.evict();
+        this.schedule();
+      };
+      img.onload = () => done('loaded');
+      img.onerror = () => done('error');
+      img.decoding = 'async';
+      img.src = image.urlFor(`${tile.x},${tile.y},${tile.w},${tile.h}`, `${tile.outW},`);
+    }
+  }
+
+  evict() {
+    if (this.tiles.size <= MAX_CACHED_TILES) return;
+    for (const [key, entry] of this.tiles) {
+      if (this.tiles.size <= MAX_CACHED_TILES) break;
+      if (entry.state !== 'loading') this.tiles.delete(key);
+    }
+  }
+
+  bind() {
+    const root = this.root;
+    const local = (/** @type {MouseEvent} */ e) => {
+      const r = root.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    root.addEventListener('pointerdown', e => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      root.setPointerCapture(e.pointerId);
+      const p = local(e);
+      this.pointers.set(e.pointerId, p);
+      if (this.pointers.size === 1) { this.downAt = p; this.moved = false; }
+      if (this.pointers.size === 2) {
+        const [a, b] = [...this.pointers.values()];
+        this.pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+        this.moved = true;
+      }
+    });
+
+    root.addEventListener('pointermove', e => {
+      const prev = this.pointers.get(e.pointerId);
+      if (!prev) return;
+      const p = local(e);
+      this.pointers.set(e.pointerId, p);
+      if (this.pointers.size === 1) {
+        if (!this.moved && Math.hypot(p.x - this.downAt.x, p.y - this.downAt.y) < 4) return;
+        this.moved = true;
+        this.dragging = true;
+        root.classList.add('dragging');
+        this.panBy(p.x - prev.x, p.y - prev.y);
+      } else if (this.pointers.size === 2) {
+        const [a, b] = [...this.pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (this.pinchDist > 0) this.zoomBy(dist / this.pinchDist, (a.x + b.x) / 2, (a.y + b.y) / 2);
+        this.pinchDist = dist;
+        this.dragging = true;
+      }
+    });
+
+    const up = (/** @type {PointerEvent} */ e) => {
+      if (!this.pointers.delete(e.pointerId)) return;
+      if (this.pointers.size === 0) {
+        // Clear after the click that ends a drag has been dispatched.
+        setTimeout(() => { this.dragging = false; root.classList.remove('dragging'); }, 0);
+      }
+      this.pinchDist = 0;
+    };
+    root.addEventListener('pointerup', up);
+    root.addEventListener('pointercancel', up);
+
+    root.addEventListener('wheel', e => {
+      e.preventDefault();
+      const p = local(e);
+      this.zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
+    }, { passive: false });
+
+    root.addEventListener('dblclick', e => {
+      const p = local(e);
+      this.zoomBy(e.shiftKey ? 0.5 : 2, p.x, p.y);
+    });
+
+    root.addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const step = 80;
+      const handled = {
+        '+': () => this.zoomBy(1.4), '=': () => this.zoomBy(1.4), '-': () => this.zoomBy(1 / 1.4), '_': () => this.zoomBy(1 / 1.4),
+        '0': () => this.fit(),
+        ArrowLeft: () => this.panBy(step, 0), ArrowRight: () => this.panBy(-step, 0),
+        ArrowUp: () => this.panBy(0, step), ArrowDown: () => this.panBy(0, -step),
+      }[e.key];
+      if (handled) { e.preventDefault(); handled(); }
+    });
+  }
+}
+
+</script>
+<script>
+// Browser UI for the images app: choose an image collection of the release,
+// browse it as pages of thumbnails (a light box), and open any image in a
+// pannable, zoomable viewer.  Uses the shared sources inlined ahead of this
+// file (see index.html).
+//
+// Location hash: `#urn=<collection URN>[&page=N]` is a page of a collection,
+// `#urn=<image URN>` an image; so links and the Back button work.
+(function () {
+  const $ = id => document.getElementById(id);
+  const proto = location.protocol;
+  const THUMB_W = 240;
+
+  /** @type {ImageCollection[]} */ let collections = [];
+  /** @type {ImageCollection | null} */ let coll = null;
+  let pageSize = 24;
+  let page = 1;
+  let current = -1;           // index of the open image in `coll.items`, or -1
+  let tableScroll = 0;
+  /** @type {any} */ let viewer = null;
+  /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
+  let openToken = 0;
+  let renderToken = 0;       // identifies the latest light-box page, so late thumbnail events can be ignored
+
+  const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
+  const urlFor = (service, region, size) => matchProtocol(iiifImageUrl(service, region, size), proto);
+
+  function setStatus(msg) { $('status').textContent = msg; }
+
+  // --- loading ---------------------------------------------------------------
+
+  function start(rel) {
+    collections = imageCollections(rel);
+    coll = null; current = -1;
+    const sel = $('collection');
+    sel.textContent = '';
+    const first = document.createElement('option');
+    first.value = ''; first.textContent = 'Choose a collection…';
+    sel.appendChild(first);
+    for (const c of collections) {
+      const o = document.createElement('option');
+      o.value = c.urn;
+      o.textContent = `${c.label} (${plural(c.items.length, 'image', 'images')})`;
+      o.disabled = c.items.length === 0;
+      sel.appendChild(o);
+    }
+    sel.disabled = collections.length === 0;
+    const total = collections.reduce((n, c) => n + c.items.length, 0);
+    setStatus(collections.length
+      ? `${rel.library.name}: ${plural(collections.length, 'image collection', 'image collections')}, ${plural(total, 'image', 'images')}`
+      : `${rel.library.name}: no image collections found`);
+    $('drop').hidden = true;
+    route();
+  }
+
+  function showProblem(msg) {
+    setStatus('');
+    $('problem').textContent = msg;
+    $('drop').hidden = false;
+  }
+
+  async function loadFile(file) {
+    setStatus(`Reading ${file.name}…`);
+    try { start(await readReleaseFile(file)); }
+    catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
+  }
+
+  // --- navigation (location hash) --------------------------------------------
+
+  /** The hash this app has just set itself (and already shown), so its hashchange event can be skipped. */
+  let ownHash = null;
+
+  /** Go to a collection page or an image: update the hash and show it at once. */
+  function go(where, replace) {
+    const target = formatHash(where);
+    if (target !== location.hash) {
+      ownHash = target;
+      if (replace) location.replace(target); else location.hash = target;
+    }
+    route();
+  }
+
+  function route() {
+    const h = parseHash(location.hash);
+    if (!h) { selectCollection(null, 1); showTable(); return; }
+    const cu = collectionOfObject(h.urn);
+    const c = collections.find(x => x.urn === cu);
+    if (!c) { selectCollection(null, 1); showTable(`${h.urn} is not an image collection or image in this release.`); return; }
+    if (isCollectionUrn(h.urn)) { selectCollection(c, h.page); showTable(); return; }
+    const idx = c.items.findIndex(i => i.urn === h.urn);
+    if (idx < 0) { selectCollection(c, 1); showTable(`${h.urn} is not in this release.`); return; }
+    const imagePage = Math.floor(idx / pageSize) + 1;
+    if (imagePage !== page) tableScroll = 0;      // the light box will show another page
+    selectCollection(c, imagePage);
+    showViewer(idx);
+  }
+
+  function selectCollection(c, p) {
+    if (c !== coll) { coll = c; $('grid').textContent = ''; }
+    page = p;
+    $('collection').value = c ? c.urn : '';
+  }
+
+  // --- light box ----------------------------------------------------------------
+
+  /** @param {string} [message]  Shown instead of the grid when no collection is chosen, or as a note above it. */
+  function showTable(message) {
+    openToken++;
+    if (viewer) viewer.close();
+    current = -1;
+    $('viewer-view').hidden = true;
+    $('table-view').hidden = false;
+    renderPage(message);
+    $('table-view').scrollTop = tableScroll;
+    document.title = coll ? `${coll.label} – Images` : 'Images';
+  }
+
+  function renderPage(message) {
+    const grid = $('grid');
+    $('note').hidden = !message || !!coll === false;
+    $('note').textContent = message || '';
+    grid.textContent = '';
+    if (!coll) {
+      $('intro').hidden = false;
+      $('intro').textContent = message || (collections.length ? 'Choose a collection of images.' : '');
+      for (const id of ['pager-top', 'pager-bottom']) $(id).hidden = true;
+      $('shown').textContent = '';
+      return;
+    }
+    $('intro').hidden = true;
+    const pg = paginate(coll.items.length, pageSize, page);
+    page = pg.page;
+    const items = coll.items.slice(pg.start, pg.end);
+    const frag = document.createDocumentFragment();
+    let loaded = 0, failed = 0;
+    const mine = ++renderToken;
+    const checkAll = () => {
+      if (mine !== renderToken) return;            // the user has moved on to another page
+      if (loaded + failed === items.length && loaded === 0 && failed > 0) {
+        $('note').textContent = 'None of the thumbnails on this page loaded. The image server may be unreachable, or this collection may not be served where this app expects it.';
+        $('note').hidden = false;
+      }
+    };
+    items.forEach((item, k) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cell'; b.dataset.index = String(pg.start + k);
+      b.title = item.caption || item.id;
+      const thumb = document.createElement('span');
+      thumb.className = 'thumb';
+      const img = document.createElement('img');
+      img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+      const service = imageService(item.urn);
+      img.onload = () => { loaded++; checkAll(); };
+      img.onerror = () => { failed++; thumb.classList.add('missing'); checkAll(); };
+      if (service) img.src = urlFor(service, 'full', `${THUMB_W},`); else { thumb.classList.add('missing'); failed++; }
+      thumb.appendChild(img);
+      const lbl = document.createElement('span');
+      lbl.className = 'lbl'; lbl.textContent = item.label;
+      b.append(thumb, lbl);
+      frag.appendChild(b);
+    });
+    grid.appendChild(frag);
+    $('shown').textContent = `${pg.start + 1}–${pg.end} of ${plural(coll.items.length, 'image', 'images')}`;
+    renderPager($('pager-top'), pg);
+    renderPager($('pager-bottom'), pg);
+  }
+
+  function renderPager(el, pg) {
+    el.hidden = pg.pages <= 1;
+    el.textContent = '';
+    const mk = (act, label, title, disabled) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn'; b.dataset.act = act;
+      b.textContent = label; b.title = title; b.setAttribute('aria-label', title); b.disabled = disabled;
+      return b;
+    };
+    const num = document.createElement('input');
+    num.type = 'number'; num.min = '1'; num.max = String(pg.pages); num.value = String(pg.page);
+    num.setAttribute('aria-label', 'Page number'); num.dataset.act = 'goto';
+    const of = document.createElement('span');
+    of.textContent = `of ${pg.pages}`;
+    el.append(
+      mk('first', '«', 'First page', pg.page === 1), mk('prev', '‹', 'Previous page', pg.page === 1),
+      num, of,
+      mk('next', '›', 'Next page', pg.page === pg.pages), mk('last', '»', 'Last page', pg.page === pg.pages));
+  }
+
+  function changePage(p) {
+    if (!coll) return;
+    tableScroll = 0;
+    go({ urn: coll.urn, page: paginate(coll.items.length, pageSize, p).page }, true);
+    $('table-view').scrollTop = 0;
+  }
+
+  // --- viewer --------------------------------------------------------------------
+
+  /** Pixel size of an image, from its IIIF info.json (asked once per image). */
+  function imageSize(service) {
+    let p = sizes.get(service);
+    if (!p) {
+      p = fetch(matchProtocol(`${service}/info.json`, proto))
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(j => parseInfo(j) || Promise.reject(new Error('no width and height in the image information')));
+      p.catch(() => sizes.delete(service));
+      sizes.set(service, p);
+    }
+    return p;
+  }
+
+  async function showViewer(idx) {
+    if (idx === current && !$('viewer-view').hidden) return;
+    if (current < 0) tableScroll = $('table-view').scrollTop;
+    current = idx;
+    const item = coll.items[idx];
+    const token = ++openToken;
+    $('table-view').hidden = true;
+    $('viewer-view').hidden = false;
+    if (!viewer) viewer = new IiifViewer($('viewer'));
+    viewer.close();
+    $('viewer-title').textContent = item.label;
+    $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
+    $('viewer-note').textContent = item.caption || item.id;
+    $('rights').textContent = item.rights || 'No rights statement in the release.';
+    $('viewer-error').hidden = true;
+    $('prev').disabled = idx === 0;
+    $('next').disabled = idx === coll.items.length - 1;
+    document.title = `${item.label} – ${coll.label} – Images`;
+
+    const service = imageService(item.urn);
+    try {
+      if (!service) throw new Error(`cannot work out where ${item.urn} is served`);
+      const { width, height } = await imageSize(service);
+      if (token !== openToken) return;
+      viewer.open({
+        width, height,
+        urlFor: (region, size) => urlFor(service, region, size),
+        placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
+      });
+      viewer.root.focus({ preventScroll: true });
+    } catch (e) {
+      if (token !== openToken) return;
+      $('viewer-error').textContent = `Could not load this image (${e.message || e}).`;
+      $('viewer-error').hidden = false;
+    }
+  }
+
+  function step(delta) {
+    if (current < 0) return;
+    const n = current + delta;
+    if (n >= 0 && n < coll.items.length) go({ urn: coll.items[n].urn }, true);
+  }
+
+  function backToGrid() {
+    go({ urn: coll.urn, page: Math.floor(current / pageSize) + 1 }, false);
+  }
+
+  // --- wiring ---------------------------------------------------------------------
+
+  $('collection').addEventListener('change', e => {
+    tableScroll = 0;
+    const urn = e.target.value;
+    if (urn) go({ urn, page: 1 }, false); else { location.hash = ''; }
+  });
+  $('page-size').addEventListener('change', e => {
+    const first = coll ? (page - 1) * pageSize : 0;       // keep the first image on the page in view
+    pageSize = parseInt(e.target.value, 10);
+    if (coll) changePage(Math.floor(first / pageSize) + 1);
+  });
+  $('grid').addEventListener('click', e => {
+    const cell = e.target.closest('.cell');
+    if (cell) go({ urn: coll.items[Number(cell.dataset.index)].urn }, false);
+  });
+  for (const id of ['pager-top', 'pager-bottom']) {
+    $(id).addEventListener('click', e => {
+      const act = e.target.closest('button') && e.target.closest('button').dataset.act;
+      if (!act || !coll) return;
+      const pages = paginate(coll.items.length, pageSize, 1).pages;
+      changePage({ first: 1, prev: page - 1, next: page + 1, last: pages }[act]);
+    });
+    $(id).addEventListener('change', e => {
+      if (e.target.dataset.act === 'goto') changePage(parseInt(e.target.value, 10));
+    });
+  }
+
+  $('back').addEventListener('click', backToGrid);
+  $('prev').addEventListener('click', () => step(-1));
+  $('next').addEventListener('click', () => step(1));
+  $('zoom-in').addEventListener('click', () => viewer && viewer.zoomBy(1.5));
+  $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
+  $('fit').addEventListener('click', () => viewer && viewer.fit());
+  $('rights-toggle').addEventListener('click', () => {
+    const open = $('rights').hidden;
+    $('rights').hidden = !open;
+    $('rights-toggle').setAttribute('aria-expanded', String(open));
+  });
+
+  window.addEventListener('hashchange', () => {
+    if (ownHash === location.hash) { ownHash = null; return; }   // from go(): already shown
+    ownHash = null;
+    if (collections.length) route();                              // Back/Forward, a pasted link
+  });
+  document.addEventListener('keydown', e => {
+    if ($('viewer-view').hidden || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Escape') backToGrid();
+    else if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
+    else if (e.key === ']' || e.key === 'PageDown') { e.preventDefault(); step(1); }
+  });
+
+  $('file').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+  window.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave', () => document.body.classList.remove('dragging'));
+  window.addEventListener('drop', e => {
+    e.preventDefault(); document.body.classList.remove('dragging');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+
+  (async function init() {
+    try { start(await fetchRelease()); }
+    catch (e) { showProblem(`Could not load the HMT release (${e.message || e}). If you are offline, load a copy of the release from your computer.`); }
+  })();
+})();
+
+</script>
+</body>
+</html>

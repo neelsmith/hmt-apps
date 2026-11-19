@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Images</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
+    --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --accent-fg: #1a1816; --focus: #8fb0ff; --err: #ff8a80;
+            --table: #121110; --cell: #23211f; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  select, input[type=number] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; }
+  [hidden] { display: none !important; }
+
+  /* ---- light box ---- */
+  #table-view { flex: 1; overflow: auto; background: var(--table); color: var(--table-fg); display: flex; flex-direction: column; }
+  #controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center;
+         padding: .6rem 1rem; background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); }
+  #controls label { display: inline-flex; gap: .4rem; align-items: center; }
+  #controls .coll { flex: 1 1 20rem; min-width: 0; }
+  #collection { flex: 1; min-width: 0; width: 100%; }
+  .pager { display: inline-flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
+  .pager input { width: 4.5rem; text-align: right; }
+  #shown { color: var(--muted); font-size: .875rem; }
+  #intro, #note { padding: 2rem 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
+  #note { padding: .75rem 1rem 0; color: #ffb4a8; opacity: 1; }
+  #grid { --cell-w: 170px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), 1fr));
+          gap: .75rem; padding: 1rem; }
+  .cell { display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
+          border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
+  .cell:hover { border-color: var(--accent); }
+  .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
+  .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cell .thumb.missing img { display: none; }
+  .cell .thumb.missing::after { content: "no image"; font-size: .75rem; opacity: .6; }
+  .cell .lbl { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pager-bottom { justify-content: center; padding: 0 1rem 1.25rem; color: var(--table-fg); }
+  #pager-bottom .btn { background: var(--cell); color: var(--table-fg); border-color: transparent; }
+
+  /* ---- viewer ---- */
+  #viewer-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #viewer-bar { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; padding: .5rem 1rem;
+         border-bottom: 1px solid var(--line); background: var(--bg); }
+  #viewer-title { font-weight: 600; flex: 1 1 10rem; min-width: 0; }
+  #viewer-count { color: var(--muted); font-size: .875rem; }
+  .group { display: inline-flex; gap: .4rem; align-items: center; }
+  #rights { padding: .5rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel); font-size: .875rem; color: var(--muted); }
+  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
+  #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
+  #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; }
+
+  /* ---- loading / errors ---- */
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted);
+          background: var(--bg); }
+  body.dragging #drop { border-color: var(--accent); }
+  #drop input[type=file] { max-width: 100%; }
+  #problem { color: var(--err); }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #controls { padding: .5rem .75rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Images</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Collection <select id="collection" disabled></select></label>
+    <label>Per page
+      <select id="page-size">
+        <option>12</option><option selected>24</option><option>48</option><option>96</option>
+      </select>
+    </label>
+    <span class="pager" id="pager-top" hidden></span>
+    <span id="shown"></span>
+  </div>
+  <p id="intro">Choose a collection of images.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <div class="pager" id="pager-bottom" hidden></div>
+</main>
+
+<section id="viewer-view" hidden>
+  <div id="viewer-bar">
+    <button class="btn" id="back" title="Back to the light box (Esc)">← Images</button>
+    <span class="group">
+      <button class="btn" id="prev" title="Previous image ([)" aria-label="Previous image">‹</button>
+      <button class="btn" id="next" title="Next image (])" aria-label="Next image">›</button>
+    </span>
+    <span id="viewer-title"></span>
+    <span id="viewer-count"></span>
+    <button class="btn" id="rights-toggle" aria-expanded="false" aria-controls="rights">Rights</button>
+    <span class="group">
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="fit" title="Fit image (0)">Fit</button>
+    </span>
+  </div>
+  <div id="rights" hidden></div>
+  <div id="viewer-wrap">
+    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer-note"></div>
+    <div id="viewer-error" role="alert" hidden></div>
+  </div>
+</section>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/iiif.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/pan-zoom.js -->
+<!-- @inline src/image-viewer.js -->
+<!-- @inline src/apps/images/app.js -->
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.1.1">
+<meta name="app-version" content="0.2.0">
 <title>Iliad scholia</title>
 <style>
   :root {
@@ -73,7 +73,7 @@
 </head>
 <body>
 <main>
-  <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.1</span></p>
+  <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span></p>
   <h1>Iliad scholia</h1>
   <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line.</p>
 
@@ -705,6 +705,36 @@ function iliadVersions(release, textIndex) {
     });
 }
 
+/**
+ * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
+ * optionally a text of it (exemplar), and optionally a passage or range.
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
+ *   urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5           + a specific text
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:                         version only
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {string} param
+ * @returns {{version: ReturnType<typeof iliadVersions>[number], kind: string | null, ref: string, note?: string}
+ *          | {error: string}}
+ */
+function parseUrnParam(versions, param) {
+  const urn = (param || '').trim();
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return { error: `"${urn}" is not a CTS URN (expected something like urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10).` };
+  const parts = m[1].split('.');
+  if (parts.length < 3) return { error: `"${urn}" does not name a version of the Iliad: add the version, as in tlg0012.tlg001.msA.` };
+  const versionUrn = ctsVersionOf(urn);
+  const version = versions.find(v => v.urn === versionUrn);
+  if (!version) return { error: `${versionUrn} is not a version of the Iliad in this release.` };
+  if (!version.online) return { error: `${version.label} has no online text in this release.` };
+  /** @type {string | null} */ let kind = null;
+  /** @type {string | undefined} */ let note;
+  if (parts[3]) {
+    if (version.texts.some(t => t.kind === parts[3])) kind = parts[3];
+    else note = `${version.label} has no ${parts[3]} text; showing ${version.texts[0].kind} instead.`;
+  }
+  return { version, kind, ref: m[2].trim(), ...(note ? { note } : {}) };
+}
+
 // ---------------------------------------------------------------------------
 // Passage references and ranges
 // ---------------------------------------------------------------------------
@@ -927,6 +957,30 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     $('drop').hidden = true;
     setStatus(`${rel.library.name}: ${versions.filter(v => v.online).length} of ${versions.length} Iliad versions have an online text.`);
     $('results').hidden = true;
+    applyUrnParam();
+  }
+
+  /**
+   * Open at the version and passage given in the page address, as in
+   * `iliad-scholia.html?urn=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
+   * The URN names the version, optionally a text of it (`…msA.normalized`),
+   * and optionally the passage or range, which is then shown at once.
+   */
+  function applyUrnParam() {
+    let param = null;
+    try { param = new URLSearchParams(location.search).get('urn'); } catch (e) { /* no usable address */ }
+    if (param === null) return;
+    const r = parseUrnParam(versions, param);
+    if ('error' in r) { $('error').textContent = r.error; return; }
+    $('version').value = r.version.urn;
+    renderKinds();
+    if (r.kind && !WOVEN) {
+      const radio = [...document.querySelectorAll('input[name=kind]')].find(i => i.value.endsWith('.' + r.kind + ':'));
+      if (radio) radio.checked = true;
+    }
+    updateCoverage();
+    if (r.ref) { $('ref').value = r.ref; show(); }
+    if (r.note) $('error').textContent = r.note;
   }
 
   function currentVersion() { return versions.find(v => v.urn === $('version').value); }

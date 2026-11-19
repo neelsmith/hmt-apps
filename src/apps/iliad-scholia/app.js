@@ -44,6 +44,30 @@
     $('drop').hidden = true;
     setStatus(`${rel.library.name}: ${versions.filter(v => v.online).length} of ${versions.length} Iliad versions have an online text.`);
     $('results').hidden = true;
+    applyUrnParam();
+  }
+
+  /**
+   * Open at the version and passage given in the page address, as in
+   * `iliad-scholia.html?urn=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
+   * The URN names the version, optionally a text of it (`…msA.normalized`),
+   * and optionally the passage or range, which is then shown at once.
+   */
+  function applyUrnParam() {
+    let param = null;
+    try { param = new URLSearchParams(location.search).get('urn'); } catch (e) { /* no usable address */ }
+    if (param === null) return;
+    const r = parseUrnParam(versions, param);
+    if ('error' in r) { $('error').textContent = r.error; return; }
+    $('version').value = r.version.urn;
+    renderKinds();
+    if (r.kind && !WOVEN) {
+      const radio = [...document.querySelectorAll('input[name=kind]')].find(i => i.value.endsWith('.' + r.kind + ':'));
+      if (radio) radio.checked = true;
+    }
+    updateCoverage();
+    if (r.ref) { $('ref').value = r.ref; show(); }
+    if (r.note) $('error').textContent = r.note;
   }
 
   function currentVersion() { return versions.find(v => v.urn === $('version').value); }

@@ -5,7 +5,7 @@ import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex } from '../src/text-index.js';
 import {
   iliadVersions, splitReference, resolveRange,
-  commentaryPairs, commentarySpans, annotateRange, scholionPassage,
+  commentaryPairs, commentarySpans, annotateRange, scholionPassage, parseUrnParam,
 } from '../src/iliad-scholia.js';
 
 const CEX = `#!ctscatalog
@@ -144,4 +144,39 @@ test('real release: versions, ranges and scholia', { skip: !existsSync(REAL) }, 
   assert.ok(out.lines.some(l => l.scholia.length > 0));
   const book1 = resolveRange(t, '1');
   assert.ok(book1.end - book1.start > 600);
+});
+
+test('parseUrnParam: version, exemplar and passage from a CTS URN', () => {
+  const rel = parseRelease(CEX);
+  const versions = iliadVersions(rel, buildTextIndex(rel));
+  const ok = parseUrnParam(versions, 'urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10');
+  assert.equal(ok.version.urn, 'urn:cts:greekLit:tlg0012.tlg001.msA:');
+  assert.equal(ok.kind, null);
+  assert.equal(ok.ref, '1.1-1.10');
+
+  const ex = parseUrnParam(versions, 'urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5');
+  assert.equal(ex.kind, 'normalized');
+  assert.equal(ex.ref, '1.5');
+
+  const only = parseUrnParam(versions, 'urn:cts:greekLit:tlg0012.tlg001.msA:');
+  assert.equal(only.ref, '');
+
+  const unknownKind = parseUrnParam(versions, 'urn:cts:greekLit:tlg0012.tlg001.msA.bogus:1.1');
+  assert.equal(unknownKind.kind, null);
+  assert.match(unknownKind.note, /no bogus text/);
+});
+
+test('parseUrnParam: reports URNs it cannot use', () => {
+  const rel = parseRelease(CEX);
+  const versions = iliadVersions(rel, buildTextIndex(rel));
+  for (const [urn, re] of [
+    ['hello', /not a CTS URN/],
+    ['urn:cts:greekLit:tlg0012.tlg001:1.1', /does not name a version/],
+    ['urn:cts:greekLit:tlg0012.tlg001.zzz:1.1', /not a version of the Iliad/],
+    ['urn:cts:greekLit:tlg7000.tlg001.msA:1.1', /not a version of the Iliad/],
+    ['urn:cts:greekLit:tlg0012.tlg001.e4:1.1', /no online text/],
+  ]) {
+    const r = parseUrnParam(versions, urn);
+    assert.ok('error' in r && re.test(r.error), `${urn}: ${JSON.stringify(r)}`);
+  }
 });
