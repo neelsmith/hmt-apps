@@ -13,6 +13,7 @@ You can download these apps and use them on your own computer, or use the instal
 1. [Codex browser](./codices.html): browse pages of a codex, see indexed images and texts.
 1. [Interwoven diplomatic/normalized reader](./editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
 1. [Browse images](./images.html) from all image collections.
+1. [FInd texts by proper names](./propernames.html): find occurrences of personal, geographic and ethnic names and see their text in context.
 1. See [referential inconsistencies](./dse-check.html) in  editorial indexing
 
 
