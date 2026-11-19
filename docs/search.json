@@ -1,9 +1,51 @@
 [
   {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About hmt-apps",
+    "section": "",
+    "text": "In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on github here.\nAll of the apps in this repository start from this plain-text file."
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Apps for working with data from the Homer Multitext project",
+    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
     "section": "",
-    "text": "You can download these apps and use them on your own computer, or use these installations on github pages:\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\nBrowse images from all image collections.\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
+    "text": "What is a “two-coffee app”?\n\nmore about the apps hosted here"
+  },
+  {
+    "objectID": "index.html#about",
+    "href": "index.html#about",
+    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "section": "",
+    "text": "What is a “two-coffee app”?\n\nmore about the apps hosted here"
+  },
+  {
+    "objectID": "index.html#exploring-the-hmt-archive",
+    "href": "index.html#exploring-the-hmt-archive",
+    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "section": "Exploring the HMT archive",
+    "text": "Exploring the HMT archive\nWhere should I start?\n\nexploring HMT archival data"
+  },
+  {
+    "objectID": "index.html#using-the-apps",
+    "href": "index.html#using-the-apps",
+    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "section": "Using the apps",
+    "text": "Using the apps\nWHere can I run them?\n\nlinks to each of the apps"
+  },
+  {
+    "objectID": "archive/index.html",
+    "href": "archive/index.html",
+    "title": "The HMT archive",
+    "section": "",
+    "text": "TBA"
+  },
+  {
+    "objectID": "apps.html",
+    "href": "apps.html",
+    "title": "Apps to work with HMT data sets",
+    "section": "",
+    "text": "You can download these apps and use them on your own computer, or use the installations on github pages:\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\nBrowse images from all image collections.\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
   }
 ]

@@ -59,6 +59,10 @@
   .badge[aria-expanded=true] { background: var(--accent); color: var(--accent-fg); }
   .scholia { margin: .4rem 0 .2rem 5.25rem; padding-left: .75rem; border-left: 3px solid var(--line); }
   .scholion { margin: .35rem 0; }
+  .byms { margin: .1rem 0 0 5.25rem; display: flex; flex-wrap: wrap; gap: 0 1rem; font-size: .8125rem; color: var(--muted); }
+  .byms .name { color: var(--badge-fg); font-weight: 600; }
+  .vhead { margin: .55rem 0 .1rem; font-size: .8125rem; font-weight: 600; color: var(--muted); }
+  .vhead:first-child { margin-top: .1rem; }
   .scholion .id { color: var(--muted); font: .8125rem ui-monospace, monospace; }
   .scholion .lemma { font-weight: 600; }
   [hidden] { display: none !important; }
@@ -66,6 +70,7 @@
     .passage .head { grid-template-columns: 3.5rem 1fr; }
     .passage .badge { grid-column: 2; justify-self: start; }
     .scholia { margin-left: .5rem; }
+    .byms { margin-left: 4.25rem; }
   }
   .appmeta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); margin: 0 0 .75rem; }
   .appmeta a { color: var(--accent); }
@@ -706,6 +711,15 @@ function iliadVersions(release, textIndex) {
 }
 
 /**
+ * Short name of a version for tight places: its label without the parenthesis
+ * (`Venetus A (Marciana 454 = 822)` gives `Venetus A`).
+ * @param {string} label
+ */
+function shortVersionLabel(label) {
+  return label.replace(/\s*\([^)]*\)\s*$/, '').trim() || label;
+}
+
+/**
  * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
  * optionally a text of it (exemplar), and optionally a passage or range.
  *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
@@ -850,7 +864,8 @@ function commentaryPairs(release) {
  * @param {{scholion: string, target: string}[]} pairs
  * @param {string} versionUrn
  * @param {TextIndex} text
- * @returns {{spans: {scholion: string, start: number, end: number}[], unresolved: number}}
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number}}
+ *          `version` of a span is the version its relation names.
  */
 function commentarySpans(pairs, versionUrn, text) {
   const spans = [];
@@ -860,21 +875,72 @@ function commentarySpans(pairs, versionUrn, text) {
     if (!m || ctsVersionOf(m[1]) !== versionUrn) continue;
     const r = resolveRange(text, m[2], { allowBook: false });
     if ('error' in r) { unresolved++; continue; }
-    spans.push({ scholion: p.scholion, start: r.start, end: r.end });
+    spans.push({ scholion: p.scholion, start: r.start, end: r.end, version: versionUrn });
   }
   return { spans, unresolved };
 }
 
 /**
- * The passages of a range with the distinct scholia commenting on each.
+ * Like `commentarySpans`, but for scholia commenting on the same passages in
+ * *any* version of the Iliad.  A scholion indexed to `1.1-1.3` of Venetus B
+ * counts for 1.1, 1.2 and 1.3 of whichever text is shown.
+ *
+ * Each relation is resolved in the text of the version it names (a range
+ * follows the order of that text, and may run through passages the shown text
+ * lacks), and the passages found are then matched to the shown text by their
+ * references.  Relations that cannot be resolved in their own version, or that
+ * name a version with no text, are counted, not guessed at.  A relation whose
+ * passages are all missing from the shown text is neither a span nor unresolved.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {TextIndex} shown  the text being displayed
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number, relations: number}}
+ *          `relations` is how many Iliad relations were considered (`unresolved` of them could not be resolved).
+ */
+function commentarySpansAllVersions(pairs, versions, textIndex, shown) {
+  /** @type {Map<string, TextIndex | null>} */
+  const own = new Map(versions.map(v => [v.urn, v.texts.length ? (textIndex.get(v.texts[0].urn) ?? null) : null]));
+  const spans = [];
+  let unresolved = 0, relations = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || !ILIAD_VERSION.test(ctsVersionOf(m[1]))) continue;      // not a passage of the Iliad
+    relations++;
+    const version = ctsVersionOf(m[1]);
+    const vtext = own.get(version);
+    if (!vtext) { unresolved++; continue; }
+    const r = resolveRange(vtext, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    // positions in the shown text of the passages the relation covers, as runs of neighbours
+    let runStart = -1, runEnd = -1;
+    for (let i = r.start; i <= r.end; i++) {
+      const at = shown.pos.get(vtext.refs[i]);
+      if (at === undefined) continue;
+      if (runStart >= 0 && at === runEnd + 1) { runEnd = at; continue; }
+      if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+      runStart = runEnd = at;
+    }
+    if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+  }
+  return { spans, unresolved, relations };
+}
+
+/**
+ * The passages of a range with the distinct scholia commenting on each, and
+ * for each passage the same scholia grouped by the version of the Iliad their
+ * relation names (`byVersion`: version URN to scholia; spans without a
+ * version go under the empty string).
  * @param {TextIndex} text
  * @param {{start: number, end: number}} range
- * @param {{scholion: string, start: number, end: number}[]} spans
- * @returns {{lines: {ref: string, text: string, scholia: string[]}[], scholiaTotal: number}}
+ * @param {{scholion: string, start: number, end: number, version?: string}[]} spans
+ * @returns {{lines: {ref: string, text: string, scholia: string[], byVersion: Record<string, string[]>}[], scholiaTotal: number}}
  */
 function annotateRange(text, range, spans) {
   /** @type {Map<number, Set<string>>} */
   const perLine = new Map();
+  /** @type {Map<number, Map<string, Set<string>>>} */
+  const perLineVersion = new Map();
   const all = new Set();
   for (const sp of spans) {
     if (sp.end < range.start || sp.start > range.end) continue;
@@ -884,11 +950,17 @@ function annotateRange(text, range, spans) {
       if (!s) { s = new Set(); perLine.set(i, s); }
       s.add(sp.scholion);
       all.add(sp.scholion);
+      let vs = perLineVersion.get(i);
+      if (!vs) { vs = new Map(); perLineVersion.set(i, vs); }
+      const key = sp.version ?? '';
+      if (!vs.has(key)) vs.set(key, new Set());
+      vs.get(key)?.add(sp.scholion);
     }
   }
   const lines = [];
   for (let i = range.start; i <= range.end; i++) {
-    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])] });
+    const byVersion = Object.fromEntries([...(perLineVersion.get(i) ?? [])].map(([v, set]) => [v, [...set]]));
+    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])], byVersion });
   }
   return { lines, scholiaTotal: all.size };
 }
@@ -918,9 +990,13 @@ function scholionPassage(textIndex, scholionUrn, kind) {
 // or normalized).  With <body data-text="interwoven"> (the editorial view) the
 // diplomatic text is shown, and wherever the normalized text differs it follows
 // in parentheses (styled by the page); there is no choice of text.
+//
+// With <body data-scholia="all"> (the all-scholia page) a line counts the scholia
+// on the same passage in any version of the Iliad, not only in the version shown.
 (function () {
   const MAX_ROWS = 2000;
   const WOVEN = document.body.dataset.text === 'interwoven';
+  const ALL = document.body.dataset.scholia === 'all';
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -1038,7 +1114,11 @@ function scholionPassage(textIndex, scholionUrn, kind) {
   }
 
   function spansFor(version, text) {
-    if (!spanCache.has(text.urn)) spanCache.set(text.urn, commentarySpans(pairs, version.urn, text));
+    if (!spanCache.has(text.urn)) {
+      spanCache.set(text.urn, ALL
+        ? commentarySpansAllVersions(pairs, versions, textIndex, text)
+        : commentarySpans(pairs, version.urn, text));
+    }
     return spanCache.get(text.urn);
   }
 
@@ -1053,7 +1133,7 @@ function scholionPassage(textIndex, scholionUrn, kind) {
       $('results').hidden = true;
       return;
     }
-    const { spans, unresolved } = spansFor(cur.version, cur.text);
+    const { spans, unresolved, relations } = spansFor(cur.version, cur.text);
     const out = annotateRange(cur.text, range, spans);
     const shown = out.lines.slice(0, MAX_ROWS);
 
@@ -1061,10 +1141,13 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     const n = out.lines.length;
     $('summary').textContent =
       `${cur.version.label}, ${first === last ? first : first + '–' + last}: ` +
-      `${n} passage${n === 1 ? '' : 's'}, ${out.scholiaTotal} scholi${out.scholiaTotal === 1 ? 'on' : 'a'}`;
+      `${n} passage${n === 1 ? '' : 's'}, ${out.scholiaTotal} scholi${out.scholiaTotal === 1 ? 'on' : 'a'}` +
+      (ALL ? ' in any version of the Iliad' : '');
     const notes = [];
     if (n > shown.length) notes.push(`Showing the first ${shown.length} passages.`);
-    if (unresolved) notes.push(`${unresolved} of ${spans.length + unresolved} commentary relations for this version could not be matched to a passage in the text (for example “13.UNKNOWN”) and are not counted.`);
+    if (unresolved) {
+      notes.push(`${unresolved} of ${relations ?? spans.length + unresolved} commentary relations ${ALL ? 'in all versions' : 'for this version'} could not be matched to a passage in the text (for example “13.UNKNOWN”) and are not counted.`);
+    }
     $('notes').textContent = notes.join(' ');
     $('notes').hidden = notes.length === 0;
 
@@ -1115,6 +1198,8 @@ function scholionPassage(textIndex, scholionUrn, kind) {
     div.appendChild(head);
 
     const count = line.scholia.length;
+    const groups = ALL ? versionGroups(line) : [];
+    if (ALL && count > 0) div.appendChild(renderBreakdown(groups));
     if (count > 0) {
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'badge';
@@ -1128,7 +1213,16 @@ function scholionPassage(textIndex, scholionUrn, kind) {
         if (!panel) {
           panel = document.createElement('div');
           panel.className = 'scholia';
-          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
+          if (groups.length > 1) {
+            for (const g of groups) {
+              const h = document.createElement('div');
+              h.className = 'vhead'; h.textContent = `${g.label}, ${g.scholia.length}`; h.title = g.full;
+              panel.appendChild(h);
+              for (const urn of g.scholia) panel.appendChild(renderScholion(urn, cur));
+            }
+          } else {
+            for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
+          }
           div.appendChild(panel);
         }
         panel.hidden = open;
@@ -1136,6 +1230,33 @@ function scholionPassage(textIndex, scholionUrn, kind) {
       });
     }
     return div;
+  }
+
+  /** A line's scholia grouped by the version they are indexed to, in the order of the version menu. */
+  function versionGroups(line) {
+    const order = new Map(versions.map((v, i) => [v.urn, i]));
+    return Object.entries(line.byVersion)
+      .map(([urn, scholia]) => {
+        const v = versions.find(x => x.urn === urn);
+        return { urn, scholia, full: v ? v.label : urn, label: v ? shortVersionLabel(v.label) : urn };
+      })
+      .sort((a, b) => (order.get(a.urn) ?? 99) - (order.get(b.urn) ?? 99));
+  }
+
+  /** "Venetus A 2 · Venetus B 2 · Escorial, Upsilon 1.1 2": how many scholia come from each version. */
+  function renderBreakdown(groups) {
+    const el = document.createElement('div');
+    el.className = 'byms';
+    el.setAttribute('aria-label', 'Scholia by version of the Iliad');
+    for (const g of groups) {
+      const s = document.createElement('span');
+      s.className = 'ms'; s.title = `${g.scholia.length} indexed to ${g.full}`;
+      const name = document.createElement('span');
+      name.className = 'name'; name.textContent = g.label;
+      s.append(name, ' ', String(g.scholia.length));
+      el.appendChild(s);
+    }
+    return el;
   }
 
   function renderScholion(urn, cur) {

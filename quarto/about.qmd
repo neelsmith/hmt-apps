@@ -1,0 +1,7 @@
+---
+title: "About `hmt-apps`"
+---
+
+In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps.  This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on [github here](https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/releases-cex/hmt-current.cex).
+
+All of the apps in this repository start from this plain-text file.
