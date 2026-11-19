@@ -5,9 +5,13 @@
 // or normalized).  With <body data-text="interwoven"> (the editorial view) the
 // diplomatic text is shown, and wherever the normalized text differs it follows
 // in parentheses (styled by the page); there is no choice of text.
+//
+// With <body data-scholia="all"> (the all-scholia page) a line counts the scholia
+// on the same passage in any version of the Iliad, not only in the version shown.
 (function () {
   const MAX_ROWS = 2000;
   const WOVEN = document.body.dataset.text === 'interwoven';
+  const ALL = document.body.dataset.scholia === 'all';
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -125,7 +129,11 @@
   }
 
   function spansFor(version, text) {
-    if (!spanCache.has(text.urn)) spanCache.set(text.urn, commentarySpans(pairs, version.urn, text));
+    if (!spanCache.has(text.urn)) {
+      spanCache.set(text.urn, ALL
+        ? commentarySpansAllVersions(pairs, versions, textIndex, text)
+        : commentarySpans(pairs, version.urn, text));
+    }
     return spanCache.get(text.urn);
   }
 
@@ -140,7 +148,7 @@
       $('results').hidden = true;
       return;
     }
-    const { spans, unresolved } = spansFor(cur.version, cur.text);
+    const { spans, unresolved, relations } = spansFor(cur.version, cur.text);
     const out = annotateRange(cur.text, range, spans);
     const shown = out.lines.slice(0, MAX_ROWS);
 
@@ -148,10 +156,13 @@
     const n = out.lines.length;
     $('summary').textContent =
       `${cur.version.label}, ${first === last ? first : first + '–' + last}: ` +
-      `${n} passage${n === 1 ? '' : 's'}, ${out.scholiaTotal} scholi${out.scholiaTotal === 1 ? 'on' : 'a'}`;
+      `${n} passage${n === 1 ? '' : 's'}, ${out.scholiaTotal} scholi${out.scholiaTotal === 1 ? 'on' : 'a'}` +
+      (ALL ? ' in any version of the Iliad' : '');
     const notes = [];
     if (n > shown.length) notes.push(`Showing the first ${shown.length} passages.`);
-    if (unresolved) notes.push(`${unresolved} of ${spans.length + unresolved} commentary relations for this version could not be matched to a passage in the text (for example “13.UNKNOWN”) and are not counted.`);
+    if (unresolved) {
+      notes.push(`${unresolved} of ${relations ?? spans.length + unresolved} commentary relations ${ALL ? 'in all versions' : 'for this version'} could not be matched to a passage in the text (for example “13.UNKNOWN”) and are not counted.`);
+    }
     $('notes').textContent = notes.join(' ');
     $('notes').hidden = notes.length === 0;
 
@@ -202,6 +213,8 @@
     div.appendChild(head);
 
     const count = line.scholia.length;
+    const groups = ALL ? versionGroups(line) : [];
+    if (ALL && count > 0) div.appendChild(renderBreakdown(groups));
     if (count > 0) {
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'badge';
@@ -215,7 +228,16 @@
         if (!panel) {
           panel = document.createElement('div');
           panel.className = 'scholia';
-          for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
+          if (groups.length > 1) {
+            for (const g of groups) {
+              const h = document.createElement('div');
+              h.className = 'vhead'; h.textContent = `${g.label}, ${g.scholia.length}`; h.title = g.full;
+              panel.appendChild(h);
+              for (const urn of g.scholia) panel.appendChild(renderScholion(urn, cur));
+            }
+          } else {
+            for (const urn of line.scholia) panel.appendChild(renderScholion(urn, cur));
+          }
           div.appendChild(panel);
         }
         panel.hidden = open;
@@ -223,6 +245,33 @@
       });
     }
     return div;
+  }
+
+  /** A line's scholia grouped by the version they are indexed to, in the order of the version menu. */
+  function versionGroups(line) {
+    const order = new Map(versions.map((v, i) => [v.urn, i]));
+    return Object.entries(line.byVersion)
+      .map(([urn, scholia]) => {
+        const v = versions.find(x => x.urn === urn);
+        return { urn, scholia, full: v ? v.label : urn, label: v ? shortVersionLabel(v.label) : urn };
+      })
+      .sort((a, b) => (order.get(a.urn) ?? 99) - (order.get(b.urn) ?? 99));
+  }
+
+  /** "Venetus A 2 · Venetus B 2 · Escorial, Upsilon 1.1 2": how many scholia come from each version. */
+  function renderBreakdown(groups) {
+    const el = document.createElement('div');
+    el.className = 'byms';
+    el.setAttribute('aria-label', 'Scholia by version of the Iliad');
+    for (const g of groups) {
+      const s = document.createElement('span');
+      s.className = 'ms'; s.title = `${g.scholia.length} indexed to ${g.full}`;
+      const name = document.createElement('span');
+      name.className = 'name'; name.textContent = g.label;
+      s.append(name, ' ', String(g.scholia.length));
+      el.appendChild(s);
+    }
+    return el;
   }
 
   function renderScholion(urn, cur) {

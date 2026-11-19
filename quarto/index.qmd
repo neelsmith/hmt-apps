@@ -1,21 +1,21 @@
 ---
-title: "Apps for working with data from the Homer Multitext project"
+title: "'Two-coffee apps' for working with data from the Homer Multitext project"
 ---
 
-You can download these apps and use them on your own computer, or use these installations on github pages:
+## About ...
 
+What is a "two-coffee app"? 
 
-- [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
-- [Facsimile reader](./va-facsimile.html): browse page images of the Venetus A, hover over indexed page to see textual edition
-- [Interwoven diplomatic/normalized reader](./editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
-- [Browse images](./images.html) from all image collections.
+- more about [the apps hosted here](./about.qmd)
 
+## Exploring the HMT archive
 
-::: {.callout-note}
-## Versions
-Each app displays an individual version number. Github release versions refer to release versions of the entire repository.
+Where should I start?
 
-For details of both github releases and individual app versions, see the [release notes](https://github.com/neelsmith/hmt-apps/blob/main/releases.md).
+- exploring [HMT archival data](./archive/)
 
+## Using the apps
 
-:::
+WHere can I run them?
+
+- links to [each of the apps](./apps.qmd)

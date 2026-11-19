@@ -37,6 +37,15 @@ export function iliadVersions(release, textIndex) {
 }
 
 /**
+ * Short name of a version for tight places: its label without the parenthesis
+ * (`Venetus A (Marciana 454 = 822)` gives `Venetus A`).
+ * @param {string} label
+ */
+export function shortVersionLabel(label) {
+  return label.replace(/\s*\([^)]*\)\s*$/, '').trim() || label;
+}
+
+/**
  * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
  * optionally a text of it (exemplar), and optionally a passage or range.
  *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
@@ -181,7 +190,8 @@ export function commentaryPairs(release) {
  * @param {{scholion: string, target: string}[]} pairs
  * @param {string} versionUrn
  * @param {TextIndex} text
- * @returns {{spans: {scholion: string, start: number, end: number}[], unresolved: number}}
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number}}
+ *          `version` of a span is the version its relation names.
  */
 export function commentarySpans(pairs, versionUrn, text) {
   const spans = [];
@@ -191,21 +201,72 @@ export function commentarySpans(pairs, versionUrn, text) {
     if (!m || ctsVersionOf(m[1]) !== versionUrn) continue;
     const r = resolveRange(text, m[2], { allowBook: false });
     if ('error' in r) { unresolved++; continue; }
-    spans.push({ scholion: p.scholion, start: r.start, end: r.end });
+    spans.push({ scholion: p.scholion, start: r.start, end: r.end, version: versionUrn });
   }
   return { spans, unresolved };
 }
 
 /**
- * The passages of a range with the distinct scholia commenting on each.
+ * Like `commentarySpans`, but for scholia commenting on the same passages in
+ * *any* version of the Iliad.  A scholion indexed to `1.1-1.3` of Venetus B
+ * counts for 1.1, 1.2 and 1.3 of whichever text is shown.
+ *
+ * Each relation is resolved in the text of the version it names (a range
+ * follows the order of that text, and may run through passages the shown text
+ * lacks), and the passages found are then matched to the shown text by their
+ * references.  Relations that cannot be resolved in their own version, or that
+ * name a version with no text, are counted, not guessed at.  A relation whose
+ * passages are all missing from the shown text is neither a span nor unresolved.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {TextIndex} shown  the text being displayed
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number, relations: number}}
+ *          `relations` is how many Iliad relations were considered (`unresolved` of them could not be resolved).
+ */
+export function commentarySpansAllVersions(pairs, versions, textIndex, shown) {
+  /** @type {Map<string, TextIndex | null>} */
+  const own = new Map(versions.map(v => [v.urn, v.texts.length ? (textIndex.get(v.texts[0].urn) ?? null) : null]));
+  const spans = [];
+  let unresolved = 0, relations = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || !ILIAD_VERSION.test(ctsVersionOf(m[1]))) continue;      // not a passage of the Iliad
+    relations++;
+    const version = ctsVersionOf(m[1]);
+    const vtext = own.get(version);
+    if (!vtext) { unresolved++; continue; }
+    const r = resolveRange(vtext, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    // positions in the shown text of the passages the relation covers, as runs of neighbours
+    let runStart = -1, runEnd = -1;
+    for (let i = r.start; i <= r.end; i++) {
+      const at = shown.pos.get(vtext.refs[i]);
+      if (at === undefined) continue;
+      if (runStart >= 0 && at === runEnd + 1) { runEnd = at; continue; }
+      if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+      runStart = runEnd = at;
+    }
+    if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+  }
+  return { spans, unresolved, relations };
+}
+
+/**
+ * The passages of a range with the distinct scholia commenting on each, and
+ * for each passage the same scholia grouped by the version of the Iliad their
+ * relation names (`byVersion`: version URN to scholia; spans without a
+ * version go under the empty string).
  * @param {TextIndex} text
  * @param {{start: number, end: number}} range
- * @param {{scholion: string, start: number, end: number}[]} spans
- * @returns {{lines: {ref: string, text: string, scholia: string[]}[], scholiaTotal: number}}
+ * @param {{scholion: string, start: number, end: number, version?: string}[]} spans
+ * @returns {{lines: {ref: string, text: string, scholia: string[], byVersion: Record<string, string[]>}[], scholiaTotal: number}}
  */
 export function annotateRange(text, range, spans) {
   /** @type {Map<number, Set<string>>} */
   const perLine = new Map();
+  /** @type {Map<number, Map<string, Set<string>>>} */
+  const perLineVersion = new Map();
   const all = new Set();
   for (const sp of spans) {
     if (sp.end < range.start || sp.start > range.end) continue;
@@ -215,11 +276,17 @@ export function annotateRange(text, range, spans) {
       if (!s) { s = new Set(); perLine.set(i, s); }
       s.add(sp.scholion);
       all.add(sp.scholion);
+      let vs = perLineVersion.get(i);
+      if (!vs) { vs = new Map(); perLineVersion.set(i, vs); }
+      const key = sp.version ?? '';
+      if (!vs.has(key)) vs.set(key, new Set());
+      vs.get(key)?.add(sp.scholion);
     }
   }
   const lines = [];
   for (let i = range.start; i <= range.end; i++) {
-    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])] });
+    const byVersion = Object.fromEntries([...(perLineVersion.get(i) ?? [])].map(([v, set]) => [v, [...set]]));
+    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])], byVersion });
   }
   return { lines, scholiaTotal: all.size };
 }

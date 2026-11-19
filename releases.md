@@ -2,7 +2,10 @@
 
 ## Repository version tag
 
-Current version:  **0.3.0**
+Current version:  **0.4.0**
+
+
+**0.4.0**, *Nov. 19, 2026*: utilities for constructing IIIF manifests and URN maps; new `all-scholia.html` app.
 
 
 **0.3.0**, *Nov. 19, 2026*: updates `iliad-scholia.html`; adds new app `images.html`.
@@ -36,3 +39,8 @@ Current version:  **0.3.0**
 ## `images.html`
 
 **0.1.0**, *Nov. 19, 2026*: browse all image collections.
+
+
+## `all-scholia.html`
+
+**0.1.0**, *?*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
