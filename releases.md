@@ -5,7 +5,7 @@
 Current version:  **0.3.0**
 
 
-**0.3.0**, *?*: updates `iliad-scholia.html`; adds new app `images.html`.
+**0.3.0**, *Nov. 19, 2026*: updates `iliad-scholia.html`; adds new app `images.html`.
 
 
 **0.2.0**, *Nov. 18, 2026*: adds `editorial.html` app. Adds links and version info to all apps.
