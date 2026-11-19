@@ -155,3 +155,17 @@ Same as `iliad-scholia.html`, except no choice of diplomatic vs normalized: one 
 - Built versions: va-facsimile 0.1.1, iliad-scholia 0.1.1, editorial 0.1.0.
 - Verification: 50 unit tests pass. Playwright header/version checks (33) pass at desktop and phone width, and the three UI regression suites pass with no page errors.
 - Nothing committed.
+
+## `?urn=` parameter for iliad-scholia (2026-11-19)
+
+- `iliad-scholia.html?urn=<CTS URN>` opens at a version and passage, e.g. `?urn=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
+  - Version-level URN selects the version; a range/line/book after the colon is filled in and shown immediately.
+  - An exemplar part (`…msA.normalized:`, `…msA.diplomatic:`) also selects that text. An unavailable text falls back to the default with a note.
+  - Version only (`…msA:`) selects the version and shows nothing.
+  - Bad input (not a CTS URN, work without version, unknown version, version with no online text, passage not in the text) shows a message in the page's error line; the app stays usable.
+  - Percent-encoded URNs work.
+- Logic: `parseUrnParam(versions, param)` in `src/iliad-scholia.js` (pure, unit-tested). UI: `applyUrnParam()` in `src/apps/iliad-scholia/app.js`, run after every successful release load (including a file loaded after the fetch failed).
+- The editorial page shares this code, so it honours `?urn=` too (text kind ignored; it always weaves both).
+- Bug caught by the browser test: text radio values are URNs ending in `:`, so the exemplar match initially never selected diplomatic.
+- Not done: the address bar is not updated as the user changes version/passage (could add `history.replaceState` for shareable links).
+- Tests: 52 unit tests; `ui-test-urn.js` (scratchpad) covers 12 cases against the real release; earlier UI suites unchanged and passing. Nothing committed.
