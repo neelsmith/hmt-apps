@@ -28,7 +28,7 @@ website:
     left:
       - text: "About" 
         file: about.qmd
-      - text: "The archive"
+      - text: "Starting points"
         file: archive/index.qmd
       - text: "The apps"
         file: apps.qmd

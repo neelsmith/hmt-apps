@@ -209,3 +209,47 @@ Same as `iliad-scholia.html`, except no choice of diplomatic vs normalized: one 
 - "Version" here is the version the scholion is indexed to (the relation's target), not the manuscript the scholion text comes from (siglum such as `msAil`, `msB`), which the scholion label still shows.
 - Logic: spans now carry `version`; `annotateRange` lines gain `byVersion` (version URN to scholia); new `shortVersionLabel`. `iliad-scholia` and `editorial` are unchanged in what they show (they do not render the breakdown); their dist files were rebuilt because the shared script and CSS changed.
 - Tests: byVersion groups on the fixture and on the real release (9.1: msA 2, msB 2, e3 2), `shortVersionLabel`; browser checks for chips, tooltips, panel headings, 1.1 (single version), no breakdown on a line without scholia, phone width. 73 unit tests pass except the known `images.html` version entry. Nothing committed.
+
+## dse-check.html (2026-11-19)
+
+Checks the relational integrity of the DSE records (`urn:cite2:hmt:hmtdse.v1:all`, `passage|imageroi|surface`) of a release, in three groups:
+
+1. **Text passage missing from DSE** — passages of the editions that no record names. (The request said "message"; read as "missing".)
+2. **DSE record for text passage not in textual editions** — including records for versions the release has no text of (`msAmeta`, `msAimLater`) and passages that are not CTS URNs.
+3. **Reference to image not in catalog** — image (before `@`) is not an item of any collection with the image data model. Reasons: no such item in an image collection; not an image collection; no image.
+
+Design: `src/dse-check.js` (`checkDse`, `reportCsv`), `src/apps/dse-check/`. Passages are compared per version: any exemplar (diplomatic/normalized) counts; scholion `.lemma`/`.comment` are one passage; `@subref` ignored. Surfaces are NOT checked (could be added). Warnings only. CSV download of the whole report.
+
+Findings on the current release: 26,666 records; 2,747 passages missing from DSE (Venetus A Iliad 43; all 710 Venetus B Iliad and 324 Venetus B scholia have no records at all); 120 records for passages not in the text; 70 records with images not in the catalog (69 for `e3bifolio.v1:E3_120v_121r`, 1 for `msA.v1:91r` used as an image).
+
+Tests: `test/dse-check.test.js` (fixture + real release). Needs `dse-check.html  0.1.0` in version.txt (user-owned; not edited).
+
+Update: records in group 2 have a "show image" button that shows the image (IIIF, 1000 px wide) with the RoI outlined in place; "open full image" link; error note if the image server cannot be reached. Uses src/iiif.js (inlined) and imageService from src/images.js. Verified in browser with a stub image server only; real server not reachable from the sandbox.
+
+## codices.html (2026-11-19)
+
+Choose a codex (collections with the `urn:cite2:hmt:datamodels.v1:codexmodel` data model: 7, 4,254 pages), then a page; the page image is shown in the shared IIIF viewer with a rectangle over each DSE-indexed passage; hovering shows the diplomatic text (same tooltip as va-facsimile). Deep link: `#urn=<page URN>`.
+
+- Image: the one named by the page's DSE records (most frequent among catalog images), because it can differ from the catalog's page image (e.g. msA 83r: VA083RN_0255 vs VA083RN_0084; e3 pages use `E3_97bisv_98r` style bifolio images). Pages with no usable records show the catalog's image without rectangles.
+- Only Venetus A (630 pages) and Escorial Y 1.1 (71 pages) have DSE records; the other five codices show images only. The menus say so.
+- Records whose image is not an image of the catalog (e.g. msA.v1:91r used as an image) are not drawn; a count of regions on another image is noted.
+- Files: `src/codices.js` (`codices`, `indexRegionsBySurface`, `pageView`), `src/apps/codices/`, `test/codices.test.js`. Needs `codices.html  0.1.0` in version.txt.
+- Image URLs for non-`hmt` namespaces (citebl, citelaur) are the unverified server layout; tested with a stub server only.
+
+Update: pages with indexed text are marked "● " in the page menu, followed by the number of drawn passages; others get blank padding. Counts are of regions that are drawn (on a catalog image): Escorial Y 1.1 has 69 such pages (71 pages have DSE records, 2 only on non-catalog images).
+
+Update: clicking a rectangle copies the full diplomatic text of the topmost passage under the pointer (scholion: lemma and comment joined by a space) to the clipboard, with a short confirmation; falls back to a hidden textarea + execCommand where navigator.clipboard is missing. A drag does not copy. A tap on touch shows the text and copies.
+
+## propernames.html (2026-11-19)
+
+Choose a kind of name (personal / geographic / ethnic), a name from a menu (with a find box), then one of the passages it occurs in; the Iliad and scholia text of that passage's page is shown with all indexed names marked (pastel background per kind; selected name outlined and bold). Scholia that contain the selected name are unfolded, the rest folded (button to unfold all). Deep link `#k=<kind>&i=<id>[&p=<passage>]`. Diplomatic/normalized toggle.
+
+Data, and what had to be worked around:
+- Indexes: `urn:cite2:hmt:{persname,placename,ethnicgroup}index.v1:all`, columns `passage|person`, `passage|place`, `passage|ethnic`. Ethnic names are items of the place collection (e.g. Achaea, place96). 21,531 rows.
+- Entity URNs in the indexes are inconsistent (`pers.v1`, `pers`, `persName`, `place.r1`, typos `htm`, `html`, `per2`); names are matched by object id (`pers142`, `place67`). 108 rows name ids that do not exist (e.g. `persMISSING`, `pesr108`, `pers903,Danae`) and are skipped; the status line says how many. Citedata headers are capitalized (`Label`, `Redirect`).
+- Index passages for scholia carry `.lemma`/`.comment`; DSE records do not. Both reduce to version + reference (`passageKey`).
+- Pages: from DSE records (passage -> surface). Passages without one (e.g. msA main scholion 1.1; all of Venetus B) show the passage alone with a note.
+- The release has no markup saying which word is a name. Names are capitalized in the editions, so capitalized words are the candidates; which word is which name is learned from the release (single-name/single-capital passages first, then by elimination), and only attributed to names indexed to that passage. On the current release every indexed name is located in 10,000 of 11,573 passages; where the identity is unclear but the kind is, the word is marked as that kind with a darker underline and no selected-name highlight (dashed outline if the selected name is in that passage); with mixed kinds left over nothing is marked. A capital on the first word of a passage is not counted unless the lexicon says it is a name.
+- Files: `src/propernames.js`, `src/apps/propernames/`, `test/propernames.test.js`. Needs `propernames.html  0.1.0` in version.txt.
+
+Update (propernames): the scholia of a page are interleaved with the Iliad line they comment on, as in iliad-scholia.html: a badge "N scholia" on the line opens a panel under it; a scholion indexed to a range (e.g. 1.13-1.16) stands once, under the first of those lines that is on the page, with "on 1.13–1.16" in its summary. The panel is open when it holds a scholion with the selected name or the chosen passage; inside, scholia without the name stay folded. Scholia that comment on no line of the page (other pages, or no Iliad on the page) are listed after the lines with their targets (e.g. "on Iliad 1.13-1.16"). Uses commentaryPairs/commentarySpansAllVersions (iliad-scholia.js, now inlined) so a relation to any version of the Iliad counts; spans are computed once per Iliad version. New: attachScholia in src/propernames.js.

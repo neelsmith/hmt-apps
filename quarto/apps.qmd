@@ -7,11 +7,13 @@ title: "Apps to work with HMT data sets"
 You can download these apps and use them on your own computer, or use the installations on github pages:
 
 
-- [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
-- [Cross-manuscript *scholia* reader](./all-scholia.html): select passage of the *Iliad* in a given version, and view passage together with *scholia* from *all* edited versions
-- [Facsimile reader](./va-facsimile.html): browse page images of the Venetus A, hover over indexed page to see textual edition
-- [Interwoven diplomatic/normalized reader](./editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
-- [Browse images](./images.html) from all image collections.
+1. [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
+1. [Cross-manuscript *scholia* reader](./all-scholia.html): select passage of the *Iliad* in a given version, and view passage together with *scholia* from *all* edited versions
+1. [Facsimile reader](./va-facsimile.html): browse page images of the Venetus A, hover over indexed page to see textual edition
+1. [Codex browser](./codices.html): browse pages of a codex, see indexed images and texts.
+1. [Interwoven diplomatic/normalized reader](./editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
+1. [Browse images](./images.html) from all image collections.
+1. See [referential inconsistencies](./dse-check.html) in  editorial indexing
 
 
 ::: {.callout-note}

@@ -2,3 +2,6 @@ va-facsimile.html   0.1.1
 iliad-scholia.html  0.2.0
 editorial.html  0.1.0
 all-scholia.html    0.1.0
+images.html  0.1.0
+dse-check.html  0.1.0
+codices.html    0.1.0

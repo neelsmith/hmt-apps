@@ -2,7 +2,9 @@
 
 ## Repository version tag
 
-Current version:  **0.4.0**
+Current version:  **0.5.0**
+
+**0.5.0**, *Nov. 19, 2026*: adds `codices.html` and `propernames.html` apps.
 
 
 **0.4.0**, *Nov. 19, 2026*: utilities for constructing IIIF manifests and URN maps; new `all-scholia.html` app.
@@ -43,4 +45,15 @@ Current version:  **0.4.0**
 
 ## `all-scholia.html`
 
-**0.1.0**, *?*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
+**0.1.0**, *Nov. 19, 2026*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
+
+
+## `codices.html`
+
+
+**0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
+
+
+## `propernames.html`
+
+**0.1.0**, *Nov. 19, 2026*: initial release. See instances of proper names in texts.

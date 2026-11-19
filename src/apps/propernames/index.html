@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Proper names</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --cur: #f3ecdc;
+    --pers: #cfe0fb; --place: #cdebd0; --ethnic: #fbdcc0;     /* pastel backgrounds of the three kinds of names */
+    --sel-ring: #8a2f1d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --cur: #2c2822;
+            --pers: #2f4a73; --place: #2f5a38; --ethnic: #6b4a2a; --sel-ring: #ffd27a; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .25rem .65rem; }
+  .btn:hover { border-color: var(--accent); }
+  select, input[type=search] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; min-width: 0; }
+
+  #controls { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  .group { display: inline-flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  .kinds label { display: inline-flex; gap: .3rem; align-items: center; padding: .2rem .6rem; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: var(--panel); }
+  .kinds input:checked + span { font-weight: 700; }
+  .kinds label:has(input:checked) { border-color: var(--accent); }
+  .sw { display: inline-block; width: .85rem; height: .85rem; border-radius: 3px; border: 1px solid var(--line); }
+  .sw.pers { background: var(--pers); } .sw.place { background: var(--place); } .sw.ethnic { background: var(--ethnic); }
+  #item { width: 20rem; max-width: 100%; }
+  #find { width: 11rem; }
+  #about { flex: 1 1 100%; color: var(--muted); font-size: .875rem; margin: 0; }
+  .legend { margin-left: auto; font-size: .8125rem; color: var(--muted); display: inline-flex; gap: .75rem; flex-wrap: wrap; }
+
+  #main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(16rem, 26rem) 1fr; }
+  #passages, #page { overflow: auto; min-height: 0; padding: .75rem 1rem 2rem; }
+  #passages { border-right: 1px solid var(--line); padding-left: .5rem; padding-right: .5rem; }
+  .hint { color: var(--muted); padding: 1rem; }
+  .vh { font-size: .8125rem; font-weight: 700; color: var(--muted); margin: .75rem .5rem .2rem; }
+  .row { display: flex; flex-direction: column; align-items: stretch; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: inherit; padding: .25rem .5rem; border-radius: 6px; }
+  .row:hover { background: var(--cur); }
+  .row.on { background: var(--cur); border-color: var(--accent); }
+  .row .ref { font: .8125rem ui-monospace, Menlo, monospace; }
+  .row .pg { color: var(--muted); font-size: .8125rem; }
+  .row .snip { font-size: .9rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; }
+  .more { margin: .5rem; }
+
+  #page h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
+  #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
+  #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
+  .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.15rem; line-height: 1.6; }
+  .line { display: flex; gap: .75rem; padding: .05rem .25rem; border-radius: 4px; }
+  .line.cur, details.cur { background: var(--cur); box-shadow: inset 3px 0 var(--accent); }
+  .line .ref { flex: 0 0 3.75rem; font: .8125rem ui-monospace, Menlo, monospace; color: var(--muted); padding-top: .35rem; text-align: right; }
+  details.scholion { border-top: 1px solid var(--line); padding: .15rem .25rem; }
+  details.scholion summary { cursor: pointer; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  details.scholion summary .id { font: .8125rem ui-monospace, Menlo, monospace; color: var(--muted); }
+  details.scholion summary .pre { color: var(--muted); font-size: 1rem; }
+  details.scholion[open] summary .pre { display: none; }
+  .line { align-items: flex-start; }
+  .line .greek { flex: 1; min-width: 0; }
+  details.scholion .body { padding: .25rem 0 .5rem 1rem; }
+  .lemma { font-weight: 700; }
+  .line .badge { flex: 0 0 auto; align-self: flex-start; margin-top: .3rem; font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 .6rem; background: var(--panel); color: var(--muted); }
+  .line .badge:hover { border-color: var(--accent); color: var(--fg); }
+  .line .badge.hot { border-color: var(--accent); color: var(--fg); background: var(--cur); }
+  .panel { margin: .1rem 0 .6rem 4.5rem; padding-left: .75rem; border-left: 2px solid var(--line); }
+  details.scholion summary .on { font-size: .8125rem; color: var(--muted); }
+  .hasname { font-size: .75rem; border-radius: 999px; padding: 0 .5rem; background: var(--cur); border: 1px solid var(--accent); color: var(--fg); }
+
+  /* names */
+  .nm { border-radius: 3px; padding: 0 .12em; }
+  .nm.pers { background: var(--pers); } .nm.place { background: var(--place); } .nm.ethnic { background: var(--ethnic); }
+  .nm.unk { box-shadow: inset 0 -2px 0 #0003; }
+  .nm.sel { font-weight: 700; outline: 2px solid var(--sel-ring); outline-offset: 1px; }
+  .nm.maybe { outline: 2px dashed var(--sel-ring); outline-offset: 1px; }
+
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  @media (max-width: 48rem) {
+    header, #controls { padding-left: .75rem; padding-right: .75rem; }
+    #main { display: block; overflow: auto; }
+    #passages { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+    #page { overflow: visible; }
+    #item, #find { width: 100%; }
+    .panel { margin-left: 1rem; }
+    .group.menu { flex: 1 1 100%; }
+    .legend { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Proper names</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<div id="controls">
+  <span class="group kinds" role="radiogroup" aria-label="Kind of name">
+    <label><input type="radio" name="kind" value="pers" disabled><span class="sw pers"></span><span>Personal names</span></label>
+    <label><input type="radio" name="kind" value="place" disabled><span class="sw place"></span><span>Geographic names</span></label>
+    <label><input type="radio" name="kind" value="ethnic" disabled><span class="sw ethnic"></span><span>Ethnic names</span></label>
+  </span>
+  <span class="group menu">
+    <input type="search" id="find" placeholder="Find a name…" autocomplete="off" aria-label="Find a name" disabled>
+    <select id="item" aria-label="Name" disabled></select>
+  </span>
+  <span class="group" role="group" aria-label="Text shown">
+    <label><input type="radio" name="text" value="diplomatic" checked> diplomatic</label>
+    <label><input type="radio" name="text" value="normalized"> normalized</label>
+  </span>
+  <span class="legend" aria-hidden="true"><span><span class="sw pers"></span> person</span><span><span class="sw place"></span> place</span><span><span class="sw ethnic"></span> ethnic group</span><span><span class="nm sel">selected</span></span></span>
+  <p id="about" hidden></p>
+</div>
+
+<div id="main">
+  <section id="passages" aria-label="Passages where the name occurs"><p class="hint">Choose a kind of name, then a name.</p></section>
+  <section id="page" aria-label="Page"><p class="hint">Choose a passage to see its page.</p></section>
+</div>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/apps/propernames/app.js -->
+</body>
+</html>
