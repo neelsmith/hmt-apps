@@ -1,5 +1,5 @@
 ---
-title: "'Two-coffee apps' for working with data from the Homer Multitext project"
+title: "'Two-coffee apps' to work with data from the Homer Multitext project"
 ---
 
 ## About ...
