@@ -265,3 +265,26 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ### String search: results grouped by word token
 
 - Results are now blocks per matching word token, sorted alphabetically ignoring accents and breathings (`groupByToken` in `src/stringsearch.js`). A match is widened to whole words; a match spanning words gives a phrase token. Tokens are unique after folding (case, accents), and the block title is the commonest written form, lower-cased. A passage with several different tokens appears under each. Rows show the text and page as well as the reference. "μηνι" gives 32 blocks, including μῆνις and μῆνιν.
+
+## String counter app
+
+- `stringcounter.html` (0.1.0): same alphabetic search as stringsearch (scope Iliad/scholia/all, diplomatic/normalized, accents/case ignored, two-letter minimum), but results are an SVG bar chart: word tokens (alphabetical, accents ignored, labelled with the commonest written form) on X, occurrences on Y. Clicking a bar (or Enter on a focused bar, or a button in the collapsible table) lists that token's passages; clicking a passage shows the page as in stringsearch.
+- Counts are occurrences of the token across all texts in scope (the Iliad is held in several manuscripts, so those add up); the table also gives the number of passages. "Download CSV" writes `token,form,occurrences,passages` (RFC 4180, CRLF, UTF-8 with BOM so spreadsheets read Greek correctly). File name is ASCII (Greek transliterated: μηνι gives `string-counts-meni.csv`), because headless Chromium dropped non-ASCII download names.
+- Logic in `src/stringcounter.js` (`countTokens`, `toCsv`, `csvName`, `niceTicks`, hash with `&b=<token>`); tests in `test/stringcounter.test.js`. Reuses `stringsearch.js` and `page-view.js`.
+- Release 2024c: "μηνι" occurs 91 times in 73 passages as 32 word forms (μῆνιν 18, the most).
+- Pitfall: all inlined modules share one global scope; a top-level `field` in stringcounter.js clashed with another module and silently broke the page (renamed `csvField`).
+- `version.txt` needs a line `stringcounter.html   0.1.0` (user-owned file, not edited on the device).
+
+### String counter: sort order
+
+- A "Sort: alphabetically / by count" control sets the order of the bars, the table and the CSV. Alphabetical is the default; by count is most frequent first, ties alphabetical (`sortCounts` in `src/stringcounter.js`). The order is in the hash as `&o=count` (omitted when alphabetical). The chosen bar stays selected when the order changes.
+
+### String counter: frequency cutoff
+
+- "Only words occurring at least [N] times" (default 1) limits the bars, table and CSV to word forms with at least N occurrences (`atLeast` in `src/stringcounter.js`). The about line still reports the full totals; the chart note says how many word forms pass. In the hash as `&m=N` (omitted at 1; junk or values below 1 read as 1). Changing the cutoff or the sort order keeps the chosen bar, its passage list and the page if that bar still passes; if it is cut, the list and page reset. If nothing passes, the chart note gives the highest count and the CSV button is disabled.
+
+### String counter: choice of texts
+
+- The Iliad/scholia/all radios are replaced by a "Texts" checklist (a drop-down panel): "All Iliad", "All scholia" and "All other texts" boxes (tri-state when only some of their texts are ticked), one box per text version under each, and Select all / Select none. All are ticked at first, which equals the old "all texts". The summary reads "Texts: all 12", "all Iliad", "all scholia", "n of m" or "none". Escape or a click elsewhere closes the panel.
+- `searchInVersions`, `textChoices`, `versionOfKey` in `src/stringcounter.js`. Hash: `&v=<ns:work.version>,…` only when a subset is chosen; an older `s=iliad|scholia` link (no `v`) still selects that section.
+- Only the counter app was changed; stringsearch.html still has the three-way scope.

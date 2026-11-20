@@ -2,7 +2,10 @@
 
 ## Repository version tag
 
-Current version:  **0.6.0**
+Current version:  **0.7.0**
+
+
+**0.7.0**, *Nov. 20, 2026*: adds `stringcounter.html` app.
 
 
 **0.6.0**, *Nov. 20, 2026*: adds `stringsearch.html` app.

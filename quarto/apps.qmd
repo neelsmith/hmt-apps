@@ -10,6 +10,7 @@ You can download these apps and use them on your own computer, or use the instal
 1. [*Iliad* + *scholia* reader](./iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
 1. [Cross-manuscript *scholia* reader](./all-scholia.html): select passage of the *Iliad* in a given version, and view passage together with *scholia* from *all* edited versions
 1. [Simple text search](./stringsearch.html): search text of *Iliad* and *scholia* for strings of text.
+1. [Count results of string search](./stringcounter.html): search text of *Iliad* and *scholia* for strings of text, tabulate frequencies, optionally explore individual passages.
 1. [Find texts by proper names](./propernames.html): find occurrences of personal, geographic and ethnic names and see their text in context.
 1. [Codex browser](./codices.html): browse pages of a codex, see indexed images and texts.
 1. [Interwoven diplomatic/normalized reader](./editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
