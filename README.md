@@ -1,7 +1,7 @@
-# hmt-apps
+# 'Two-coffee apps' to work with HMT data
 
 
-> *Stand-alone web apps for exploring data from the Homer Multitext project.*
+> *Stand-alone web apps exploring published releases of the Homer Multitext project.*
 
 
 ## On the web
