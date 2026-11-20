@@ -22,8 +22,7 @@
   /** @type {NameEntry | null} */ let sel = null;
   let selPassage = '';
   let ownHash = null;
-  /** @type {Map<string, any[]>} */ const spansCache = new Map();
-  let pairsCache = null, iVersionsCache = null, targetsCache = null;
+  /** @type {any} */ let pageView = null;
 
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
   const textKind = () => document.querySelector('input[name=text]:checked').value;
@@ -52,7 +51,7 @@
       pageLabels = new Map();
       for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
       lexicon = learnLexicon(lexiconSamples());
-      spansCache.clear(); pairsCache = iVersionsCache = targetsCache = titlesCache = null;
+      pageView = createPageView({ release: rel, textIndex, versionLabels, pageLabels, surfacesOf, passagesOn });
       for (const r of document.querySelectorAll('input[name=kind]')) r.disabled = false;
       const counts = NAME_KINDS.map(k => `${names.byKind[k.id].length.toLocaleString('en')} ${kindLabel(k.id).toLowerCase()}`);
       setStatus(`${rel.library.name}: ${counts.join(', ')}` + (names.unresolved ? ` · ${plural(names.unresolved, 'index entry', 'index entries')} naming an unknown name not shown` : ''));
@@ -144,34 +143,8 @@
 
   // --- the passages of a name -----------------------------------------------------------
 
-  /** Position of a passage in its text, for ordering. */
-  function position(pk) {
-    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(pk);
-    if (!m) return 1e9;
-    const t = textsOfVersion(textIndex, ctsVersionOf(m[1]))[0];
-    const tx = t && textIndex.get(t.urn);
-    if (!tx) return 1e9;
-    return tx.pos.get(m[2]) ?? tx.pos.get(m[2] + '.lemma') ?? 1e9;
-  }
-  const versionOf = pk => ctsVersionOf(/^(urn:cts:[^:]+:[^:]+:)/.exec(pk)[1]);
-  const refOf = pk => pk.slice(versionOf(pk).length);
-  const sectionRank = { iliad: 0, scholia: 1, other: 2 };
-
   /** Passages of the name, grouped by version of the text: Iliad first, then scholia, then others; in text order. */
-  function groupPassages(e) {
-    /** @type {Map<string, string[]>} */
-    const by = new Map();
-    for (const pk of e.passages) {
-      const v = versionOf(pk);
-      if (!by.has(v)) by.set(v, []);
-      by.get(v).push(pk);
-    }
-    const order = [...versionLabels.keys()];
-    const groups = [...by].map(([version, list]) => ({ version, list: list.sort((a, b) => position(a) - position(b)) }));
-    groups.sort((a, b) => sectionRank[sectionOf(a.list[0])] - sectionRank[sectionOf(b.list[0])]
-      || (order.indexOf(a.version) + 1 || 999) - (order.indexOf(b.version) + 1 || 999));
-    return groups;
-  }
+  const groupPassages = e => groupByVersion(textIndex, e.passages, [...versionLabels.keys()]);
 
   function selectName(e, passage, fromRoute) {
     sel = e;
@@ -267,177 +240,11 @@
   function showPassage(pk) {
     selPassage = pk;
     for (const r of $('passages').querySelectorAll('.row')) r.classList.toggle('on', r.dataset.passage === pk);
-    const surfaces = surfacesOf.get(pk);
-    const box = $('page');
-    box.textContent = '';
-    if (!surfaces) { renderLoose(box, pk); return; }
-    renderPage(box, surfaces[0], pk, surfaces);
+    pageView.show($('page'), pk, {
+      textKind, fillText, isHit: hasSelected,
+      hitLabel: `“${sel.label}”`, hitNoun: 'name',
+    });
   }
-
-  function renderLoose(box, pk) {
-    box.appendChild(el('h2', '', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
-    box.appendChild(el('p', 'sub', 'The DSE records do not place this passage on a page; here is the passage alone.'));
-    const t = el('div', 'greek');
-    fillText(t, pk);
-    box.appendChild(t);
-  }
-
-  function renderPage(box, surface, current, surfaces) {
-    box.appendChild(el('h2', '', pageLabels.get(surface) ?? surface));
-    const sub = el('p', 'sub', surface);
-    if (surfaces.length > 1) {
-      sub.append(' · also on: ');
-      for (const s of surfaces.filter(x => x !== surface)) {
-        const b = el('button', 'btn', pageLabels.get(s) ?? s);
-        b.addEventListener('click', () => { box.textContent = ''; renderPage(box, s, current, surfaces); });
-        sub.appendChild(b);
-      }
-    }
-    box.appendChild(sub);
-
-    const keys = (passagesOn.get(surface) ?? []).slice();
-    /** @type {Record<string, string[]>} */
-    const secs = { iliad: [], scholia: [], other: [] };
-    for (const pk of keys) secs[sectionOf(pk)].push(pk);
-    for (const s of Object.keys(secs)) secs[s].sort((a, b) => (versionOf(a) === versionOf(b) ? position(a) - position(b) : versionOf(a).localeCompare(versionOf(b))));
-
-    // Iliad lines, each followed by the scholia of the page that comment on it
-    /** @type {Map<string, string[]>} */
-    const iliadBy = new Map();
-    for (const pk of secs.iliad) { const v = versionOf(pk); if (!iliadBy.has(v)) iliadBy.set(v, []); iliadBy.get(v).push(pk); }
-    let rest = secs.scholia.slice();
-    const nHas = secs.scholia.filter(hasSelected).length;
-    for (const [version, lines] of iliadBy) {
-      const shown = shownText(version);
-      const { byLine, loose } = shown ? attachScholia(lines.map(refOf), shown, spansFor(version), rest) : { byLine: new Map(), loose: rest };
-      rest = loose;
-      const label = iliadBy.size > 1 ? ` · ${(versionLabels.get(version) ?? version).replace(/^Iliad — /, '')}` : '';
-      box.appendChild(el('h3', '', `Iliad${label} · ${plural(lines.length, 'line', 'lines')}`));
-      for (const pk of lines) {
-        const row = el('div', 'line');
-        row.dataset.passage = pk;
-        if (pk === current) row.classList.add('cur');
-        row.appendChild(el('span', 'ref', refOf(pk)));
-        const t = el('span', 'greek');
-        fillText(t, pk);
-        row.appendChild(t);
-        box.appendChild(row);
-        const attached = byLine.get(refOf(pk));
-        if (!attached) continue;
-        const panel = el('div', 'panel');
-        for (const a of attached) panel.appendChild(scholionEl(a.key, current, a.from === a.to ? a.from : `${a.from}–${a.to}`));
-        const nOpen = attached.filter(a => hasSelected(a.key) || a.key === current).length;
-        const badge = el('button', 'badge', `${plural(attached.length, 'scholion', 'scholia')}${nOpen ? ` · ${nOpen} with “${sel.label}”` : ''}`);
-        badge.type = 'button';
-        if (nOpen) badge.classList.add('hot');
-        panel.hidden = !nOpen;
-        badge.setAttribute('aria-expanded', String(!panel.hidden));
-        badge.title = 'Show the scholia';
-        badge.addEventListener('click', () => { panel.hidden = !panel.hidden; badge.setAttribute('aria-expanded', String(!panel.hidden)); });
-        row.appendChild(badge);
-        box.appendChild(panel);
-      }
-    }
-
-    // scholia that comment on no line of this page
-    const hasLines = iliadBy.size > 0;
-    if (rest.length || (!hasLines && secs.scholia.length)) {
-      const h = el('h3', '', `${hasLines ? 'Other scholia on this page' : 'Scholia'} · ${plural(rest.length, 'scholion', 'scholia')}`);
-      box.appendChild(h);
-      for (const pk of rest) box.appendChild(scholionEl(pk, current, ''));
-    }
-
-    if (secs.scholia.length) {
-      const fold = el('button', 'btn', 'Unfold all scholia');
-      let all = false;
-      fold.addEventListener('click', () => {
-        all = !all;
-        for (const pn of box.querySelectorAll('.panel')) {
-          const open = all || !!pn.querySelector('details.scholion.has, details.scholion.cur');
-          pn.hidden = !open;
-          const b = pn.previousElementSibling && pn.previousElementSibling.querySelector('.badge');
-          if (b) b.setAttribute('aria-expanded', String(open));
-        }
-        for (const d of box.querySelectorAll('details.scholion')) d.open = all || d.classList.contains('has') || d.classList.contains('cur');
-        fold.textContent = all ? 'Fold scholia without the name' : 'Unfold all scholia';
-      });
-      const top = el('p', 'sub', `${plural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with “${sel.label}”. ` : '. '));
-      top.appendChild(fold);
-      sub.after(top);
-    }
-
-    if (secs.other.length) {
-      box.appendChild(el('h3', '', `Other text · ${plural(secs.other.length, 'passage', 'passages')}`));
-      for (const pk of secs.other) {
-        const row = el('div', 'line');
-        if (pk === current) row.classList.add('cur');
-        row.appendChild(el('span', 'ref', refOf(pk)));
-        const t = el('span', 'greek');
-        fillText(t, pk);
-        row.appendChild(t);
-        box.appendChild(row);
-      }
-    }
-    const cur = box.querySelector('.cur');
-    if (cur) cur.scrollIntoView({ block: 'center' });
-  }
-
-  /** One scholion, folded unless it has the selected name or is the chosen passage. */
-  function scholionEl(pk, current, on) {
-    const d = el('details', 'scholion');
-    d.dataset.passage = pk;
-    const has = hasSelected(pk);
-    d.open = has || pk === current;
-    if (has) d.classList.add('has');
-    if (pk === current) d.classList.add('cur');
-    const sm = el('summary');
-    sm.appendChild(el('span', 'id', passageLabel(pk, versionLabelsByTitle())));
-    const target = on || commentedOn(pk);
-    if (target) sm.appendChild(el('span', 'on', `on ${target}`));
-    const lemma = passageText(textIndex, pk, textKind()).parts.find(p => p.part === 'lemma');
-    if (lemma) { const pre = el('span', 'pre greek', lemma.text.length > 60 ? lemma.text.slice(0, 60) + '…' : lemma.text); pre.lang = 'grc'; sm.appendChild(pre); }
-    if (has) sm.appendChild(el('span', 'hasname', sel.label));
-    d.appendChild(sm);
-    const body = el('div', 'body greek');
-    fillText(body, pk);
-    d.appendChild(body);
-    return d;
-  }
-
-  /** The text a text version's scholia are positioned in, and the spans of commentary relations in it (computed once per version). */
-  function shownText(version) {
-    const t = textsOfVersion(textIndex, version)[0];
-    return t ? textIndex.get(t.urn) : null;
-  }
-  function spansFor(version) {
-    let sp = spansCache.get(version);
-    if (!sp) {
-      const shown = shownText(version);
-      sp = shown ? commentarySpansAllVersions(commentary(), iVersions(), textIndex, shown).spans : [];
-      spansCache.set(version, sp);
-    }
-    return sp;
-  }
-  function commentary() { return pairsCache ?? (pairsCache = commentaryPairs(release)); }
-  function iVersions() { return iVersionsCache ?? (iVersionsCache = iliadVersions(release, textIndex)); }
-  /** "Iliad 1.13-1.16": what a scholion is indexed to, for scholia not placed under a line. */
-  function commentedOn(pk) {
-    if (!targetsCache) {
-      targetsCache = new Map();
-      for (const p of commentary()) {
-        const k = passageKey(p.scholion);
-        if (!k) continue;
-        const list = targetsCache.get(k) ?? [];
-        const label = passageLabel(p.target, versionLabelsByTitle());
-        if (!list.includes(label)) list.push(label);
-        targetsCache.set(k, list);
-      }
-    }
-    return (targetsCache.get(pk) ?? []).join(', ');
-  }
-
-  let titlesCache = null;
-  function versionLabelsByTitle() { return titlesCache ?? (titlesCache = catalogTitles(release)); }
 
   // --- wiring ---------------------------------------------------------------------------------
 

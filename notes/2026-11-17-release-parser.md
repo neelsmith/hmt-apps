@@ -253,3 +253,15 @@ Data, and what had to be worked around:
 - Files: `src/propernames.js`, `src/apps/propernames/`, `test/propernames.test.js`. Needs `propernames.html  0.1.0` in version.txt.
 
 Update (propernames): the scholia of a page are interleaved with the Iliad line they comment on, as in iliad-scholia.html: a badge "N scholia" on the line opens a panel under it; a scholion indexed to a range (e.g. 1.13-1.16) stands once, under the first of those lines that is on the page, with "on 1.13–1.16" in its summary. The panel is open when it holds a scholion with the selected name or the chosen passage; inside, scholia without the name stay folded. Scholia that comment on no line of the page (other pages, or no Iliad on the page) are listed after the lines with their targets (e.g. "on Iliad 1.13-1.16"). Uses commentaryPairs/commentarySpansAllVersions (iliad-scholia.js, now inlined) so a relation to any version of the Iliad counts; spans are computed once per Iliad version. New: attachScholia in src/propernames.js.
+
+## String search app and shared page view
+
+- `stringsearch.html` (0.1.0): enter a Greek string without diacritics, optionally limit to Iliad or scholia, list matching passages (grouped by text, paged 60 at a time, with a snippet), pick one to see the whole page with the Iliad lines interleaved with their scholia. Matches are marked; scholia holding a match are unfolded, the rest folded.
+- Folding (`src/stringsearch.js`): accents, breathings, capitals and punctuation are ignored; ς/ϲ = σ; minimum two letters; matches may span words inside one text part, but not from a scholion's lemma into its comment. Diplomatic or normalized text can be searched. Hash form: `#q=..&s=..&t=..[&p=..]`.
+- Release 2024c: "αχιλλευς" matches 305 passages (189 Iliad, 111 scholia, the rest other texts).
+- Refactor: the page display shared by propernames and stringsearch now lives in `src/page-view.js` and `src/page-view.css`; propernames was moved onto it (tests unchanged and passing).
+- Tests: `test/stringsearch.test.js` (9, includes an independent count against the real release); full suite 109 pass.
+
+### String search: results grouped by word token
+
+- Results are now blocks per matching word token, sorted alphabetically ignoring accents and breathings (`groupByToken` in `src/stringsearch.js`). A match is widened to whole words; a match spanning words gives a phrase token. Tokens are unique after folding (case, accents), and the block title is the commonest written form, lower-cased. A passage with several different tokens appears under each. Rows show the text and page as well as the reference. "μηνι" gives 32 blocks, including μῆνις and μῆνιν.

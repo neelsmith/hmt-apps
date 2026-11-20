@@ -2,7 +2,11 @@
 
 ## Repository version tag
 
-Current version:  **0.5.0**
+Current version:  **0.6.0**
+
+
+**0.6.0**, *Nov. 20, 2026*: adds `stringsearch.html` app.
+
 
 **0.5.0**, *Nov. 19, 2026*: adds `codices.html` and `propernames.html` apps.
 
@@ -57,3 +61,9 @@ Current version:  **0.5.0**
 ## `propernames.html`
 
 **0.1.0**, *Nov. 19, 2026*: initial release. See instances of proper names in texts.
+
+
+
+## `stringsearch.html`
+
+**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.

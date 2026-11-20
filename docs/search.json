@@ -46,7 +46,7 @@
     "href": "index.html#using-the-apps",
     "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
     "section": "Using the apps",
-    "text": "Using the apps\nWHere can I run them?\n\nlinks to each of the apps"
+    "text": "Using the apps\nWhere can I find running versions the apps?\n\nlinks to each of the apps"
   },
   {
     "objectID": "archive/index.html",
@@ -67,13 +67,13 @@
     "href": "archive/index.html#choose-this-first",
     "title": "Where should I start?",
     "section": "Choose this first",
-    "text": "Choose this first\n\nif you want to browse images:\nif you want to read editions of the Iliad and scholia:\nif you want a fascimile view relating textual editions to pages images:\nif you want to find out about the editorial status of HMT work:"
+    "text": "Choose this first\n\nif you want to browse the HMT project’s collection of manuscripts images: try images.html\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html"
   },
   {
     "objectID": "apps.html",
     "href": "apps.html",
     "title": "Apps to work with HMT data sets",
     "section": "",
-    "text": "You can download these apps and use them on your own computer, or use the installations on github pages:\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nCodex browser: browse pages of a codex, see indexed images and texts.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\nBrowse images from all image collections.\nFInd texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nSee referential inconsistencies in editorial indexing\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
+    "text": "You can download these apps and use them on your own computer, or use the installations on github pages:\n\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nSimple text search: search text of Iliad and scholia for strings of text.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nCodex browser: browse pages of a codex, see indexed images and texts.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\nBrowse images from all image collections.\nSee referential inconsistencies in editorial indexing\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
   }
 ]
