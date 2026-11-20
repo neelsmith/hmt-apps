@@ -1,0 +1,2601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="0.1.0">
+<title>String search</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --cur: #f3ecdc;
+    --hit: #ffe27a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --cur: #2c2822;
+            --hit: #7a5f00; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .25rem .65rem; }
+  .btn:hover { border-color: var(--accent); }
+  select, input[type=search] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; min-width: 0; }
+
+  #controls { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  .group { display: inline-flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  #q { width: 18rem; max-width: 100%; font-size: 1.1rem; }
+  .hit { background: var(--hit); border-radius: 3px; color: inherit; padding: 0 .05em; }
+  .row .snip .hit { color: var(--fg); }
+  .go { font-weight: 600; }
+  #about { flex: 1 1 100%; color: var(--muted); font-size: .875rem; margin: 0; }
+
+
+
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  @media (max-width: 48rem) {
+    header, #controls { padding-left: .75rem; padding-right: .75rem; }
+    #q { width: 100%; }
+    .group.query { flex: 1 1 100%; }
+    .group.menu { flex: 1 1 100%; }
+  }
+  #passages .vh { font-size: 1.0625rem; color: var(--fg); position: sticky; top: 0; background: var(--bg); padding: .25rem 0; margin-top: .5rem; }
+  #passages .vh .n { font-size: .8125rem; font-weight: 400; color: var(--muted); }
+</style>
+<style>
+/* Shared by the apps that show a manuscript page: a list of passages beside the text of the page
+   (see src/page-view.js).  Uses the variables --bg --fg --muted --line --panel --accent --cur. */
+  #main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(16rem, 26rem) 1fr; }
+  #passages, #page { overflow: auto; min-height: 0; padding: .75rem 1rem 2rem; }
+  #passages { border-right: 1px solid var(--line); padding-left: .5rem; padding-right: .5rem; }
+  .hint { color: var(--muted); padding: 1rem; }
+  .vh { font-size: .8125rem; font-weight: 700; color: var(--muted); margin: .75rem .5rem .2rem; }
+  .row { display: flex; flex-direction: column; align-items: stretch; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: inherit; padding: .25rem .5rem; border-radius: 6px; }
+  .row:hover { background: var(--cur); }
+  .row.on { background: var(--cur); border-color: var(--accent); }
+  .row .ref { font: .8125rem ui-monospace, Menlo, monospace; }
+  .row .pg { color: var(--muted); font-size: .8125rem; }
+  .row .snip { font-size: .9rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; }
+  .more { margin: .5rem; }
+
+  #page h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
+  #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
+  #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
+  .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.15rem; line-height: 1.6; }
+  .line { display: flex; gap: .75rem; padding: .05rem .25rem; border-radius: 4px; }
+  .line.cur, details.cur { background: var(--cur); box-shadow: inset 3px 0 var(--accent); }
+  .line .ref { flex: 0 0 3.75rem; font: .8125rem ui-monospace, Menlo, monospace; color: var(--muted); padding-top: .35rem; text-align: right; }
+  details.scholion { border-top: 1px solid var(--line); padding: .15rem .25rem; }
+  details.scholion summary { cursor: pointer; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  details.scholion summary .id { font: .8125rem ui-monospace, Menlo, monospace; color: var(--muted); }
+  details.scholion summary .pre { color: var(--muted); font-size: 1rem; }
+  details.scholion[open] summary .pre { display: none; }
+  .line { align-items: flex-start; }
+  .line .greek { flex: 1; min-width: 0; }
+  details.scholion .body { padding: .25rem 0 .5rem 1rem; }
+  .lemma { font-weight: 700; }
+  .line .badge { flex: 0 0 auto; align-self: flex-start; margin-top: .3rem; font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 .6rem; background: var(--panel); color: var(--muted); }
+  .line .badge:hover { border-color: var(--accent); color: var(--fg); }
+  .line .badge.hot { border-color: var(--accent); color: var(--fg); background: var(--cur); }
+  .panel { margin: .1rem 0 .6rem 4.5rem; padding-left: .75rem; border-left: 2px solid var(--line); }
+  details.scholion summary .on { font-size: .8125rem; color: var(--muted); }
+  .hasname { font-size: .75rem; border-radius: 999px; padding: 0 .5rem; background: var(--cur); border: 1px solid var(--accent); color: var(--fg); }
+@media (max-width: 48rem) {
+  #main { display: block; overflow: auto; }
+  #passages { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  #page { overflow: visible; }
+  .panel { margin-left: 1rem; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>String search</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.0</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<form id="controls" autocomplete="off">
+  <span class="group query">
+    <input type="search" id="q" lang="grc" placeholder="Greek letters, no accents: e.g. αχιλλευς" aria-label="Greek string to search for" spellcheck="false" disabled>
+    <button type="submit" class="btn go" id="go" disabled>Search</button>
+  </span>
+  <span class="group" role="radiogroup" aria-label="Where to search">
+    <label><input type="radio" name="scope" value="all" checked> all texts</label>
+    <label><input type="radio" name="scope" value="iliad"> Iliad</label>
+    <label><input type="radio" name="scope" value="scholia"> scholia</label>
+  </span>
+  <span class="group" role="radiogroup" aria-label="Text searched and shown">
+    <label><input type="radio" name="text" value="diplomatic" checked> diplomatic</label>
+    <label><input type="radio" name="text" value="normalized"> normalized</label>
+  </span>
+  <p id="about">Type at least two letters. Accents, breathings, capitals and punctuation do not matter.</p>
+</form>
+
+<div id="main">
+  <section id="passages" aria-label="Matching passages"><p class="hint">Enter a string to search for.</p></section>
+  <section id="page" aria-label="Page"><p class="hint">Choose a passage to see its page.</p></section>
+</div>
+
+<script>
+// @ts-check
+/**
+ * Parsing of an HMT data release (a single CEX text file).
+ *
+ * Design notes
+ * - No imports and no dependencies, so this file runs unchanged in Node
+ *   (tests) and in a browser, and can later be inlined into a single-file app
+ *   by stripping the leading `export` keywords.
+ * - Parsing never throws on irregular data.  Irregularities are collected as
+ *   warnings: see `HmtRelease.validate()`.
+ */
+
+/** Block labels recognised in a release, in the order given in CLAUDE.md. */
+const BLOCK_TYPES = [
+  'cexversion', 'citelibrary', 'citecollections', 'citeproperties',
+  'citedata', 'datamodels', 'ctscatalog', 'ctsdata', 'citerelationset',
+];
+
+/** Default location of the current release. */
+const DEFAULT_RELEASE_URL =
+  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/releases-cex/hmt-current.cex';
+
+/** Block types whose repeated blocks each start with the same header line. */
+const FIXED_HEADER_TYPES = new Set(['citecollections', 'citeproperties', 'datamodels', 'ctscatalog']);
+
+// ---------------------------------------------------------------------------
+// Step 1: split text into labelled blocks
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} Block
+ * @property {string} type       Label without the `#!` prefix.
+ * @property {number} startLine  1-based line number of the header line.
+ * @property {string[]} lines    Data lines: comments and blank lines removed.
+ */
+
+/**
+ * Split CEX text into blocks.  Lines starting with `//` and empty lines are
+ * dropped.  Everything between a `#!` header line and the next belongs to the
+ * first.
+ * @param {string} text
+ * @returns {{blocks: Block[], warnings: string[]}}
+ */
+function splitBlocks(text) {
+  /** @type {Block[]} */
+  const blocks = [];
+  /** @type {string[]} */
+  const warnings = [];
+  /** @type {Block | null} */
+  let current = null;
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('#!')) {
+      const type = line.slice(2).trim();
+      if (!BLOCK_TYPES.includes(type)) {
+        warnings.push(`line ${i + 1}: unrecognized block type "${type}"`);
+      }
+      current = { type, startLine: i + 1, lines: [] };
+      blocks.push(current);
+      continue;
+    }
+    if (line.startsWith('//') || line.trim() === '') continue;
+    if (current === null) {
+      warnings.push(`line ${i + 1}: content before the first block header ignored`);
+      continue;
+    }
+    current.lines.push(line);
+  }
+  return { blocks, warnings };
+}
+
+// ---------------------------------------------------------------------------
+// URN helpers (CITE2 and CTS)
+// ---------------------------------------------------------------------------
+
+/** True for a collection-level CITE2 URN, e.g. `urn:cite2:hmt:e3pages.v1:`. */
+function isCollectionUrn(urn) {
+  return /^urn:cite2:[^:]+:[^:]+:$/.test(urn);
+}
+
+/** Collection-level URN for an object URN, or null if `urn` is not CITE2. */
+function collectionOfObject(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/**
+ * Collection-level URN for a property-level URN, e.g.
+ * `urn:cite2:citebl:burney86pages.v1.sequence:` gives
+ * `urn:cite2:citebl:burney86pages.v1:`.  Null if not property-level.
+ */
+function collectionOfProperty(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+)\.[^.:]+:$/.exec(urn);
+  return m ? m[1] + ':' : null;
+}
+
+/** Property-level URN for a property name in a collection. */
+function propertyUrn(collectionUrn, name) {
+  return collectionUrn.slice(0, -1) + '.' + name + ':';
+}
+
+/**
+ * Work-component prefix of a CTS URN (`urn:cts:ns:group.work.version[.exemplar]:`),
+ * which is version-level or exemplar-level depending on the URN.
+ */
+function ctsWorkOf(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/** Version-level CTS URN (`urn:cts:ns:group.work.version:`): drops any exemplar part. */
+function ctsVersionOf(urn) {
+  const m = /^(urn:cts:[^:]+:)([^:]+):/.exec(urn);
+  return m ? m[1] + m[2].split('.').slice(0, 3).join('.') + ':' : null;
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: typed access
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse lines of delimited text into objects keyed by `fields`.  Rows with the
+ * wrong number of values are still returned (padded or truncated); they are
+ * reported through `warn` as one summary message per table.
+ * @param {string[]} lines
+ * @param {string[]} fields
+ * @param {(msg: string) => void} warn
+ * @param {string} label  used in warnings
+ * @returns {Record<string, string>[]}
+ */
+function rowsToObjects(lines, fields, warn, label) {
+  let ragged = 0;
+  let firstBad = 0;
+  const out = lines.map((line, i) => {
+    const vals = line.split('|');
+    if (vals.length !== fields.length) {
+      if (!ragged) firstBad = i + 1;
+      ragged++;
+    }
+    /** @type {Record<string, string>} */
+    const obj = {};
+    fields.forEach((f, j) => { obj[f] = vals[j] ?? ''; });
+    return obj;
+  });
+  if (ragged) {
+    warn(`${label}: ${ragged} of ${lines.length} rows do not have ${fields.length} values (first: row ${firstBad})`);
+  }
+  return out;
+}
+
+class HmtRelease {
+  /** @param {string} text  Full text of a CEX release. */
+  constructor(text) {
+    const { blocks, warnings } = splitBlocks(text);
+    /** @type {Block[]} */
+    this.blocks = blocks;
+    /** @type {string[]} */
+    this._warnings = [...warnings];
+    /** @type {Map<string, any>} */
+    this._cache = new Map();
+  }
+
+  /** @param {string} msg */
+  _warn(msg) { if (!this._warnings.includes(msg)) this._warnings.push(msg); }
+
+  /**
+   * @template T
+   * @param {string} key
+   * @param {() => T} compute
+   * @returns {T}
+   */
+  _memo(key, compute) {
+    if (!this._cache.has(key)) this._cache.set(key, compute());
+    return this._cache.get(key);
+  }
+
+  /** Block types actually present, in order of first appearance. */
+  blockTypes() {
+    return [...new Set(this.blocks.map(b => b.type))];
+  }
+
+  /**
+   * Data lines of all blocks of one type, composited into a single array.
+   * For types with one fixed header line (citecollections, citeproperties,
+   * datamodels, ctscatalog) the first line of each repeated block is treated
+   * as its header and dropped, so the result has a single header line at the
+   * start.  For `citedata` and
+   * `citerelationset` the composite is a plain concatenation; use `citeData()`
+   * or `relationSets()` to get the per-block structure.
+   * @param {string} type
+   * @returns {string[]}
+   */
+  getBlock(type) {
+    return this._memo('block:' + type, () => {
+      const same = this.blocks.filter(b => b.type === type);
+      if (!FIXED_HEADER_TYPES.has(type)) return same.flatMap(b => b.lines);
+      /** @type {string[]} */
+      const out = [];
+      for (const b of same) {
+        if (out.length === 0) { out.push(...b.lines); continue; }
+        // Later blocks repeat the header line; drop it.
+        if (b.lines[0] !== out[0]) {
+          this._warn(`${type} (line ${b.startLine}): header "${b.lines[0]}" differs from first header "${out[0]}"`);
+        }
+        out.push(...b.lines.slice(1));
+      }
+      return out;
+    });
+  }
+
+  /** The CEX version string, or null if absent. */
+  get cexVersion() {
+    const lines = this.getBlock('cexversion');
+    if (this.blocks.filter(b => b.type === 'cexversion').length > 1) {
+      this._warn('more than one #!cexversion block');
+    }
+    return lines.length ? lines[0].trim() : null;
+  }
+
+  /**
+   * Library metadata from the `#!citelibrary` block.
+   * @returns {{name: string, urn: string, license: string,
+   *            namespaces: {abbreviation: string, uri: string}[]}}
+   */
+  get library() {
+    return this._memo('library', () => {
+      if (this.blocks.filter(b => b.type === 'citelibrary').length > 1) {
+        this._warn('more than one #!citelibrary block');
+      }
+      const lib = { name: '', urn: '', license: '', namespaces: /** @type {{abbreviation: string, uri: string}[]} */ ([]) };
+      for (const line of this.getBlock('citelibrary')) {
+        const [key, ...rest] = line.split('|');
+        if (key === 'namespace') {
+          if (rest.length !== 2) this._warn(`citelibrary: malformed namespace line "${line}"`);
+          lib.namespaces.push({ abbreviation: rest[0] ?? '', uri: rest[1] ?? '' });
+        } else if (key === 'name' || key === 'urn' || key === 'license') {
+          lib[key] = rest.join('|');
+        } else {
+          this._warn(`citelibrary: unrecognized key "${key}"`);
+        }
+      }
+      return lib;
+    });
+  }
+
+  /** @returns {{urn: string, description: string, labellingProperty: string, orderingProperty: string, license: string}[]} */
+  collections() {
+    return this._memo('collections', () => {
+      const [, ...rows] = this.getBlock('citecollections');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'description', 'labellingProperty', 'orderingProperty', 'license'],
+        m => this._warn(m), 'citecollections'));
+    });
+  }
+
+  /** @returns {{urn: string, label: string, type: string, authorityList: string}[]} */
+  properties() {
+    return this._memo('properties', () => {
+      const [, ...rows] = this.getBlock('citeproperties');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'label', 'type', 'authorityList'], m => this._warn(m), 'citeproperties'));
+    });
+  }
+
+  /** @returns {{collection: string, model: string, label: string, description: string}[]} */
+  dataModels() {
+    return this._memo('datamodels', () => {
+      const [, ...rows] = this.getBlock('datamodels');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['collection', 'model', 'label', 'description'], m => this._warn(m), 'datamodels'));
+    });
+  }
+
+  /** @returns {Record<string, string>[]}  Keys: urn, citationScheme, groupName, workTitle, versionLabel, exemplarLabel, online, language. */
+  ctsCatalog() {
+    return this._memo('ctscatalog', () => {
+      const [, ...rows] = this.getBlock('ctscatalog');
+      return rowsToObjects(rows,
+        ['urn', 'citationScheme', 'groupName', 'workTitle', 'versionLabel', 'exemplarLabel', 'online', 'language'],
+        m => this._warn(m), 'ctscatalog');
+    });
+  }
+
+  /**
+   * Passages of all `#!ctsdata` blocks.  Each line is split at its first `|`.
+   * @returns {{urn: string, text: string}[]}
+   */
+  ctsData() {
+    return this._memo('ctsdata', () => {
+      /** @type {{urn: string, text: string}[]} */
+      const out = [];
+      for (const line of this.getBlock('ctsdata')) {
+        const i = line.indexOf('|');
+        if (i < 0) { this._warn(`ctsdata: line without "|": "${line.slice(0, 60)}"`); continue; }
+        if (line.indexOf('|', i + 1) >= 0) this._warn(`ctsdata: extra "|" in passage ${line.slice(0, i)}`);
+        out.push({ urn: line.slice(0, i), text: line.slice(i + 1) });
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Tables of all `#!citedata` blocks.  Each block has its own header.
+   * `collections` lists the distinct collection URNs of the rows' `urn` values.
+   * @returns {{header: string[], rows: Record<string, string>[], collections: string[], startLine: number}[]}
+   */
+  citeData() {
+    return this._memo('citedata', () => this.blocks.filter(b => b.type === 'citedata').map(b => {
+      const header = (b.lines[0] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(1), header, m => this._warn(m), `citedata (line ${b.startLine})`);
+      const cols = new Set();
+      const urnField = header.find(h => h.toLowerCase() === 'urn');
+      if (urnField !== undefined) {
+        for (const r of rows) {
+          const c = collectionOfObject(r[urnField]);
+          if (c) cols.add(c);
+        }
+      } else if (b.lines.length) {
+        this._warn(`citedata (line ${b.startLine}): no "urn" column, collection unknown`);
+      }
+      return { header, rows, collections: [...cols], startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Relation sets, one per `#!citerelationset` block: `urn` and `label`
+   * key-value lines, then a header line, then rows.
+   * @returns {{urn: string, label: string, header: string[], rows: Record<string, string>[], startLine: number}[]}
+   */
+  relationSets() {
+    return this._memo('relationsets', () => this.blocks.filter(b => b.type === 'citerelationset').map(b => {
+      let urn = '', label = '';
+      let i = 0;
+      for (; i < b.lines.length; i++) {
+        const [key, ...rest] = b.lines[i].split('|');
+        if (key === 'urn' && rest.length === 1 && !urn) urn = rest[0];
+        else if (key === 'label' && !label) label = rest.join('|');
+        else break;
+      }
+      if (!urn) this._warn(`citerelationset (line ${b.startLine}): no urn`);
+      const header = (b.lines[i] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(i + 1), header, m => this._warn(m), `citerelationset ${urn || b.startLine}`);
+      return { urn, label, header, rows, startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Check the release for consistency.  Never throws; returns warnings
+   * (including any irregularities noticed while parsing), empty if none.
+   * @returns {string[]}
+   */
+  validate() {
+    // Run every typed parser so their warnings are collected.
+    this.cexVersion; this.library; this.ctsData();
+    const collections = this.collections();
+    const properties = this.properties();
+    const models = this.dataModels();
+    const catalog = this.ctsCatalog();
+    const citeData = this.citeData();
+    const relSets = this.relationSets();
+    const warn = (/** @type {string} */ m) => this._warn(m);
+
+    const collUrns = new Set(collections.map(c => c.urn));
+    const propUrns = new Set(properties.map(p => p.urn));
+    const propLower = new Set(properties.map(p => p.urn.toLowerCase()));
+
+    for (const c of collections) {
+      if (!isCollectionUrn(c.urn)) warn(`citecollections: "${c.urn}" is not a collection-level CITE2 URN`);
+      if (!propUrns.has(c.labellingProperty)) {
+        warn(`citecollections: labelling property "${c.labellingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+      if (c.orderingProperty && !propUrns.has(c.orderingProperty)) {
+        warn(`citecollections: ordering property "${c.orderingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+    }
+    for (const p of properties) {
+      const c = collectionOfProperty(p.urn);
+      if (!c) warn(`citeproperties: "${p.urn}" is not a property-level CITE2 URN`);
+      else if (!collUrns.has(c)) warn(`citeproperties: collection ${c} of property ${p.urn} is not documented in citecollections`);
+    }
+    for (const t of citeData) {
+      for (const c of t.collections) {
+        if (!collUrns.has(c)) warn(`citedata (line ${t.startLine}): collection ${c} is not documented in citecollections`);
+        const undocumented = t.header.filter(name => !propUrns.has(propertyUrn(c, name)))
+          .map(name => propLower.has(propertyUrn(c, name).toLowerCase()) ? `${name} (documented with different capitalization)` : name);
+        if (undocumented.length) {
+          warn(`citedata (line ${t.startLine}): ${undocumented.length} of ${t.header.length} properties of ${c} not documented in citeproperties: ${undocumented.join(', ')}`);
+        }
+      }
+    }
+    for (const m of models) {
+      if (!collUrns.has(m.collection) && !relSets.some(r => r.urn === m.collection)) {
+        warn(`datamodels: ${m.collection} is neither a documented collection nor a relation set`);
+      }
+    }
+    const modelled = new Set(models.map(m => m.collection));
+    for (const r of relSets) {
+      if (r.urn && !modelled.has(r.urn)) warn(`citerelationset: ${r.urn} has no entry in datamodels`);
+    }
+    const versions = new Set(catalog.map(c => c.urn));
+    const missing = new Set();
+    for (const p of this.ctsData()) {
+      const w = ctsWorkOf(p.urn);
+      const v = ctsVersionOf(p.urn);
+      if (!(w && versions.has(w)) && !(v && versions.has(v))) missing.add(w ?? p.urn);
+    }
+    for (const v of missing) warn(`ctsdata: no ctscatalog entry for version ${v}`);
+
+    return [...this._warnings];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+/** Parse release text. */
+function parseRelease(text) {
+  return new HmtRelease(text);
+}
+
+/**
+ * Fetch and parse a release.  Works when the page is served over http(s);
+ * browsers block fetch from file:// pages, where apps should instead use
+ * `readReleaseFile` with a file picker or drop target.
+ * @param {string} [url]
+ */
+async function fetchRelease(url = DEFAULT_RELEASE_URL) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Could not load ${url}: HTTP ${resp.status}`);
+  return parseRelease(await resp.text());
+}
+
+/** Parse a release from a `File`/`Blob` (file picker or drag-and-drop). */
+async function readReleaseFile(file) {
+  return parseRelease(await file.text());
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Shared lookup of CTS passage text in a release.  Used by several apps.
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/**
+ * Passages of one text (a version or exemplar), in the order of the release.
+ * @typedef {Object} TextIndex
+ * @property {string} urn                     Work-component URN, ending in ":".
+ * @property {string[]} refs                  Passage references, in order.
+ * @property {string[]} texts                 Passage text, parallel to `refs`.
+ * @property {Map<string, number>} pos        Reference -> position in `refs`.
+ */
+
+/** Preferred order of exemplar kinds when listing the texts of a version. */
+const KIND_ORDER = ['normalized', 'diplomatic'];
+
+/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
+function exemplarName(workUrn) {
+  const parts = workUrn.split(':')[3].split('.');
+  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+}
+
+/**
+ * Index every text in the release by work-component URN.  The order of
+ * passages in the release is the order of the text (references like
+ * `1.title` or `6.386del` do not sort numerically).
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, TextIndex>}
+ */
+function buildTextIndex(release) {
+  /** @type {Map<string, TextIndex>} */
+  const map = new Map();
+  for (const { urn, text } of release.ctsData()) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+    if (!m) continue;
+    let t = map.get(m[1]);
+    if (!t) { t = { urn: m[1], refs: [], texts: [], pos: new Map() }; map.set(m[1], t); }
+    if (!t.pos.has(m[2])) t.pos.set(m[2], t.refs.length);
+    t.refs.push(m[2]);
+    t.texts.push(text);
+  }
+  return map;
+}
+
+/** @type {WeakMap<Map<string, TextIndex>, Map<string, {urn: string, kind: string}[]>>} */
+const versionTexts = new WeakMap();
+
+/**
+ * The texts (exemplars, or the version itself) available for a version URN,
+ * `normalized` first.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} versionUrn  e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`
+ * @returns {{urn: string, kind: string}[]}
+ */
+function textsOfVersion(textIndex, versionUrn) {
+  let byVersion = versionTexts.get(textIndex);
+  if (!byVersion) {
+    byVersion = new Map();
+    for (const key of textIndex.keys()) {
+      const v = ctsVersionOf(key);
+      if (!v) continue;
+      const list = byVersion.get(v) ?? [];
+      list.push({ urn: key, kind: exemplarName(key) });
+      byVersion.set(v, list);
+    }
+    const rank = (/** @type {string} */ k) => KIND_ORDER.indexOf(k) + 1 || 99;
+    for (const list of byVersion.values()) list.sort((a, b) => rank(a.kind) - rank(b.kind));
+    versionTexts.set(textIndex, byVersion);
+  }
+  return byVersion.get(versionUrn) ?? [];
+}
+
+/**
+ * Text of a passage, from the exemplar of the requested kind when the version
+ * has one (otherwise the first available).  A passage with its own text gives
+ * one part with an empty `part` name; a scholion, whose text is stored as
+ * `<ref>.lemma` and `<ref>.comment`, gives those parts.  Nothing found gives
+ * no parts.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} urn   Passage URN at version level, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} kind  `diplomatic` or `normalized`.
+ * @returns {{parts: {part: string, text: string}[]}}
+ */
+function passageText(textIndex, urn, kind) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+  if (!m) return { parts: [] };
+  const version = ctsVersionOf(m[1]);
+  const texts = version ? textsOfVersion(textIndex, version) : [];
+  const pick = texts.find(t => t.kind === kind) ?? texts[0];
+  const t = pick ? textIndex.get(pick.urn) : undefined;
+  if (!t) return { parts: [] };
+  const direct = t.pos.get(m[2]);
+  if (direct !== undefined) return { parts: [{ part: '', text: t.texts[direct] }] };
+  /** @type {{part: string, text: string}[]} */
+  const parts = [];
+  for (const part of ['lemma', 'comment']) {
+    const i = t.pos.get(m[2] + '.' + part);
+    if (i !== undefined) parts.push({ part, text: t.texts[i] });
+  }
+  return { parts };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Digital scholarly edition (DSE) index: the relation set that links text
+ * passages to regions of interest (ROI) on manuscript images.
+ * No DOM access.
+ */
+
+/** Relation set linking passages, image regions, and manuscript surfaces. */
+const DSE_URN = 'urn:cite2:hmt:hmtdse.v1:all';
+
+/**
+ * @typedef {Object} Roi
+ * @property {number} x  Left edge, as a fraction (0–1) of the image width.
+ * @property {number} y  Top edge, as a fraction of the image height.
+ * @property {number} w  Width, as a fraction of the image width.
+ * @property {number} h  Height, as a fraction of the image height.
+ */
+
+/**
+ * Parse `x,y,w,h` (fractions of the image size).  Whitespace around values
+ * is tolerated.  Returns null if there are not four numbers, or the region is
+ * empty or lies outside the image.  A region that sticks out past the right or
+ * bottom edge by up to 0.02 of the image size (rounding in the source data,
+ * e.g. x+w = 1.004) is clipped to the image.
+ * @param {string} text
+ * @returns {Roi | null}
+ */
+function parseRoi(text) {
+  const parts = text.split(',').map(s => s.trim());
+  if (parts.length !== 4 || parts.some(p => !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(p))) return null;
+  const [x, y, w, h] = parts.map(Number);
+  const eps = 0.02;
+  if (x < 0 || y < 0 || !(w > 0) || !(h > 0) || x + w > 1 + eps || y + h > 1 + eps) return null;
+  return { x, y, w: Math.min(w, 1 - x), h: Math.min(h, 1 - y) };
+}
+
+/**
+ * Split an `imageroi` value such as
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013@0.0611,0.2252,0.4675,0.0901`.
+ * @param {string} value
+ * @returns {{image: string, roi: Roi} | null}  Null if there is no usable region.
+ */
+function parseImageRoi(value) {
+  const at = value.indexOf('@');
+  if (at < 0) return null;
+  const roi = parseRoi(value.slice(at + 1));
+  const image = value.slice(0, at).trim();
+  return roi && image ? { image, roi } : null;
+}
+
+/**
+ * Regions of the DSE relation set, grouped by image.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{byImage: Map<string, {passage: string, roi: Roi}[]>, rows: number, skipped: number, found: boolean}}
+ *   `skipped` counts rows without a usable region; `found` is false if the
+ *   release has no such relation set.
+ */
+function indexDse(release) {
+  /** @type {Map<string, {passage: string, roi: Roi}[]>} */
+  const byImage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { byImage, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    if (!parsed || !row.passage) { skipped++; continue; }
+    const list = byImage.get(parsed.image) ?? [];
+    list.push({ passage: row.passage, roi: parsed.roi });
+    byImage.set(parsed.image, list);
+  }
+  return { byImage, rows: set.rows.length, skipped, found: true };
+}
+
+/** @typedef {'iliad' | 'scholia' | 'other'} PassageKind */
+
+/**
+ * Kind of text a passage belongs to: the Iliad (tlg0012.tlg001), scholia
+ * (tlg5026), or anything else.
+ * @param {string} urn
+ * @returns {PassageKind}
+ */
+function passageKind(urn) {
+  const m = /^urn:cts:[^:]+:([^:.]+)\.([^:.]+)/.exec(urn);
+  if (!m) return 'other';
+  if (m[1] === 'tlg0012' && m[2] === 'tlg001') return 'iliad';
+  if (m[1] === 'tlg5026') return 'scholia';
+  return 'other';
+}
+
+const SCHOLIA_ZONES = {
+  msA: 'main', msAint: 'interior', msAext: 'exterior', msAextra: 'extra',
+  msAil: 'interlinear', msAim: 'intermarginal', msAimLater: 'later intermarginal', msAmeta: 'meta',
+};
+
+/**
+ * Short label for a passage: `Iliad 5.506`, `Scholion 1.28 (interior)`,
+ * otherwise the work title from the CTS catalog when known.
+ * @param {string} urn
+ * @param {Map<string, string>} [titles]  Version URN -> work title, from the CTS catalog.
+ */
+function passageLabel(urn, titles) {
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return urn;
+  const kind = passageKind(urn);
+  if (kind === 'iliad') return `Iliad ${m[2]}`;
+  if (kind === 'scholia') {
+    const zone = /** @type {Record<string, string>} */ (SCHOLIA_ZONES)[m[1].split('.')[1]];
+    return `Scholion ${m[2]}${zone ? ` (${zone})` : ''}`;
+  }
+  const version = `urn:cts:${urn.split(':')[2]}:${m[1].split('.').slice(0, 3).join('.')}:`;
+  return `${titles?.get(version) ?? m[1]} ${m[2]}`;
+}
+
+/**
+ * Work titles by version URN, from the CTS catalog.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, string>}
+ */
+function catalogTitles(release) {
+  return new Map(release.ctsCatalog().map(c => [c.urn, c.workTitle]));
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the images app: the image collections of a release, their items,
+ * where the pictures are served, paging, and the location hash.
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** Data model of image collections. */
+const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
+
+/**
+ * Base of the HMT IIIF image server.  The release lists images by CITE2 URN
+ * only, so their location follows the server's convention:
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013` is the image
+ * `<base>hmt/vaimg/2017a/VA012RN_0013.tif`.  (Verified for the `hmt` namespace
+ * from the Venetus A manifest; the other namespaces assume the same layout.)
+ */
+const IMAGE_SERVICE_BASE =
+  'http://www.homermultitext.org/iipsrv?IIIF=/project/homer/pyramidal/deepzoom/';
+
+/**
+ * @typedef {Object} ImageItem
+ * @property {string} urn      Image URN.
+ * @property {string} id       Object part of the URN, e.g. `VA012RN_0013`.
+ * @property {string} caption
+ * @property {string} rights
+ * @property {string} label    Short label for a grid cell, e.g. `folio 12, recto`.
+ */
+
+/**
+ * @typedef {Object} ImageCollection
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:vaimg.2017a:`.
+ * @property {string} label
+ * @property {string} license
+ * @property {ImageItem[]} items  In the order of the release.
+ */
+
+/**
+ * Short label for an image: the part of its caption that says which page it
+ * is (`folio 12, recto`, `front cover`, `page 7`), else the whole caption's
+ * tail, else the id.
+ * @param {string} caption
+ * @param {string} id
+ */
+function cellLabel(caption, id) {
+  const m = /\b(?:bifolio|folio|page|front|inside|back|rear|spine|cover|fly)\b.*$/i.exec(caption);
+  const s = (m ? m[0] : '').replace(/[\s.]+$/, '').trim();
+  return s && s.length <= 48 ? s : id;
+}
+
+/**
+ * Every collection documented in `datamodels` as following the image model,
+ * with its items, ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {ImageCollection[]}
+ */
+function imageCollections(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === IMAGE_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, ImageCollection>} */
+  const out = new Map();
+  for (const urn of wanted) {
+    const c = info.get(urn);
+    out.set(urn, { urn, label: c?.description || urn, license: c?.license || '', items: [] });
+  }
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const coll = out.get(collectionOfObject(urn) ?? '');
+      if (!coll) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const caption = row.caption ?? '';
+      coll.items.push({ urn, id, caption, rights: row.rights ?? '', label: cellLabel(caption, id) });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * IIIF Image API base URL of an image.
+ * @param {string} imageUrn  e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`
+ * @param {string} [base]
+ * @returns {string | null}
+ */
+function imageService(imageUrn, base = IMAGE_SERVICE_BASE) {
+  const m = /^urn:cite2:([^:]+):([^:.]+)\.([^:]+):([^:]+)$/.exec(imageUrn);
+  return m ? `${base}${m[1]}/${m[2]}/${m[3]}/${m[4]}.tif` : null;
+}
+
+/**
+ * Width and height from an IIIF Image API `info.json` (any version).
+ * @param {any} info
+ * @returns {{width: number, height: number} | null}
+ */
+function parseInfo(info) {
+  const width = Number(info?.width), height = Number(info?.height);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/**
+ * One page of a list.  Out-of-range pages are clamped.
+ * @param {number} total
+ * @param {number} pageSize
+ * @param {number} page  1-based
+ * @returns {{page: number, pages: number, start: number, end: number}}  `start`..`end` is a half-open index range.
+ */
+function paginate(total, pageSize, page) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages);
+  const start = (p - 1) * pageSize;
+  return { page: p, pages, start, end: Math.min(total, start + pageSize) };
+}
+
+/**
+ * Location hash for a collection page or one image.
+ * @param {{urn: string, page?: number}} where
+ */
+function formatHash(where) {
+  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
+  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+}
+
+/**
+ * Read a location hash written by `formatHash`.
+ * @param {string} hash
+ * @returns {{urn: string, page: number} | null}
+ */
+function parseHash(hash) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const urn = params.get('urn');
+  if (!urn || !/^urn:cite2:/.test(urn)) return null;
+  const page = parseInt(params.get('page') ?? '', 10);
+  return { urn, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the codices app: the codices (manuscripts) of a release, their
+ * pages, and for each page the image and indexed text regions given by the
+ * DSE records.  Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/** Data model of codices (collections of pages). */
+const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
+
+/**
+ * @typedef {Object} CodexPage
+ * @property {string} urn       Page (surface) URN, e.g. `urn:cite2:hmt:msA.v1:12r`.
+ * @property {string} id        Object part of the URN, e.g. `12r`.
+ * @property {string} label     Label from the release.
+ * @property {string} short     Short label for a menu, e.g. `folio 12, recto`.
+ * @property {number} sequence  Position in the codex (the release's `sequence`), else order of appearance.
+ * @property {string} image     Image URN the catalog gives for the page, or "".
+ */
+
+/**
+ * @typedef {Object} Codex
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:msA.v1:`.
+ * @property {string} label
+ * @property {CodexPage[]} pages  In codex order.
+ */
+
+/**
+ * Every collection documented as following the codex model, with its pages,
+ * ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Codex[]}
+ */
+function codices(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === CODEX_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, Codex>} */
+  const out = new Map();
+  for (const urn of wanted) out.set(urn, { urn, label: info.get(urn)?.description || urn, pages: [] });
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const codex = out.get(collectionOfObject(urn) ?? '');
+      if (!codex) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const label = row.label ?? '';
+      const seq = parseFloat(row.sequence ?? '');
+      codex.pages.push({
+        urn, id, label, short: cellLabel(label, id),
+        sequence: Number.isFinite(seq) ? seq : codex.pages.length,
+        image: (row.image ?? '').trim(),
+      });
+    }
+  }
+  for (const c of out.values()) c.pages.sort((a, b) => a.sequence - b.sequence);   // stable: ties keep release order
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * @typedef {Object} PageRegion
+ * @property {string} passage  Passage URN as in the DSE record.
+ * @property {string} image    Image URN of the record.
+ * @property {import('./dse.js').Roi} roi
+ */
+
+/**
+ * Indexed regions of the DSE records, by surface (page) URN.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{bySurface: Map<string, PageRegion[]>, rows: number, skipped: number, found: boolean}}
+ *   `skipped` counts records without a usable surface, passage or region.
+ */
+function indexRegionsBySurface(release) {
+  /** @type {Map<string, PageRegion[]>} */
+  const bySurface = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { bySurface, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    const surface = (row.surface ?? '').trim();
+    const passage = (row.passage ?? '').trim();
+    if (!parsed || !surface || !passage) { skipped++; continue; }
+    const list = bySurface.get(surface) ?? [];
+    list.push({ passage, image: parsed.image, roi: parsed.roi });
+    bySurface.set(surface, list);
+  }
+  return { bySurface, rows: set.rows.length, skipped, found: true };
+}
+
+/**
+ * What to show for a page: the image of its DSE records and the regions on it.
+ * The DSE records decide the image: the one they name most often among the
+ * images of the catalog (a record may carry a different image from the
+ * catalog's page image, e.g. another scan).  Without usable records the
+ * catalog's image for the page is shown, without regions.
+ * @param {CodexPage} page
+ * @param {PageRegion[]} regions        DSE regions of the page
+ * @param {Set<string>} catalogImages   Image URNs of the image catalog
+ * @returns {{image: string, regions: PageRegion[], elsewhere: number, source: 'dse' | 'catalog' | 'none'}}
+ *   `elsewhere` counts regions on other images, which are not shown.
+ */
+function pageView(page, regions, catalogImages) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const r of regions) if (catalogImages.has(r.image)) counts.set(r.image, (counts.get(r.image) ?? 0) + 1);
+  let best = '';
+  for (const [image, n] of counts) if (n > (counts.get(best) ?? 0)) best = image;
+  if (best) {
+    const shown = regions.filter(r => r.image === best);
+    return { image: best, regions: shown, elsewhere: regions.length - shown.length, source: 'dse' };
+  }
+  return { image: page.image, regions: [], elsewhere: regions.length, source: page.image ? 'catalog' : 'none' };
+}
+
+/**
+ * Location hash for a page, and its reading.
+ * @param {string} pageUrn
+ */
+const formatPageHash = pageUrn => `#urn=${encodeURIComponent(pageUrn)}`;
+
+/** @param {string} hash @returns {string | null} */
+function parsePageHash(hash) {
+  const urn = new URLSearchParams(hash.replace(/^#/, '')).get('urn');
+  return urn && /^urn:cite2:/.test(urn) ? urn : null;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
+ * and scholia attached to passages through the `commentary` data model.
+ * Pure functions over an `HmtRelease`; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+/** Data model whose relation sets link scholia to the passages they comment on. */
+const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
+
+/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
+const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
+
+/** @typedef {import('./text-index.js').TextIndex} TextIndex */
+
+/**
+ * All Iliad versions listed in the CTS catalog, with the texts available for each.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, TextIndex>} textIndex
+ * @returns {{urn: string, label: string, online: boolean,
+ *            texts: {urn: string, kind: string}[]}[]}
+ */
+function iliadVersions(release, textIndex) {
+  return release.ctsCatalog()
+    .filter(c => ILIAD_VERSION.test(c.urn))
+    .map(c => {
+      const texts = [...textIndex.keys()]
+        .filter(k => ctsVersionOf(k) === c.urn)
+        .map(k => ({ urn: k, kind: exemplarName(k) }))
+        .sort((a, b) => (KIND_ORDER.indexOf(a.kind) + 1 || 99) - (KIND_ORDER.indexOf(b.kind) + 1 || 99));
+      return { urn: c.urn, label: c.versionLabel, online: c.online === 'true' && texts.length > 0, texts };
+    });
+}
+
+/**
+ * Short name of a version for tight places: its label without the parenthesis
+ * (`Venetus A (Marciana 454 = 822)` gives `Venetus A`).
+ * @param {string} label
+ */
+function shortVersionLabel(label) {
+  return label.replace(/\s*\([^)]*\)\s*$/, '').trim() || label;
+}
+
+/**
+ * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
+ * optionally a text of it (exemplar), and optionally a passage or range.
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
+ *   urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5           + a specific text
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:                         version only
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {string} param
+ * @returns {{version: ReturnType<typeof iliadVersions>[number], kind: string | null, ref: string, note?: string}
+ *          | {error: string}}
+ */
+function parseUrnParam(versions, param) {
+  const urn = (param || '').trim();
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return { error: `"${urn}" is not a CTS URN (expected something like urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10).` };
+  const parts = m[1].split('.');
+  if (parts.length < 3) return { error: `"${urn}" does not name a version of the Iliad: add the version, as in tlg0012.tlg001.msA.` };
+  const versionUrn = ctsVersionOf(urn);
+  const version = versions.find(v => v.urn === versionUrn);
+  if (!version) return { error: `${versionUrn} is not a version of the Iliad in this release.` };
+  if (!version.online) return { error: `${version.label} has no online text in this release.` };
+  /** @type {string | null} */ let kind = null;
+  /** @type {string | undefined} */ let note;
+  if (parts[3]) {
+    if (version.texts.some(t => t.kind === parts[3])) kind = parts[3];
+    else note = `${version.label} has no ${parts[3]} text; showing ${version.texts[0].kind} instead.`;
+  }
+  return { version, kind, ref: m[2].trim(), ...(note ? { note } : {}) };
+}
+
+// ---------------------------------------------------------------------------
+// Passage references and ranges
+// ---------------------------------------------------------------------------
+
+/**
+ * Split a reference such as `1.1-1.10` into its endpoints.  Tolerates
+ * subreferences (`15.339@word`), trailing dots, and Unicode dashes.
+ * @param {string} input
+ * @returns {string[]}  One endpoint for a single passage, two for a range.
+ */
+function splitReference(input) {
+  const s = input.replace(/[‐-―]/g, '-').replace(/@.*?(?=-\d+\.\d|$)/g, '').trim();
+  const i = s.indexOf('-');
+  const clean = (/** @type {string} */ x) => x.trim().replace(/\.$/, '');
+  return i < 0 ? [clean(s)] : [clean(s.slice(0, i)), clean(s.slice(i + 1))];
+}
+
+/**
+ * Ways to read the end of a range given its start.  `1.1-10` and
+ * `14.205-207` mean the same book; `14.75-6` abbreviates 14.76.
+ * @param {string} a start
+ * @param {string} b end as written
+ */
+function endCandidates(a, b) {
+  const dot = a.indexOf('.');
+  if (b.includes('.') || dot < 0) return [b];
+  const book = a.slice(0, dot);
+  const line = a.slice(dot + 1);
+  const out = [book + '.' + b];
+  if (/^\d+$/.test(b) && /^\d+$/.test(line) && b.length < line.length) {
+    out.push(book + '.' + line.slice(0, line.length - b.length) + b);
+  }
+  return out;
+}
+
+/** First and last position of the passages in a book, or null. */
+function bookBounds(text, book) {
+  const prefix = book + '.';
+  let first = -1, last = -1;
+  for (let i = 0; i < text.refs.length; i++) {
+    if (text.refs[i].startsWith(prefix)) { if (first < 0) first = i; last = i; }
+  }
+  return first < 0 ? null : { first, last };
+}
+
+/**
+ * Resolve a reference to positions in a text.  Both ends are inclusive and
+ * follow the order of the text.  Accepts `1.5`, `1.1-1.10`, `1.1-10`, and
+ * (unless `allowBook` is false) whole books: `1`, `1-3`.
+ * @param {TextIndex} text
+ * @param {string} input
+ * @param {{allowBook?: boolean}} [opts]
+ * @returns {{start: number, end: number} | {error: string}}
+ */
+function resolveRange(text, input, opts = {}) {
+  const allowBook = opts.allowBook !== false;
+  const [a, b] = splitReference(input);
+  if (!a) return { error: 'Enter a passage reference, for example 1.1-1.10.' };
+  const isBook = (/** @type {string} */ x) => /^\d+$/.test(x);
+
+  if (isBook(a)) {
+    if (!allowBook) return { error: `"${a}" is not a passage reference.` };
+    const first = bookBounds(text, a);
+    if (!first) return { error: `Book ${a} is not in this text.` };
+    if (b === undefined) return { start: first.first, end: first.last };
+    if (!isBook(b)) return { error: `A range of books needs a book number at both ends ("${a}-${b}").` };
+    const last = bookBounds(text, b);
+    if (!last) return { error: `Book ${b} is not in this text.` };
+    if (last.last < first.first) return { error: 'The range ends before it starts.' };
+    return { start: first.first, end: last.last };
+  }
+
+  const start = text.pos.get(a);
+  if (start === undefined) return { error: `Passage ${a} is not in this text.` };
+  if (b === undefined) return { start, end: start };
+  for (const cand of endCandidates(a, b)) {
+    const end = text.pos.get(cand);
+    if (end !== undefined && end >= start) return { start, end };
+  }
+  const missing = endCandidates(a, b).some(c => text.pos.has(c));
+  return { error: missing ? 'The range ends before it starts.' : `Passage ${endCandidates(a, b)[0]} is not in this text.` };
+}
+
+// ---------------------------------------------------------------------------
+// Commentary relations
+// ---------------------------------------------------------------------------
+
+/**
+ * Scholion–passage pairs from every relation set documented in `datamodels`
+ * as following the commentary model.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{scholion: string, target: string}[]}
+ */
+function commentaryPairs(release) {
+  const modelled = new Set(release.dataModels()
+    .filter(m => m.model === COMMENTARY_MODEL).map(m => m.collection));
+  /** @type {{scholion: string, target: string}[]} */
+  const pairs = [];
+  for (const rs of release.relationSets()) {
+    if (!modelled.has(rs.urn)) continue;
+    const [c1, c2] = rs.header;
+    for (const row of rs.rows) {
+      pairs.push({ scholion: row.scholion ?? row[c1] ?? '', target: row.iliad ?? row[c2] ?? '' });
+    }
+  }
+  return pairs;
+}
+
+/**
+ * Resolve the passages commented on in one Iliad version to positions in a
+ * text of that version.  Relations that cannot be resolved (for example
+ * `13.UNKNOWN`) are counted, not guessed at.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {string} versionUrn
+ * @param {TextIndex} text
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number}}
+ *          `version` of a span is the version its relation names.
+ */
+function commentarySpans(pairs, versionUrn, text) {
+  const spans = [];
+  let unresolved = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || ctsVersionOf(m[1]) !== versionUrn) continue;
+    const r = resolveRange(text, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    spans.push({ scholion: p.scholion, start: r.start, end: r.end, version: versionUrn });
+  }
+  return { spans, unresolved };
+}
+
+/**
+ * Like `commentarySpans`, but for scholia commenting on the same passages in
+ * *any* version of the Iliad.  A scholion indexed to `1.1-1.3` of Venetus B
+ * counts for 1.1, 1.2 and 1.3 of whichever text is shown.
+ *
+ * Each relation is resolved in the text of the version it names (a range
+ * follows the order of that text, and may run through passages the shown text
+ * lacks), and the passages found are then matched to the shown text by their
+ * references.  Relations that cannot be resolved in their own version, or that
+ * name a version with no text, are counted, not guessed at.  A relation whose
+ * passages are all missing from the shown text is neither a span nor unresolved.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {TextIndex} shown  the text being displayed
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number, relations: number}}
+ *          `relations` is how many Iliad relations were considered (`unresolved` of them could not be resolved).
+ */
+function commentarySpansAllVersions(pairs, versions, textIndex, shown) {
+  /** @type {Map<string, TextIndex | null>} */
+  const own = new Map(versions.map(v => [v.urn, v.texts.length ? (textIndex.get(v.texts[0].urn) ?? null) : null]));
+  const spans = [];
+  let unresolved = 0, relations = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || !ILIAD_VERSION.test(ctsVersionOf(m[1]))) continue;      // not a passage of the Iliad
+    relations++;
+    const version = ctsVersionOf(m[1]);
+    const vtext = own.get(version);
+    if (!vtext) { unresolved++; continue; }
+    const r = resolveRange(vtext, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    // positions in the shown text of the passages the relation covers, as runs of neighbours
+    let runStart = -1, runEnd = -1;
+    for (let i = r.start; i <= r.end; i++) {
+      const at = shown.pos.get(vtext.refs[i]);
+      if (at === undefined) continue;
+      if (runStart >= 0 && at === runEnd + 1) { runEnd = at; continue; }
+      if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+      runStart = runEnd = at;
+    }
+    if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+  }
+  return { spans, unresolved, relations };
+}
+
+/**
+ * The passages of a range with the distinct scholia commenting on each, and
+ * for each passage the same scholia grouped by the version of the Iliad their
+ * relation names (`byVersion`: version URN to scholia; spans without a
+ * version go under the empty string).
+ * @param {TextIndex} text
+ * @param {{start: number, end: number}} range
+ * @param {{scholion: string, start: number, end: number, version?: string}[]} spans
+ * @returns {{lines: {ref: string, text: string, scholia: string[], byVersion: Record<string, string[]>}[], scholiaTotal: number}}
+ */
+function annotateRange(text, range, spans) {
+  /** @type {Map<number, Set<string>>} */
+  const perLine = new Map();
+  /** @type {Map<number, Map<string, Set<string>>>} */
+  const perLineVersion = new Map();
+  const all = new Set();
+  for (const sp of spans) {
+    if (sp.end < range.start || sp.start > range.end) continue;
+    const to = Math.min(sp.end, range.end);
+    for (let i = Math.max(sp.start, range.start); i <= to; i++) {
+      let s = perLine.get(i);
+      if (!s) { s = new Set(); perLine.set(i, s); }
+      s.add(sp.scholion);
+      all.add(sp.scholion);
+      let vs = perLineVersion.get(i);
+      if (!vs) { vs = new Map(); perLineVersion.set(i, vs); }
+      const key = sp.version ?? '';
+      if (!vs.has(key)) vs.set(key, new Set());
+      vs.get(key)?.add(sp.scholion);
+    }
+  }
+  const lines = [];
+  for (let i = range.start; i <= range.end; i++) {
+    const byVersion = Object.fromEntries([...(perLineVersion.get(i) ?? [])].map(([v, set]) => [v, [...set]]));
+    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])], byVersion });
+  }
+  return { lines, scholiaTotal: all.size };
+}
+
+/**
+ * Lemma and comment of a scholion, taken from the same kind of text
+ * (normalized or diplomatic) as the Iliad being shown when that exists.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} scholionUrn  e.g. `urn:cts:greekLit:tlg5026.msAint.hmt:1.28`
+ * @param {string} kind         e.g. `normalized`
+ * @returns {{label: string, lemma: string, comment: string}}
+ */
+function scholionPassage(textIndex, scholionUrn, kind) {
+  const m = /^(urn:cts:[^:]+:)([^:]+):(.*)$/.exec(scholionUrn);
+  if (!m) return { label: scholionUrn, lemma: '', comment: '' };
+  const { parts } = passageText(textIndex, scholionUrn, kind);
+  const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
+  return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the proper names app: the indexes of personal, geographic and
+ * ethnic names of a release, the passages each name occurs in, where those
+ * passages are on the pages of the manuscripts, and where in a passage's text
+ * the names stand.
+ *
+ * The indexes say only *which* names occur in a passage, not where.  Names are
+ * written with a capital letter in the editions, so the capitalized words of a
+ * passage are the candidates; which word is which name is learned from the
+ * release (see `learnLexicon`).  A word that cannot be attributed is shown as
+ * a name of unknown identity, never guessed.
+ *
+ * Pure functions; no DOM access.  Convention for inlining (see
+ * scripts/build.js): imports are single-line.
+ */
+
+
+/**
+ * @typedef {'pers' | 'place' | 'ethnic'} NameKind
+ */
+
+/** The three kinds of names: index relation set, and the label of the menu. */
+const NAME_KINDS = /** @type {{id: NameKind, label: string, index: string}[]} */ ([
+  { id: 'pers', label: 'Personal names', index: 'urn:cite2:hmt:persnameindex.v1:all' },
+  { id: 'place', label: 'Geographic names', index: 'urn:cite2:hmt:placenameindex.v1:all' },
+  { id: 'ethnic', label: 'Ethnic names', index: 'urn:cite2:hmt:ethnicgroupindex.v1:all' },
+]);
+
+/**
+ * @typedef {Object} NameEntry
+ * @property {string} key          `kind:id`, e.g. `pers:pers1`.
+ * @property {NameKind} kind
+ * @property {string} id           Object part of the URN, e.g. `pers1`.
+ * @property {string} urn          URN in its collection, e.g. `urn:cite2:hmt:pers.v1:pers1`.
+ * @property {string} label
+ * @property {string} description
+ * @property {string[]} passages   Passages (version URN + reference) it occurs in, in index order, without duplicates.
+ */
+
+/**
+ * @typedef {Object} NameData
+ * @property {Map<string, NameEntry>} entries         By key.
+ * @property {Record<NameKind, NameEntry[]>} byKind   Ordered by label.
+ * @property {Map<string, {kind: NameKind, id: string}[]>} byPassage  Names of each passage.
+ * @property {number} unresolved   Index rows naming something that is not in the pers or place collection.
+ * @property {number} rows         Index rows read.
+ */
+
+/** Field of a row by header name, ignoring case. */
+const field = (/** @type {Record<string, string>} */ row, /** @type {string} */ name) => {
+  for (const k of Object.keys(row)) if (k.toLowerCase() === name) return (row[k] ?? '').trim();
+  return '';
+};
+
+/** Object id of a name URN as the indexes write it: `…:pers142`, `…:place.r1:place67`; null if it has none. */
+function nameId(urn) {
+  const m = /(?:^|:)((?:pers|place)\d+)\s*$/.exec(urn.trim().replace(/\s+$/, ''));
+  return m ? m[1] : null;
+}
+
+/**
+ * Passage reference of a text node as the indexes and the DSE name it: the
+ * `.lemma` and `.comment` parts of a scholion belong to the scholion, and a
+ * subreference (`@word`) is dropped.  Returns the version URN with the
+ * reference appended, e.g. `urn:cts:greekLit:tlg5026.msA.hmt:1.28`.
+ * @param {string} urn
+ * @returns {string | null}
+ */
+function passageKey(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn.trim());
+  if (!m || !m[2]) return null;
+  const version = ctsVersionOf(m[1]);
+  let ref = m[2].replace(/@.*$/, '');
+  if (/^urn:cts:[^:]+:tlg5026\./.test(version)) ref = ref.replace(/\.(lemma|comment)$/, '');
+  return `${version}${ref}`;
+}
+
+/**
+ * Read the name indexes.  Names are identified by object id (`pers142`,
+ * `place67`), since the indexes are not consistent about the version part of
+ * the collection URN (`pers.v1`, `place.r1`, none).  A redirect in the
+ * collection is followed.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {NameData}
+ */
+function readNames(release) {
+  /** @type {Map<string, {urn: string, label: string, description: string, redirect: string}>} */
+  const records = new Map();
+  for (const block of release.citeData()) {
+    if (!block.collections.some(c => /^urn:cite2:[^:]+:(pers|place)\.[^:]+:$/.test(c))) continue;
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField) continue;
+    for (const row of block.rows) {
+      const urn = (row[urnField] ?? '').trim();
+      const id = nameId(urn);
+      if (id) records.set(id, { urn, label: field(row, 'label'), description: field(row, 'description'), redirect: field(row, 'redirect') });
+    }
+  }
+  const resolve = (/** @type {string} */ id) => {
+    for (let i = 0; i < 5; i++) {
+      const r = records.get(id);
+      const to = r && r.redirect ? nameId(r.redirect) : null;
+      if (!to || to === id || !records.has(to)) break;
+      id = to;
+    }
+    return id;
+  };
+
+  /** @type {Map<string, NameEntry>} */
+  const entries = new Map();
+  /** @type {Map<string, {kind: NameKind, id: string}[]>} */
+  const byPassage = new Map();
+  let unresolved = 0, rows = 0;
+  for (const kind of NAME_KINDS) {
+    const set = release.relationSets().find(r => r.urn === kind.index);
+    if (!set) continue;
+    for (const row of set.rows) {
+      rows++;
+      const rawId = nameId(row[set.header[1]] ?? '');
+      const pk = passageKey(row[set.header[0]] ?? '');
+      if (!rawId || !pk || !records.has(rawId)) { unresolved++; continue; }
+      const id = resolve(rawId);
+      const rec = /** @type {NonNullable<ReturnType<typeof records.get>>} */ (records.get(id));
+      const key = `${kind.id}:${id}`;
+      let e = entries.get(key);
+      if (!e) {
+        e = { key, kind: kind.id, id, urn: rec.urn, label: rec.label || id, description: rec.description, passages: [] };
+        entries.set(key, e);
+      }
+      let names = byPassage.get(pk);
+      if (!names) { names = []; byPassage.set(pk, names); }
+      if (names.some(n => n.kind === kind.id && n.id === id)) continue;     // already indexed
+      names.push({ kind: kind.id, id });
+      e.passages.push(pk);
+    }
+  }
+  /** @type {Record<NameKind, NameEntry[]>} */
+  const byKind = { pers: [], place: [], ethnic: [] };
+  for (const e of entries.values()) byKind[e.kind].push(e);
+  for (const k of Object.keys(byKind)) byKind[/** @type {NameKind} */ (k)].sort((a, b) => a.label.localeCompare(b.label, 'en') || a.id.localeCompare(b.id, 'en', { numeric: true }));
+  return { entries, byKind, byPassage, unresolved, rows };
+}
+
+/**
+ * Menu labels for the names of one kind: the label and the number of
+ * passages, with the id added where two names have the same label.
+ * @param {NameEntry[]} items
+ * @returns {string[]}  parallel to `items`
+ */
+function menuLabels(items) {
+  /** @type {Map<string, number>} */
+  const seen = new Map();
+  for (const e of items) seen.set(e.label, (seen.get(e.label) ?? 0) + 1);
+  return items.map(e => `${e.label}${(seen.get(e.label) ?? 0) > 1 ? ` [${e.id}]` : ''} (${e.passages.length.toLocaleString('en')})`);
+}
+
+// --- locating the names in a text -------------------------------------------------
+
+/**
+ * @typedef {Object} Token
+ * @property {string} text   The word with its punctuation, as written.
+ * @property {string} core   Letters only, in lower case, e.g. `ἀχιλῆος`.
+ * @property {boolean} cap   Starts with a capital letter.
+ * @property {boolean} space True if whitespace follows it (to rebuild the text).
+ */
+
+/** Split a text into words.  @param {string} text @returns {Token[]} */
+function tokenize(text) {
+  /** @type {Token[]} */
+  const out = [];
+  const re = /(\S+)(\s*)/gu;
+  let m;
+  while ((m = re.exec(text))) {
+    const core = m[1].replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '');
+    const first = core.normalize('NFD').replace(/[̀-ͯ]/g, '').charAt(0);
+    out.push({ text: m[1], core: core.normalize('NFC').toLowerCase(), cap: first !== '' && first !== first.toLowerCase(), space: m[2].length > 0 });
+  }
+  return out;
+}
+
+/**
+ * A word list of the names: which entity each capitalized word stands for.
+ * `forms.get(core)` maps entity keys to how often the word was seen for them.
+ * @typedef {Map<string, Map<string, number>>} Lexicon
+ */
+
+/**
+ * Learn which words are which names from every passage of the release that is
+ * indexed: first from passages where one name and one capitalized word make
+ * the attribution certain; then from passages where, once the known words are
+ * taken out, one name and one capitalized word are left.
+ * @param {{text: string, names: string[]}[]} samples  Texts with the keys (`kind:id`) of the names indexed to them.
+ * @returns {Lexicon}
+ */
+function learnLexicon(samples) {
+  /** @type {Lexicon} */
+  const forms = new Map();
+  const add = (/** @type {string} */ core, /** @type {string} */ key) => {
+    let m = forms.get(core);
+    if (!m) { m = new Map(); forms.set(core, m); }
+    m.set(key, (m.get(key) ?? 0) + 1);
+  };
+  const toks = samples.map(s => tokenize(s.text));
+  samples.forEach((s, i) => {
+    if (s.names.length !== 1) return;
+    const caps = toks[i].filter(t => t.cap);
+    if (caps.length === 1) add(caps[0].core, s.names[0]);
+  });
+  // second round: elimination
+  samples.forEach((s, i) => {
+    if (s.names.length < 2) return;
+    const a = attribute(toks[i], s.names, forms);
+    if (a.leftoverTokens.length === 1 && a.leftoverNames.length === 1) add(toks[i][a.leftoverTokens[0]].core, a.leftoverNames[0]);
+  });
+  return forms;
+}
+
+/**
+ * Attribute the capitalized words of a passage to the names indexed to it.
+ * A word known (from the lexicon) for one of the passage's names belongs to
+ * the name seen most often with it.  Words left over are matched to names
+ * left over when exactly one of each remains.
+ * @param {Token[]} tokens
+ * @param {string[]} names    keys of the passage's names
+ * @param {Lexicon} lexicon
+ * @returns {{found: Map<number, string>, leftoverTokens: number[], leftoverNames: string[]}}
+ *   `found`: token index to name key.
+ */
+function attribute(tokens, names, lexicon) {
+  /** @type {Map<number, string>} */
+  const found = new Map();
+  const wanted = new Set(names);
+  tokens.forEach((t, i) => {
+    if (!t.cap) return;
+    const votes = lexicon.get(t.core);
+    if (!votes) return;
+    let best = '', n = 0;
+    for (const [key, c] of votes) if (wanted.has(key) && c > n) { best = key; n = c; }
+    if (best) found.set(i, best);
+  });
+  const usedNames = new Set(found.values());
+  const leftoverTokens = tokens.map((t, i) => (t.cap && !found.has(i) ? i : -1)).filter(i => i >= 0);
+  const leftoverNames = names.filter(k => !usedNames.has(k));
+  return { found, leftoverTokens, leftoverNames };
+}
+
+/**
+ * @typedef {Object} NameSpan
+ * @property {number} token       Token index.
+ * @property {NameKind} kind
+ * @property {string | null} key  Entity key if the word is certainly that name; null if the name is one of several and not known.
+ */
+
+/**
+ * The words of a text that are names.  Only passages with indexed names have
+ * any.  A capitalized word is attributed from the lexicon; if one word and one
+ * name are left over they belong together; if all the names left over are of
+ * one kind, the left-over words are names of that kind of unknown identity
+ * (`key` null); with a mixture of kinds, they cannot be told apart and are
+ * left unmarked.  The first word of a passage, which a capital letter does not
+ * make a name, is marked only when the lexicon says it is one or when it is
+ * the only candidate.
+ * @param {string} text
+ * @param {{kind: NameKind, id: string}[]} names  Names indexed to the passage.
+ * @param {Lexicon} lexicon
+ * @returns {{tokens: Token[], spans: Map<number, NameSpan>}}
+ */
+function locateNames(text, names, lexicon) {
+  const tokens = tokenize(text);
+  /** @type {Map<number, NameSpan>} */
+  const spans = new Map();
+  if (!names.length) return { tokens, spans };
+  const keys = names.map(n => `${n.kind}:${n.id}`);
+  const kindOf = new Map(names.map(n => [`${n.kind}:${n.id}`, n.kind]));
+  const a = attribute(tokens, keys, lexicon);
+  for (const [i, key] of a.found) spans.set(i, { token: i, kind: /** @type {NameKind} */ (kindOf.get(key)), key });
+  let tokensLeft = a.leftoverTokens;
+  if (tokensLeft.length > a.leftoverNames.length && tokensLeft[0] === 0) tokensLeft = tokensLeft.slice(1);   // capital of the first word only
+  if (a.leftoverNames.length && tokensLeft.length) {
+    if (tokensLeft.length === 1 && a.leftoverNames.length === 1) {
+      const key = a.leftoverNames[0];
+      spans.set(tokensLeft[0], { token: tokensLeft[0], kind: /** @type {NameKind} */ (kindOf.get(key)), key });
+    } else {
+      const kinds = new Set(a.leftoverNames.map(k => kindOf.get(k)));
+      if (kinds.size === 1) {
+        const kind = /** @type {NameKind} */ ([...kinds][0]);
+        for (const i of tokensLeft) spans.set(i, { token: i, kind, key: null });
+      }
+    }
+  }
+  return { tokens, spans };
+}
+
+// --- from passage to page ---------------------------------------------------------
+
+/**
+ * Pages (surfaces) of the passages, from the DSE records.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}}
+ *   `surfacesOf`: passage key to the pages it is on; `passagesOn`: page URN to
+ *   the passage keys on it, in order of the records, without duplicates.
+ */
+function indexPages(release) {
+  /** @type {Map<string, string[]>} */
+  const surfacesOf = new Map();
+  /** @type {Map<string, string[]>} */
+  const passagesOn = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { surfacesOf, passagesOn };
+  /** @type {Map<string, Set<string>>} */
+  const seenOn = new Map();
+  for (const row of set.rows) {
+    const key = passageKey(row.passage ?? '');
+    const surface = (row.surface ?? '').trim();
+    if (!key || !surface) continue;
+    const s = surfacesOf.get(key) ?? [];
+    if (!s.includes(surface)) s.push(surface);
+    surfacesOf.set(key, s);
+    let seen = seenOn.get(surface);
+    if (!seen) { seen = new Set(); seenOn.set(surface, seen); passagesOn.set(surface, []); }
+    if (!seen.has(key)) { seen.add(key); /** @type {string[]} */ (passagesOn.get(surface)).push(key); }
+  }
+  return { surfacesOf, passagesOn };
+}
+
+/**
+ * @typedef {'iliad' | 'scholia' | 'other'} Section
+ */
+
+/** Part of a page's text a passage belongs to. @param {string} key */
+function sectionOf(key) {
+  const m = /^urn:cts:[^:]+:([^:.]+)\.([^:.]+)/.exec(key);
+  if (!m) return /** @type {Section} */ ('other');
+  if (m[1] === 'tlg0012' && m[2] === 'tlg001') return /** @type {Section} */ ('iliad');
+  if (m[1] === 'tlg5026') return /** @type {Section} */ ('scholia');
+  return /** @type {Section} */ ('other');
+}
+
+/**
+ * Where the scholia of a page go among the Iliad lines of the page.  Each
+ * scholion stands under the first line of the page it comments on (a
+ * scholion on `1.13-1.16` appears once, under 1.13); scholia that comment on
+ * no line of the page are returned apart.
+ * @param {string[]} lineRefs   References of the Iliad lines on the page.
+ * @param {import('./text-index.js').TextIndex} shown  The text those lines belong to.
+ * @param {{scholion: string, start: number, end: number}[]} spans  Commentary relations as positions in `shown`.
+ * @param {string[]} pageScholia  Passage keys of the scholia on the page, in the order to keep.
+ * @returns {{byLine: Map<string, {key: string, from: string, to: string}[]>, loose: string[]}}
+ *   `from`..`to` are the references the scholion comments on.
+ */
+function attachScholia(lineRefs, shown, spans, pageScholia) {
+  const onPage = new Set(pageScholia);
+  /** @type {Map<string, {start: number, end: number}[]>} */
+  const spansOf = new Map();
+  for (const sp of spans) {
+    const key = passageKey(sp.scholion);
+    if (!key || !onPage.has(key)) continue;
+    const list = spansOf.get(key) ?? [];
+    list.push(sp);
+    spansOf.set(key, list);
+  }
+  /** @type {Map<number, string>} */
+  const lineAt = new Map();
+  for (const r of lineRefs) { const at = shown.pos.get(r); if (at !== undefined) lineAt.set(at, r); }
+  const positions = [...lineAt.keys()].sort((a, b) => a - b);
+  /** @type {Map<string, {key: string, from: string, to: string}[]>} */
+  const byLine = new Map();
+  /** @type {string[]} */
+  const loose = [];
+  for (const key of pageScholia) {
+    /** @type {{at: number, sp: {start: number, end: number}} | null} */
+    let best = null;
+    for (const sp of spansOf.get(key) ?? []) {
+      const at = positions.find(p => p >= sp.start && p <= sp.end);
+      if (at !== undefined && (!best || at < best.at)) best = { at, sp };
+    }
+    if (!best) { loose.push(key); continue; }
+    const ref = /** @type {string} */ (lineAt.get(best.at));
+    const list = byLine.get(ref) ?? [];
+    list.push({ key, from: shown.refs[best.sp.start], to: shown.refs[best.sp.end] });
+    byLine.set(ref, list);
+  }
+  return { byLine, loose };
+}
+
+/**
+ * Location hash for a name and a passage, and its reading.
+ * @param {{kind: string, id: string, passage?: string}} where
+ */
+function formatNameHash(where) {
+  const p = new URLSearchParams({ k: where.kind, i: where.id });
+  if (where.passage) p.set('p', where.passage);
+  return `#${p.toString()}`;
+}
+
+/** @param {string} hash @returns {{kind: NameKind, id: string, passage: string} | null} */
+function parseNameHash(hash) {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  const kind = p.get('k'), id = p.get('i');
+  if (!NAME_KINDS.some(k => k.id === kind) || !id) return null;
+  return { kind: /** @type {NameKind} */ (kind), id, passage: p.get('p') ?? '' };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Shared view of a manuscript page: the Iliad lines and scholia the DSE records
+ * put on it, each scholion under the Iliad line it comments on, as in
+ * `iliad-scholia.html`.  Used by the proper names and string search apps.
+ *
+ * The app decides what is *marked* in the text: it supplies `fillText` (writes
+ * the text of one passage into an element, with its marks) and `isHit` (does
+ * the passage contain what the user looked for).  Scholia and panels with a
+ * hit, and the chosen passage, are unfolded; the rest are rolled up.
+ *
+ * DOM code, for the browser.  Convention for inlining (see scripts/build.js):
+ * imports are single-line.
+ */
+
+
+
+
+
+/** Version URN of a passage key (version URN + reference). @param {string} pk */
+const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
+
+/** Reference part of a passage key. @param {string} pk */
+const refOf = pk => pk.slice(versionOf(pk).length);
+
+/**
+ * Position of a passage in its text, for ordering.
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @param {string} pk
+ */
+function positionIn(textIndex, pk) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(pk);
+  if (!m) return 1e9;
+  const t = textsOfVersion(textIndex, ctsVersionOf(m[1]))[0];
+  const tx = t && textIndex.get(t.urn);
+  if (!tx) return 1e9;
+  return tx.pos.get(m[2]) ?? tx.pos.get(m[2] + '.lemma') ?? 1e9;
+}
+
+/**
+ * Passage keys grouped by version of the text: Iliad first, then scholia, then
+ * the rest, each in text order.
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @param {string[]} keys
+ * @param {string[]} versionOrder  version URNs in catalog order
+ * @returns {{version: string, list: string[]}[]}
+ */
+function groupByVersion(textIndex, keys, versionOrder) {
+  /** @type {Map<string, string[]>} */
+  const by = new Map();
+  for (const pk of keys) {
+    const v = versionOf(pk);
+    const list = by.get(v);
+    if (list) list.push(pk); else by.set(v, [pk]);
+  }
+  const rank = { iliad: 0, scholia: 1, other: 2 };
+  const groups = [...by].map(([version, list]) => ({ version, list: list.sort((a, b) => positionIn(textIndex, a) - positionIn(textIndex, b)) }));
+  groups.sort((a, b) => rank[sectionOf(a.list[0])] - rank[sectionOf(b.list[0])]
+    || (versionOrder.indexOf(a.version) + 1 || 999) - (versionOrder.indexOf(b.version) + 1 || 999));
+  return groups;
+}
+
+/** @param {string} tag @param {string} [cls] @param {string} [text] */
+function pvEl(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
+
+/**
+ * @typedef {Object} PageData
+ * @property {any} release
+ * @property {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @property {Map<string, string>} versionLabels  Version URN to "Iliad — Venetus A".
+ * @property {Map<string, string>} pageLabels     Page URN to a readable label.
+ * @property {Map<string, string[]>} surfacesOf   Passage key to its pages.
+ * @property {Map<string, string[]>} passagesOn   Page URN to the passage keys on it.
+ */
+
+/**
+ * @typedef {Object} PageOptions
+ * @property {() => string} textKind                  `diplomatic` or `normalized`.
+ * @property {(box: HTMLElement, pk: string) => void} fillText   Write the text of a passage, marks included.
+ * @property {(pk: string) => boolean} isHit          The passage contains what was looked for.
+ * @property {string} hitLabel                         Said in the badges: "with “Achilles”".
+ * @property {string} hitNoun                          "name", "match": "Fold scholia without the name".
+ */
+
+/**
+ * A page view over the data of a release.
+ * @param {PageData} data
+ */
+function createPageView(data) {
+  const { release, textIndex, versionLabels, pageLabels, surfacesOf, passagesOn } = data;
+  /** @type {Map<string, any[]>} */ const spansCache = new Map();
+  /** @type {any} */ let pairs = null;
+  /** @type {any} */ let iVers = null;
+  /** @type {Map<string, string[]> | null} */ let targets = null;
+  /** @type {Map<string, string> | null} */ let titles = null;
+
+  const titlesOf = () => titles ?? (titles = catalogTitles(release));
+  const commentary = () => pairs ?? (pairs = commentaryPairs(release));
+  const iVersions = () => iVers ?? (iVers = iliadVersions(release, textIndex));
+
+  /** The text a version's scholia are positioned in. @param {string} version */
+  function shownText(version) {
+    const t = textsOfVersion(textIndex, version)[0];
+    return t ? textIndex.get(t.urn) : null;
+  }
+  /** Commentary relations as positions in the text of a version (computed once). @param {string} version */
+  function spansFor(version) {
+    let sp = spansCache.get(version);
+    if (!sp) {
+      const shown = shownText(version);
+      sp = shown ? commentarySpansAllVersions(commentary(), iVersions(), textIndex, shown).spans : [];
+      spansCache.set(version, sp);
+    }
+    return sp;
+  }
+  /** "Iliad 1.13-1.16": what a scholion is indexed to, for scholia not placed under a line. @param {string} pk */
+  function commentedOn(pk) {
+    if (!targets) {
+      targets = new Map();
+      for (const p of commentary()) {
+        const k = passageKey(p.scholion);
+        if (!k) continue;
+        const list = targets.get(k) ?? [];
+        const label = passageLabel(p.target, titlesOf());
+        if (!list.includes(label)) list.push(label);
+        targets.set(k, list);
+      }
+    }
+    return (targets.get(pk) ?? []).join(', ');
+  }
+
+  /**
+   * One scholion, folded unless it has a hit or is the chosen passage.
+   * @param {string} pk @param {string} current @param {string} on  range commented on, "" to look it up
+   * @param {PageOptions} o
+   */
+  function scholionEl(pk, current, on, o) {
+    const d = pvEl('details', 'scholion');
+    d.dataset.passage = pk;
+    const has = o.isHit(pk);
+    d.open = has || pk === current;
+    if (has) d.classList.add('has');
+    if (pk === current) d.classList.add('cur');
+    const sm = pvEl('summary');
+    sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
+    const target = on || commentedOn(pk);
+    if (target) sm.appendChild(pvEl('span', 'on', `on ${target}`));
+    const lemma = passageText(textIndex, pk, o.textKind()).parts.find(p => p.part === 'lemma');
+    if (lemma) { const pre = pvEl('span', 'pre greek', lemma.text.length > 60 ? lemma.text.slice(0, 60) + '…' : lemma.text); pre.lang = 'grc'; sm.appendChild(pre); }
+    if (has) sm.appendChild(pvEl('span', 'hasname', o.hitLabel));
+    d.appendChild(sm);
+    const body = pvEl('div', 'body greek');
+    o.fillText(body, pk);
+    d.appendChild(body);
+    return d;
+  }
+
+  /** A passage with no page: the passage alone. */
+  function renderLoose(box, pk, o) {
+    box.appendChild(pvEl('h2', '', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    box.appendChild(pvEl('p', 'sub', 'The DSE records do not place this passage on a page; here is the passage alone.'));
+    const t = pvEl('div', 'greek');
+    o.fillText(t, pk);
+    box.appendChild(t);
+  }
+
+  function renderPage(box, surface, current, surfaces, o) {
+    box.appendChild(pvEl('h2', '', pageLabels.get(surface) ?? surface));
+    const sub = pvEl('p', 'sub', surface);
+    if (surfaces.length > 1) {
+      sub.append(' · also on: ');
+      for (const s of surfaces.filter(x => x !== surface)) {
+        const b = pvEl('button', 'btn', pageLabels.get(s) ?? s);
+        b.addEventListener('click', () => { box.textContent = ''; renderPage(box, s, current, surfaces, o); });
+        sub.appendChild(b);
+      }
+    }
+    box.appendChild(sub);
+
+    const keys = (passagesOn.get(surface) ?? []).slice();
+    /** @type {Record<string, string[]>} */
+    const secs = { iliad: [], scholia: [], other: [] };
+    for (const pk of keys) secs[sectionOf(pk)].push(pk);
+    for (const s of Object.keys(secs)) secs[s].sort((a, b) => (versionOf(a) === versionOf(b) ? positionIn(textIndex, a) - positionIn(textIndex, b) : versionOf(a).localeCompare(versionOf(b))));
+
+    // Iliad lines, each followed by the scholia of the page that comment on it
+    /** @type {Map<string, string[]>} */
+    const iliadBy = new Map();
+    for (const pk of secs.iliad) { const v = versionOf(pk); if (!iliadBy.has(v)) iliadBy.set(v, []); /** @type {string[]} */ (iliadBy.get(v)).push(pk); }
+    let rest = secs.scholia.slice();
+    const nHas = secs.scholia.filter(o.isHit).length;
+    for (const [version, lines] of iliadBy) {
+      const shown = shownText(version);
+      const { byLine, loose } = shown ? attachScholia(lines.map(refOf), shown, spansFor(version), rest) : { byLine: new Map(), loose: rest };
+      rest = loose;
+      const label = iliadBy.size > 1 ? ` · ${(versionLabels.get(version) ?? version).replace(/^Iliad — /, '')}` : '';
+      box.appendChild(pvEl('h3', '', `Iliad${label} · ${pvPlural(lines.length, 'line', 'lines')}`));
+      for (const pk of lines) {
+        const row = pvEl('div', 'line');
+        row.dataset.passage = pk;
+        if (pk === current) row.classList.add('cur');
+        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        const t = pvEl('span', 'greek');
+        o.fillText(t, pk);
+        row.appendChild(t);
+        box.appendChild(row);
+        const attached = byLine.get(refOf(pk));
+        if (!attached) continue;
+        const panel = pvEl('div', 'panel');
+        for (const a of attached) panel.appendChild(scholionEl(a.key, current, a.from === a.to ? a.from : `${a.from}–${a.to}`, o));
+        const nOpen = attached.filter(a => o.isHit(a.key) || a.key === current).length;
+        const badge = pvEl('button', 'badge', `${pvPlural(attached.length, 'scholion', 'scholia')}${nOpen ? ` · ${nOpen} with ${o.hitLabel}` : ''}`);
+        badge.type = 'button';
+        if (nOpen) badge.classList.add('hot');
+        panel.hidden = !nOpen;
+        badge.setAttribute('aria-expanded', String(!panel.hidden));
+        badge.title = 'Show the scholia';
+        badge.addEventListener('click', () => { panel.hidden = !panel.hidden; badge.setAttribute('aria-expanded', String(!panel.hidden)); });
+        row.appendChild(badge);
+        box.appendChild(panel);
+      }
+    }
+
+    // scholia that comment on no line of this page
+    const hasLines = iliadBy.size > 0;
+    if (rest.length || (!hasLines && secs.scholia.length)) {
+      box.appendChild(pvEl('h3', '', `${hasLines ? 'Other scholia on this page' : 'Scholia'} · ${pvPlural(rest.length, 'scholion', 'scholia')}`));
+      for (const pk of rest) box.appendChild(scholionEl(pk, current, '', o));
+    }
+
+    if (secs.scholia.length) {
+      const fold = pvEl('button', 'btn', 'Unfold all scholia');
+      let all = false;
+      fold.addEventListener('click', () => {
+        all = !all;
+        for (const pn of box.querySelectorAll('.panel')) {
+          const open = all || !!pn.querySelector('details.scholion.has, details.scholion.cur');
+          /** @type {HTMLElement} */ (pn).hidden = !open;
+          const b = pn.previousElementSibling && pn.previousElementSibling.querySelector('.badge');
+          if (b) b.setAttribute('aria-expanded', String(open));
+        }
+        for (const d of box.querySelectorAll('details.scholion')) d.open = all || d.classList.contains('has') || d.classList.contains('cur');
+        fold.textContent = all ? `Fold scholia without the ${o.hitNoun}` : 'Unfold all scholia';
+      });
+      const top = pvEl('p', 'sub', `${pvPlural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with ${o.hitLabel}. ` : '. '));
+      top.appendChild(fold);
+      sub.after(top);
+    }
+
+    if (secs.other.length) {
+      box.appendChild(pvEl('h3', '', `Other text · ${pvPlural(secs.other.length, 'passage', 'passages')}`));
+      for (const pk of secs.other) {
+        const row = pvEl('div', 'line');
+        if (pk === current) row.classList.add('cur');
+        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        const t = pvEl('span', 'greek');
+        o.fillText(t, pk);
+        row.appendChild(t);
+        box.appendChild(row);
+      }
+    }
+    const cur = box.querySelector('.cur');
+    if (cur) cur.scrollIntoView({ block: 'center' });
+  }
+
+  return {
+    /**
+     * Show the page of a passage in `box` (or the passage alone if the DSE
+     * records give it no page).
+     * @param {HTMLElement} box @param {string} pk @param {PageOptions} o
+     */
+    show(box, pk, o) {
+      box.textContent = '';
+      const surfaces = surfacesOf.get(pk);
+      if (!surfaces) renderLoose(box, pk, o);
+      else renderPage(box, surfaces[0], pk, surfaces, o);
+    },
+  };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the string search app: Greek text compared without breathings,
+ * accents and other diacritics, case, or punctuation; a search over every
+ * passage of the texts of a release; and the position of a match in the text
+ * as written, so that it can be marked.  Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/**
+ * The text folded for comparison, with where each folded character stands in
+ * the original.  Letters lose their diacritics and case (`Ἀχιλῆος` becomes
+ * `αχιληοσ`; final sigma and lunate sigma become `σ`), runs of white space
+ * become one space, and everything else (punctuation, apostrophes, digits,
+ * brackets) is dropped.
+ * @param {string} text
+ * @returns {{folded: string, start: number[], end: number[]}}
+ *   `start[i]`..`end[i]` is the stretch of `text` the i-th folded character
+ *   comes from, including any combining marks that follow its letter.
+ */
+function foldWithMap(text) {
+  let folded = '';
+  /** @type {number[]} */ const start = [];
+  /** @type {number[]} */ const end = [];
+  let at = 0;
+  for (const cp of text) {
+    const next = at + cp.length;
+    const base = cp.normalize('NFD').replace(/\p{M}/gu, '');
+    if (base === '' && /\p{M}/u.test(cp)) {                    // a combining mark of the letter before it
+      if (end.length) end[end.length - 1] = next;
+    } else if (/\s/u.test(cp)) {
+      if (folded !== '' && !folded.endsWith(' ')) { folded += ' '; start.push(at); end.push(next); }
+    } else {
+      for (const ch of base) {
+        if (/\p{L}/u.test(ch)) {
+          folded += ch.toLowerCase().replace(/[ςϲ]/g, 'σ');
+          start.push(at); end.push(next);
+        }
+      }
+    }
+    at = next;
+  }
+  return { folded, start, end };
+}
+
+/** A text folded for comparison. @param {string} text */
+const fold = text => foldWithMap(text).folded.trim();
+
+/**
+ * The query as it is compared: folded, trimmed.
+ * @param {string} input
+ */
+function parseQuery(input) {
+  return fold(input).trim();
+}
+
+/** Fewest letters a query may have. */
+const MIN_QUERY = 2;
+
+/**
+ * Where a folded query occurs in a text: ranges of the text as written, not
+ * overlapping, in order.
+ * @param {string} text
+ * @param {string} query  already folded (see `parseQuery`)
+ * @returns {{start: number, end: number}[]}
+ */
+function findMatches(text, query) {
+  /** @type {{start: number, end: number}[]} */
+  const out = [];
+  if (!query) return out;
+  const { folded, start, end } = foldWithMap(text);
+  let from = 0;
+  for (;;) {
+    const i = folded.indexOf(query, from);
+    if (i < 0) break;
+    const last = i + query.length - 1;
+    out.push({ start: start[i], end: end[last] });
+    from = i + query.length;
+  }
+  return out;
+}
+
+/**
+ * @typedef {Object} SearchEntry
+ * @property {string} key   Passage key (version URN + reference).
+ * @property {{part: string, text: string, folded: string}[]} parts  One part, or a scholion's lemma and comment.
+ */
+
+/**
+ * @typedef {Object} SearchIndex
+ * @property {string} kind
+ * @property {SearchEntry[]} entries  All passages, version by version in text order.
+ * @property {Map<string, SearchEntry>} byKey
+ */
+
+/**
+ * Every passage of the release's texts, with its text folded, ready to search.
+ * Each version is read from the exemplar of the requested kind (diplomatic or
+ * normalized), or its first exemplar where it has none.
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @param {string} kind
+ * @returns {SearchIndex}
+ */
+function buildSearchIndex(textIndex, kind) {
+  /** @type {SearchEntry[]} */
+  const entries = [];
+  /** @type {Map<string, SearchEntry>} */
+  const byKey = new Map();
+  const versions = new Set([...textIndex.keys()].map(k => ctsVersionOf(k)).filter(Boolean));
+  for (const version of versions) {
+    const texts = textsOfVersion(textIndex, version);
+    const t = texts.find(x => x.kind === kind) ?? texts[0];
+    const tx = t && textIndex.get(t.urn);
+    if (!tx) continue;
+    const scholia = /^urn:cts:[^:]+:tlg5026\./.test(version);
+    tx.refs.forEach((ref, i) => {
+      const key = passageKey(`${version}${ref}`);
+      if (!key) return;
+      const m = scholia ? /\.(lemma|comment)$/.exec(ref) : null;
+      let e = byKey.get(key);
+      if (!e) { e = { key, parts: [] }; byKey.set(key, e); entries.push(e); }
+      const text = tx.texts[i];
+      e.parts.push({ part: m ? m[1] : '', text, folded: fold(text) });
+    });
+  }
+  return { kind, entries, byKey };
+}
+
+/** Does a passage contain the query in any of its parts? @param {SearchEntry | undefined} e @param {string} query */
+const entryMatches = (e, query) => !!e && !!query && e.parts.some(p => p.folded.includes(query));
+
+/**
+ * Passages that contain the query.
+ * @param {SearchIndex} index
+ * @param {string} query   folded (see `parseQuery`)
+ * @param {'all' | 'iliad' | 'scholia'} scope
+ * @returns {string[]}  passage keys, in order of the index
+ */
+function searchPassages(index, query, scope) {
+  if (query.length < MIN_QUERY) return [];
+  const out = [];
+  for (const e of index.entries) {
+    if (scope !== 'all' && sectionOf(e.key) !== scope) continue;
+    if (entryMatches(e, query)) out.push(e.key);
+  }
+  return out;
+}
+
+/**
+ * A stretch of a passage around its first match, for a result list.
+ * @param {SearchEntry} entry
+ * @param {string} query
+ * @param {number} [width]  characters of context on each side
+ * @returns {{before: string, hit: string, after: string} | null}  null if the entry has no match
+ */
+function snippet(entry, query, width = 36, token = '') {
+  for (const p of entry.parts) {
+    const m = (token ? tokenMatches(p.text, query).filter(t => t.token === token) : findMatches(p.text, query))[0];
+    if (!m) continue;
+    const from = Math.max(0, m.start - width), to = Math.min(p.text.length, m.end + width);
+    return {
+      before: (from > 0 ? '…' : '') + p.text.slice(from, m.start),
+      hit: p.text.slice(m.start, m.end),
+      after: p.text.slice(m.end, to) + (to < p.text.length ? '…' : ''),
+    };
+  }
+  return null;
+}
+
+const isWordChar = ch => /[\p{L}\p{M}]/u.test(ch);
+
+/**
+ * The matches of a query in a text, each with the word token it lies in: the match
+ * widened to whole words (a match spanning words gives the whole phrase).
+ * `token` is the folded token, `form` the token as written.
+ * @param {string} text
+ * @param {string} query folded query
+ * @returns {{start: number, end: number, token: string, form: string}[]}
+ */
+function tokenMatches(text, query) {
+  return findMatches(text, query).map(m => {
+    let a = m.start, b = m.end;
+    while (a > 0 && isWordChar(text[a - 1])) a--;
+    while (b < text.length && isWordChar(text[b])) b++;
+    const form = text.slice(a, b);
+    return { start: m.start, end: m.end, token: fold(form), form };
+  });
+}
+
+/** The distinct folded tokens of a passage entry that contain the query. */
+const entryTokens = (entry, query) =>
+  [...new Set(entry.parts.flatMap(p => tokenMatches(p.text, query).map(t => t.token)))];
+
+/**
+ * Group matching passages under the word tokens that match, alphabetically by token
+ * ignoring accents and breathings.  A passage with several different tokens is listed
+ * under each.  `form` is the commonest written form of the token (lower-cased).
+ * @param {SearchIndex} index
+ * @param {string[]} keys matching passage keys, in the order wanted within a group
+ * @param {string} query folded query
+ * @returns {{token: string, form: string, keys: string[]}[]}
+ */
+function groupByToken(index, keys, query) {
+  /** @type {Map<string, {keys: string[], forms: Map<string, number>}>} */
+  const groups = new Map();
+  for (const k of keys) {
+    const entry = index.byKey.get(k);
+    if (!entry) continue;
+    const seen = new Set();
+    for (const p of entry.parts) for (const t of tokenMatches(p.text, query)) {
+      let g = groups.get(t.token);
+      if (!g) groups.set(t.token, g = { keys: [], forms: new Map() });
+      const f = t.form.toLowerCase();
+      g.forms.set(f, (g.forms.get(f) ?? 0) + 1);
+      if (!seen.has(t.token)) { seen.add(t.token); g.keys.push(k); }
+    }
+  }
+  return [...groups].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([token, g]) => ({
+    token, keys: g.keys,
+    form: [...g.forms].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0][0],
+  }));
+}
+
+/**
+ * Location hash for a search and a chosen passage, and its reading.
+ * @param {{q: string, scope: string, kind: string, passage?: string}} w
+ */
+function formatSearchHash(w) {
+  const p = new URLSearchParams({ q: w.q, s: w.scope, t: w.kind });
+  if (w.passage) p.set('p', w.passage);
+  return `#${p.toString()}`;
+}
+
+/** @param {string} hash @returns {{q: string, scope: 'all' | 'iliad' | 'scholia', kind: string, passage: string} | null} */
+function parseSearchHash(hash) {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  const q = p.get('q');
+  if (!q) return null;
+  const s = p.get('s');
+  const scope = s === 'iliad' || s === 'scholia' ? s : 'all';
+  return { q, scope, kind: p.get('t') === 'normalized' ? 'normalized' : 'diplomatic', passage: p.get('p') ?? '' };
+}
+
+</script>
+<script>
+// Browser UI for the string search app: enter a Greek string (no diacritics
+// needed), optionally limit the search to the Iliad or the scholia, pick one of
+// the matching passages, and see the Iliad and scholia text of its page with
+// every match marked.  Uses the shared sources inlined ahead of this file.
+//
+// Location hash: `#q=<string>&s=<all|iliad|scholia>&t=<diplomatic|normalized>[&p=<passage>]`.
+(function () {
+  const $ = id => document.getElementById(id);
+  const LIMIT = 60;                // passages listed at once, per text
+  const DEBOUNCE = 250;
+
+  /** @type {any} */ let release = null;
+  /** @type {Map<string, any>} */ let textIndex = new Map();
+  /** @type {Map<string, string>} */ let versionLabels = new Map();
+  /** @type {Map<string, string>} */ let pageLabels = new Map();
+  /** @type {Map<string, string[]>} */ let surfacesOf = new Map();
+  /** @type {any} */ let pageView = null;
+  /** @type {Map<string, SearchIndex>} */ const indexes = new Map();
+  let query = '';                  // the folded query of the results on show
+  let typed = '';                  // as the user typed it
+  let results = [];
+  let selPassage = '';
+  let ownHash = null;
+  let timer = 0;
+
+  const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
+  const radio = name => document.querySelector(`input[name=${name}]:checked`).value;
+  const textKind = () => radio('text');
+  const scope = () => radio('scope');
+  const setStatus = msg => { $('status').textContent = msg; };
+  const searchIndex = () => {
+    const k = textKind();
+    let ix = indexes.get(k);
+    if (!ix) { ix = buildSearchIndex(textIndex, k); indexes.set(k, ix); }
+    return ix;
+  };
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  // --- loading -------------------------------------------------------------------
+
+  function start(rel) {
+    release = rel;
+    setStatus('Reading the texts…');
+    setTimeout(() => {
+      textIndex = buildTextIndex(rel);
+      versionLabels = new Map(rel.ctsCatalog().map(c => [c.urn, `${c.workTitle} — ${c.versionLabel}`]));
+      const ip = indexPages(rel);
+      surfacesOf = ip.surfacesOf;
+      pageLabels = new Map();
+      for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
+      pageView = createPageView({ release: rel, textIndex, versionLabels, pageLabels, surfacesOf, passagesOn: ip.passagesOn });
+      indexes.clear();
+      const ix = searchIndex();
+      setStatus(`${rel.library.name}: ${plural(ix.entries.length, 'passage', 'passages')} to search`);
+      for (const e of [$('q'), $('go')]) e.disabled = false;
+      $('drop').hidden = true;
+      route();
+      if (!query) $('q').focus();
+    }, 0);
+  }
+
+  function showProblem(msg) {
+    setStatus('');
+    $('problem').textContent = msg;
+    $('drop').hidden = false;
+  }
+
+  async function loadFile(file) {
+    setStatus(`Reading ${file.name}…`);
+    try { start(await readReleaseFile(file)); }
+    catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
+  }
+
+  // --- marking ---------------------------------------------------------------------
+
+  /** Append a text to an element with the matches of the query marked. */
+  function appendMarked(parent, text) {
+    let at = 0;
+    for (const m of findMatches(text, query)) {
+      if (m.start > at) parent.appendChild(document.createTextNode(text.slice(at, m.start)));
+      parent.appendChild(el('mark', 'hit', text.slice(m.start, m.end)));
+      at = m.end;
+    }
+    if (at < text.length) parent.appendChild(document.createTextNode(text.slice(at)));
+  }
+
+  /** The text of a passage in a container, matches marked; a scholion's lemma and comment in their own parts. */
+  function fillText(box, pk) {
+    box.lang = 'grc';
+    const entry = searchIndex().byKey.get(pk);
+    const parts = entry ? entry.parts : passageText(textIndex, pk, textKind()).parts;
+    if (!parts.length) { box.appendChild(el('span', 'hint', '(text not available in this release)')); return; }
+    parts.forEach((p, i) => {
+      if (parts.length === 1 && !p.part) { appendMarked(box, p.text); return; }
+      if (i) box.appendChild(document.createTextNode(' '));
+      const holder = el('span', p.part === 'lemma' ? 'lemma' : '');
+      appendMarked(holder, p.text);
+      box.appendChild(holder);
+    });
+  }
+
+  const isHit = pk => entryMatches(searchIndex().byKey.get(pk), query);
+
+  // --- searching ---------------------------------------------------------------------
+
+  function setAbout(msg) { $('about').textContent = msg; }
+
+  /** Run the search in the form; `how`: 'push' to add a history entry, 'replace' to replace it, 'none' for none (the hash is already right). */
+  function search(how) {
+    clearTimeout(timer);
+    typed = $('q').value.trim();
+    query = parseQuery(typed);
+    selPassage = '';
+    if (query.length < MIN_QUERY) {
+      results = [];
+      query = '';
+      $('passages').replaceChildren(el('p', 'hint', 'Enter a string to search for.'));
+      $('page').replaceChildren(el('p', 'hint', 'Choose a passage to see its page.'));
+      setAbout(typed ? 'Type at least two letters.' : 'Type at least two letters. Accents, breathings, capitals and punctuation do not matter.');
+      go(how);
+      return;
+    }
+    results = searchPassages(searchIndex(), query, scope());
+    const groups = tokenGroups();
+    setAbout(results.length
+      ? `${plural(results.length, 'passage', 'passages')} contain “${typed}”, in ${plural(groups.length, 'different word form', 'different word forms')}.`
+      : `No passage contains “${typed}”.`);
+    renderList();
+    $('page').replaceChildren(el('p', 'hint', results.length ? 'Choose a passage to see its page.' : ''));
+    go(how);
+  }
+
+  /** Matching passages (Iliad first, then scholia, in text order) grouped under their word tokens. */
+  function tokenGroups() {
+    const ordered = groupByVersion(textIndex, results, [...versionLabels.keys()]).flatMap(g => g.list);
+    return groupByToken(searchIndex(), ordered, query);
+  }
+
+  function renderList() {
+    const box = $('passages');
+    box.textContent = '';
+    if (!results.length) { box.appendChild(el('p', 'hint', 'No matches. Try fewer letters, or search all texts.')); return; }
+    const ix = searchIndex();
+    for (const g of tokenGroups()) {
+      const h = el('div', 'vh');
+      h.lang = 'grc';
+      h.appendChild(document.createTextNode(g.form));
+      h.appendChild(el('span', 'n', ` (${g.keys.length.toLocaleString('en')})`));
+      box.appendChild(h);
+      const rows = el('div');
+      box.appendChild(rows);
+      let shown = 0;
+      const more = el('button', 'btn more');
+      more.type = 'button';
+      const step = upTo => {
+        const end = Math.min(g.keys.length, upTo ?? shown + LIMIT);
+        for (; shown < end; shown++) rows.appendChild(rowFor(g.keys[shown], ix, g.token));
+        more.hidden = shown >= g.keys.length;
+        more.textContent = `Show more (${g.keys.length - shown} left)`;
+      };
+      more.addEventListener('click', () => step());
+      box.appendChild(more);
+      const at = selPassage ? g.keys.indexOf(selPassage) : -1;     // the chosen passage must be listed, however far down
+      step(at >= 0 ? Math.max(LIMIT, at + 1) : undefined);
+    }
+  }
+
+  function rowFor(pk, ix, token) {
+    const b = el('button', 'row');
+    b.type = 'button'; b.dataset.passage = pk;
+    if (pk === selPassage) b.classList.add('on');
+    b.appendChild(el('span', 'ref', refOf(pk)));
+    const pages = surfacesOf.get(pk);
+    b.appendChild(el('span', 'pg', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} · ${pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'}`));
+    const sn = snippet(ix.byKey.get(pk), query, 36, token);
+    if (sn) {
+      const s = el('span', 'snip');
+      s.lang = 'grc';
+      s.appendChild(document.createTextNode(sn.before));
+      s.appendChild(el('mark', 'hit', sn.hit));
+      s.appendChild(document.createTextNode(sn.after));
+      b.appendChild(s);
+    }
+    return b;
+  }
+
+  function showPassage(pk) {
+    selPassage = pk;
+    for (const r of $('passages').querySelectorAll('.row')) r.classList.toggle('on', r.dataset.passage === pk);
+    pageView.show($('page'), pk, { textKind, fillText, isHit, hitLabel: `“${typed}”`, hitNoun: 'match' });
+  }
+
+  // --- navigation (location hash) --------------------------------------------------------
+
+  function go(how) {
+    if (how === 'none') return;
+    const hash = query ? formatSearchHash({ q: typed, scope: scope(), kind: textKind(), passage: selPassage }) : '';
+    ownHash = hash || '#';
+    if (how === 'replace') history.replaceState(null, '', hash || location.pathname + location.search);
+    else if (hash) location.hash = hash;
+    else history.pushState(null, '', location.pathname + location.search);
+  }
+
+  function route() {
+    const w = parseSearchHash(location.hash);
+    if (!w) { if (query) { $('q').value = ''; search('none'); } return; }
+    $('q').value = w.q;
+    document.querySelector(`input[name=scope][value=${w.scope}]`).checked = true;
+    document.querySelector(`input[name=text][value=${w.kind}]`).checked = true;
+    search('none');
+    if (w.passage && results.includes(w.passage)) {
+      selPassage = w.passage;
+      renderList();
+      showPassage(w.passage);
+    }
+  }
+
+  // --- wiring ------------------------------------------------------------------------------
+
+  $('controls').addEventListener('submit', e => { e.preventDefault(); search('push'); });
+  $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => search('replace'), DEBOUNCE); });
+  for (const r of document.querySelectorAll('input[name=scope]')) r.addEventListener('change', () => { if (release) search('push'); });
+  for (const r of document.querySelectorAll('input[name=text]')) {
+    r.addEventListener('change', () => {
+      if (!release) return;
+      const keep = selPassage;
+      search('replace');
+      if (keep && results.includes(keep)) { selPassage = keep; renderList(); showPassage(keep); go('replace'); }
+    });
+  }
+  $('passages').addEventListener('click', e => {
+    const row = e.target.closest('.row');
+    if (!row) return;
+    showPassage(row.dataset.passage);
+    go('push');
+  });
+  window.addEventListener('hashchange', () => {
+    const h = location.hash || '#';
+    if (ownHash === h) { ownHash = null; return; }
+    ownHash = null;
+    if (release) route();
+  });
+  $('file').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+  window.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave', () => document.body.classList.remove('dragging'));
+  window.addEventListener('drop', e => {
+    e.preventDefault(); document.body.classList.remove('dragging');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+
+  (async function init() {
+    try { start(await fetchRelease()); }
+    catch (e) { showProblem(`Could not load the HMT release (${e.message || e}). If you are offline, load a copy of the release from your computer.`); }
+  })();
+})();
+
+</script>
+</body>
+</html>

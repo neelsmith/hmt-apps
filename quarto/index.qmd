@@ -16,6 +16,6 @@ Where should I start?
 
 ## Using the apps
 
-Where can I find running versions the apps?
+Where can I find running versions of all the apps?
 
 - links to [each of the apps](./apps.qmd)
