@@ -70,3 +70,8 @@ Current version:  **0.7.0**
 ## `stringsearch.html`
 
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.
+
+
+## `stringcounter.html`
+
+**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.

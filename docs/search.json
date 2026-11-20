@@ -18,7 +18,7 @@
     "href": "about.html#two-coffee-apps",
     "title": "About hmt-apps",
     "section": "“Two-coffee apps”",
-    "text": "“Two-coffee apps”\nAll of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it’s straightforward to try out ideas for apps working an HMT archival publication quickly. Each of the apps linked here reached an initially release status in less time than it takes me to finish two cups of coffee.\nClaude and his kin have justified the HMT design decision, and amplified the value of the HMT plain-text releases."
+    "text": "“Two-coffee apps”\nAll of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it’s straightforward to try out ideas for apps working with an HMT archival publication very quickly. Each of the apps linked here reached an initial release status in less time than it took me to finish two cups of coffee.\nClaude and its kin have justified the HMT design decision, and amplified the value of the HMT plain-text releases."
   },
   {
     "objectID": "index.html",
@@ -67,7 +67,7 @@
     "href": "archive/index.html#choose-this-first",
     "title": "Where should I start?",
     "section": "Choose this first",
-    "text": "Choose this first\n\nif you want to browse the HMT project’s collection of manuscripts images: try images.html\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html"
+    "text": "Choose this first\n\nif you want to browse the HMT project’s collection of manuscripts images: try images.html\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\n\nYou can find links to all of the apps in this repository here."
   },
   {
     "objectID": "apps.html",
