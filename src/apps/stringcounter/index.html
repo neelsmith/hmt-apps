@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>String counter</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --cur: #f3ecdc;
+    --hit: #ffe27a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --cur: #2c2822;
+            --hit: #7a5f00; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .25rem .65rem; }
+  .btn:hover { border-color: var(--accent); }
+  select, input[type=search] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; min-width: 0; }
+
+  #controls { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  .group { display: inline-flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  #q { width: 18rem; max-width: 100%; font-size: 1.1rem; }
+  .hit { background: var(--hit); border-radius: 3px; color: inherit; padding: 0 .05em; }
+  .row .snip .hit { color: var(--fg); }
+  .go { font-weight: 600; }
+  #about { flex: 1 1 100%; color: var(--muted); font-size: .875rem; margin: 0; }
+
+
+
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  @media (max-width: 48rem) {
+    header, #controls { padding-left: .75rem; padding-right: .75rem; }
+    #q { width: 100%; }
+    .group.query { flex: 1 1 100%; }
+    .group.menu { flex: 1 1 100%; }
+  }
+  #passages .vh { font-size: 1.0625rem; color: var(--fg); position: sticky; top: 0; background: var(--bg); padding: .25rem 0; margin-top: .5rem; }
+  #passages .vh .n { font-size: .8125rem; font-weight: 400; color: var(--muted); }
+  #chartbox { border-bottom: 1px solid var(--line); padding: .5rem 1rem 0; }
+  .charthead { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; font-size: .875rem; color: var(--muted); }
+  .charthead #chartnote { flex: 1 1 auto; }
+  #minc { width: 4.5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .2rem .4rem; }
+  #tbl { flex: 1 1 100%; }
+  #tbl summary { cursor: pointer; }
+  #tablebox { max-height: 14rem; overflow: auto; margin: .4rem 0; }
+  #tablebox table { border-collapse: collapse; font-size: .875rem; color: var(--fg); }
+  #tablebox th, #tablebox td { text-align: left; padding: .15rem .8rem .15rem 0; border-bottom: 1px solid var(--line); }
+  #tablebox td.num, #tablebox th.num { text-align: right; }
+  #tablebox button { border: 0; background: none; color: var(--accent); padding: 0; text-decoration: underline; }
+  #chart { overflow-x: auto; padding-bottom: .25rem; }
+  #chart svg { display: block; }
+  #chart .grid { stroke: var(--line); stroke-width: 1; }
+  #chart .axis text, #chart .val { fill: var(--muted); font-size: 11px; font-family: system-ui, sans-serif; }
+  #chart .tick { fill: var(--fg); font-size: 12px; font-family: "Times New Roman", "Noto Serif", serif; }
+  #chart .bar { fill: var(--accent); opacity: .55; cursor: pointer; }
+  #chart .bar:hover { opacity: .8; }
+  #chart .barg:focus-visible { outline: none; }
+  #chart .barg:focus-visible .bar { stroke: var(--focus); stroke-width: 2; opacity: .8; }
+  #chart .barg.on .bar { opacity: 1; stroke: var(--fg); stroke-width: 1.5; }
+  #chart .barg.on .tick { font-weight: 700; }
+  #chart .barg { cursor: pointer; }
+  #main { min-height: 14rem; }
+  #texts { position: relative; }
+  #texts summary { cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: .25rem .65rem; background: var(--panel); }
+  #textlist { position: absolute; z-index: 5; top: 2.2rem; left: 0; width: max-content; max-width: min(34rem, calc(100vw - 2rem)); max-height: 60vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .75rem; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  #textlist .sec { margin: .25rem 0 .35rem; }
+  #textlist .sec > label:first-child { font-weight: 700; }
+  #textlist .kid { display: block; margin-left: 1.4rem; font-size: .9rem; }
+  #textlist .tools { display: flex; gap: .5rem; margin-bottom: .25rem; }
+</style>
+<!-- @inline-style src/page-view.css -->
+</head>
+<body>
+<header>
+  <h1>String counter</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<form id="controls" autocomplete="off">
+  <span class="group query">
+    <input type="search" id="q" lang="grc" placeholder="Greek letters, no accents: e.g. αχιλλευς" aria-label="Greek string to search for" spellcheck="false" disabled>
+    <button type="submit" class="btn go" id="go" disabled>Search</button>
+  </span>
+  <details class="group" id="texts">
+    <summary id="textsum">Texts: all</summary>
+    <div id="textlist" role="group" aria-label="Texts to search"></div>
+  </details>
+  <span class="group" role="radiogroup" aria-label="Text searched and shown">
+    <label><input type="radio" name="text" value="diplomatic" checked> diplomatic</label>
+    <label><input type="radio" name="text" value="normalized"> normalized</label>
+  </span>
+  <p id="about">Type at least two letters. Accents, breathings, capitals and punctuation do not matter.</p>
+</form>
+
+<section id="chartbox" aria-label="Counts by word token" hidden>
+  <div class="charthead">
+    <span id="chartnote"></span>
+    <span class="group" role="radiogroup" aria-label="Order of the word forms">Sort:
+      <label><input type="radio" name="order" value="alpha" checked> alphabetically</label>
+      <label><input type="radio" name="order" value="count"> by count</label>
+    </span>
+    <label class="group">Only words occurring at least <input type="number" id="minc" min="1" step="1" value="1" inputmode="numeric"> times</label>
+    <button type="button" class="btn" id="csv">Download CSV</button>
+    <details id="tbl"><summary>Show as table</summary><div id="tablebox"></div></details>
+  </div>
+  <div id="chart" role="group" aria-label="Bar chart: word tokens and how often each occurs"></div>
+</section>
+
+<div id="main">
+  <section id="passages" aria-label="Passages with the chosen token"><p class="hint">Click a bar to list the passages with that word.</p></section>
+  <section id="page" aria-label="Page"><p class="hint">Choose a passage to see its page.</p></section>
+</div>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/page-view.js -->
+<!-- @inline src/stringsearch.js -->
+<!-- @inline src/stringcounter.js -->
+<!-- @inline src/apps/stringcounter/app.js -->
+</body>
+</html>
