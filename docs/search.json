@@ -1,50 +1,64 @@
 [
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About hmt-apps",
+    "objectID": "apps/index.html",
+    "href": "apps/index.html",
+    "title": "Apps to work with HMT data sets",
     "section": "",
-    "text": "In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on github here."
+    "text": "You can download these apps and use them on your own computer, or use the installations on github pages."
   },
   {
-    "objectID": "about.html#the-hmt-archive",
-    "href": "about.html#the-hmt-archive",
-    "title": "About hmt-apps",
-    "section": "",
-    "text": "In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on github here."
+    "objectID": "apps/index.html#facsmile-views",
+    "href": "apps/index.html#facsmile-views",
+    "title": "Apps to work with HMT data sets",
+    "section": "Facsmile views",
+    "text": "Facsmile views\n\nVenetus A facsimile: browse page images of the Venetus A, hover over indexed page to see textual edition"
   },
   {
-    "objectID": "about.html#two-coffee-apps",
-    "href": "about.html#two-coffee-apps",
-    "title": "About hmt-apps",
-    "section": "“Two-coffee apps”",
-    "text": "“Two-coffee apps”\nAll of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it’s straightforward to try out ideas for apps working with an HMT archival publication very quickly. Each of the apps linked here reached an initial release status in less time than it took me to finish two cups of coffee.\nClaude and its kin have justified the HMT design decision, and amplified the value of the HMT plain-text releases."
+    "objectID": "apps/index.html#text-oriented-apps",
+    "href": "apps/index.html#text-oriented-apps",
+    "title": "Apps to work with HMT data sets",
+    "section": "Text-oriented apps",
+    "text": "Text-oriented apps\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses."
+  },
+  {
+    "objectID": "apps/index.html#apps-starting-from-physical-artifacts-and-images",
+    "href": "apps/index.html#apps-starting-from-physical-artifacts-and-images",
+    "title": "Apps to work with HMT data sets",
+    "section": "Apps starting from physical artifacts and images",
+    "text": "Apps starting from physical artifacts and images\n\nCodex browser: browse pages of a codex, see indexed images and texts.\nBrowse images from all image collections."
+  },
+  {
+    "objectID": "apps/index.html#editorial-status",
+    "href": "apps/index.html#editorial-status",
+    "title": "Apps to work with HMT data sets",
+    "section": "Editorial status",
+    "text": "Editorial status\n\nFind referential inconsistencies in editorial indexing."
   },
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "title": "‘Two-coffee apps’ to work with data from the Homer Multitext project",
     "section": "",
     "text": "What is a “two-coffee app”?\n\nmore about the apps hosted here"
   },
   {
     "objectID": "index.html#about",
     "href": "index.html#about",
-    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "title": "‘Two-coffee apps’ to work with data from the Homer Multitext project",
     "section": "",
     "text": "What is a “two-coffee app”?\n\nmore about the apps hosted here"
   },
   {
     "objectID": "index.html#exploring-the-hmt-archive",
     "href": "index.html#exploring-the-hmt-archive",
-    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "title": "‘Two-coffee apps’ to work with data from the Homer Multitext project",
     "section": "Exploring the HMT archive",
     "text": "Exploring the HMT archive\nWhere should I start?\n\nexploring HMT archival data"
   },
   {
     "objectID": "index.html#using-the-apps",
     "href": "index.html#using-the-apps",
-    "title": "‘Two-coffee apps’ for working with data from the Homer Multitext project",
+    "title": "‘Two-coffee apps’ to work with data from the Homer Multitext project",
     "section": "Using the apps",
     "text": "Using the apps\nWhere can I find running versions of all the apps?\n\nlinks to each of the apps"
   },
@@ -70,10 +84,24 @@
     "text": "Choose this first\n\nif you want to browse the HMT project’s collection of manuscripts images: try images.html\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\n\nYou can find links to all of the apps in this repository here."
   },
   {
-    "objectID": "apps.html",
-    "href": "apps.html",
-    "title": "Apps to work with HMT data sets",
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About hmt-apps",
     "section": "",
-    "text": "You can download these apps and use them on your own computer, or use the installations on github pages:\n\nFacsimile reader: browse page images of the Venetus A, hover over indexed page to see textual edition\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nCodex browser: browse pages of a codex, see indexed images and texts.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses.\nBrowse images from all image collections.\nSee referential inconsistencies in editorial indexing\n\n\n\n\n\n\n\nNoteVersions\n\n\n\nEach app displays an individual version number. Github release versions refer to release versions of the entire repository.\nFor details of both github releases and individual app versions, see the release notes."
+    "text": "In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on github here."
+  },
+  {
+    "objectID": "about.html#the-hmt-archive",
+    "href": "about.html#the-hmt-archive",
+    "title": "About hmt-apps",
+    "section": "",
+    "text": "In its work on Homeric manuscripts throughout the first quarter of the twenty-first century, the Homer Multitext project (HMT) intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. This design decision is epitomized in the publication of the HMT archive in a single, plain-text file, that is always available in its most recent release on github here."
+  },
+  {
+    "objectID": "about.html#two-coffee-apps",
+    "href": "about.html#two-coffee-apps",
+    "title": "About hmt-apps",
+    "section": "“Two-coffee apps”",
+    "text": "“Two-coffee apps”\nAll of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it’s straightforward to try out ideas for apps working with an HMT archival publication very quickly. Each of the apps linked here reached an initial release status in less time than it took me to finish two cups of coffee.\nClaude and its kin have justified the HMT design decision, and amplified the value of the HMT plain-text releases."
   }
 ]

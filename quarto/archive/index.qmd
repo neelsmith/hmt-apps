@@ -23,4 +23,4 @@ The HMT archive includes (among other things):
 - if you want a fascimile view of our most completely edited manuscript, the Venetus A: try [va-facsimile.html](https://neelsmith.github.io/hmt-apps/va-facsimile.html)
 
 
-You can find links to *all* of the apps in this repository [here](../apps.qmd).
+You can find links to *all* of the apps in this repository [here](../apps/).

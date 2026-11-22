@@ -31,7 +31,7 @@ website:
       - text: "Starting points"
         file: archive/index.qmd
       - text: "The apps"
-        file: apps.qmd
+        file: apps/index.qmd
 
     right:
       - icon: person-circle

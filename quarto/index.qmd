@@ -18,4 +18,4 @@ Where should I start?
 
 Where can I find running versions of all the apps?
 
-- links to [each of the apps](./apps.qmd)
+- links to [each of the apps](./apps/)

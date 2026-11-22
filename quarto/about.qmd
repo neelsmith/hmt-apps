@@ -10,6 +10,6 @@ In its work on Homeric manuscripts throughout the first quarter of the twenty-fi
 
 ## "Two-coffee apps"
 
-All of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it's straightforward to try out ideas for apps working with an HMT archival publication very quickly. Each of the apps [linked here](./apps.qmd) reached an initial release status in less time than it took me to finish two cups of coffee.
+All of the apps in this repository start from this plain-text file. With an agentic assistant like Claude, it's straightforward to try out ideas for apps working with an HMT archival publication very quickly. Each of the apps [linked here](./apps/) reached an initial release status in less time than it took me to finish two cups of coffee.
 
 Claude and its kin have justified the HMT design decision, and amplified the value of the HMT plain-text releases.
