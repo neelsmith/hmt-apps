@@ -20,7 +20,7 @@ format:
 website:
   title: "hmt-apps"
   page-footer:
-    center: "`hmt-apps` version **{{< meta version >}}**, website last updated {{< meta date >}}"
+    center: "`hmt-apps` release **{{< meta version >}}**, website last updated {{< meta date >}}"
 
   navbar:
     background: primary

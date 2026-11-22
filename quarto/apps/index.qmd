@@ -3,8 +3,7 @@ title: "Apps to work with HMT data sets"
 ---
 
 
-
-You can download these apps and use them on your own computer, or use the installations on github pages.
+Since these apps are self-contained HTML pages, you can download them and use them on your own computer, or follow the links below to use the current version installed on github pages.
 
 
 ::: {.callout-note}

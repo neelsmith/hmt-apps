@@ -1,21 +1,17 @@
 ---
-title: "'Two-coffee apps' to work with data from the Homer Multitext project"
+title: Work with published releases of data from the  Homer Multitext project
 ---
 
-## About ...
+## Overview
 
-What is a "two-coffee app"? 
+- a personal collection of "two-coffee" web apps
+- all apps can be run from a web server or from a single local file
+- apps dynamically load the HMT project's latest published release
+- explore HMT datasets starting text passages, physical artifact, or documentary image
+- throughout all apps, display of text passages formats edited content by manuscript page
 
-- more about [the apps hosted here](./about.qmd)
+## More info
 
-## Exploring the HMT archive
-
-Where should I start?
-
-- exploring [HMT archival data](./archive/)
-
-## Using the apps
-
-Where can I find running versions of all the apps?
-
-- links to [each of the apps](./apps/)
+- **What is a "two-coffee app"**? More about [the contents of this repository](./about.qmd).
+- **Where should I start**? Get started exploring [HMT archival data](./archive/).
+- **Where can I find running versions of all the apps**? Find links to [all of the apps](./apps/) hosted here.
