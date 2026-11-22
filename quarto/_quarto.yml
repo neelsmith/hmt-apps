@@ -20,7 +20,7 @@ format:
 website:
   title: "hmt-apps"
   page-footer:
-    center: "`hmt-apps` version **{{< meta version >}}**, website last updated {{< meta date >}}"
+    center: "`hmt-apps` release **{{< meta version >}}**, website last updated {{< meta date >}}"
 
   navbar:
     background: primary
@@ -31,7 +31,7 @@ website:
       - text: "Starting points"
         file: archive/index.qmd
       - text: "The apps"
-        file: apps.qmd
+        file: apps/index.qmd
 
     right:
       - icon: person-circle
