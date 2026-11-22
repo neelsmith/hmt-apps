@@ -5,10 +5,10 @@ title: Work with published releases of data from the  Homer Multitext project
 ## Overview
 
 - a personal collection of "two-coffee" web apps
-- all apps can be run from a web server or from a single local file
+- all apps can be run from a web server or from a single local HTML file
 - apps dynamically load the HMT project's latest published release
-- explore HMT datasets starting text passages, physical artifact, or documentary image
-- throughout all apps, display of text passages formats edited content by manuscript page
+- explore HMT datasets starting from text passages, physical artifact, or documentary image
+- throughout all apps, display of text passages organizes edited content by manuscript page
 
 ## More info
 
