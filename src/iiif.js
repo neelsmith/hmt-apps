@@ -6,7 +6,7 @@
 
 /** Manifest of the Venetus A images in the HMT archive. */
 export const VA_MANIFEST_URL =
-  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/iiif/venetusA.json';
+  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/iiif/vaimg.2017a.json';
 
 /**
  * @typedef {Object} Canvas
