@@ -10,6 +10,7 @@
 // on the same passage in any version of the Iliad, not only in the version shown.
 (function () {
   const MAX_ROWS = 2000;
+  const MAX_PAGES = 40;
   const WOVEN = document.body.dataset.text === 'interwoven';
   const ALL = document.body.dataset.scholia === 'all';
   const $ = id => document.getElementById(id);
@@ -20,6 +21,9 @@
   /** @type {any[]} */ let versions = [];
   /** Resolved commentary spans, per text URN. */
   const spanCache = new Map();
+  /** The manuscript pages of the passages (from the DSE records), and the view that shows one. */
+  /** @type {any} */ let pageView = null;
+  /** @type {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}} */ let pageIndex = { surfacesOf: new Map(), passagesOn: new Map() };
 
   function setStatus(msg) { $('status').textContent = msg; }
 
@@ -29,6 +33,14 @@
     pairs = commentaryPairs(rel);
     versions = iliadVersions(rel, textIndex);
     spanCache.clear();
+    pageIndex = indexPages(rel);
+    const pageLabels = new Map();
+    for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
+    pageView = createPageView({
+      release: rel, textIndex, pageLabels,
+      versionLabels: new Map(rel.ctsCatalog().map(c => [c.urn, `${c.workTitle} — ${c.versionLabel}`])),
+      surfacesOf: pageIndex.surfacesOf, passagesOn: pageIndex.passagesOn,
+    });
 
     const sel = $('version');
     sel.textContent = '';
@@ -168,10 +180,76 @@
 
     const box = $('passages');
     box.textContent = '';
-    const frag = document.createDocumentFragment();
-    for (const line of shown) frag.appendChild(renderPassage(line, cur));
-    box.appendChild(frag);
+    const pagesNote = renderPages(box, shown, cur);
+    if (pagesNote) { notes.push(pagesNote); $('notes').textContent = notes.join(' '); $('notes').hidden = false; }
     $('results').hidden = false;
+    const firstCur = box.querySelector('#page .cur');
+    if (firstCur) {
+      const r = firstCur.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > window.innerHeight) firstCur.scrollIntoView({ block: 'center' });
+    }
+  }
+
+  /**
+   * Show the lines of the range in the context of their manuscript pages: each page
+   * the range touches, whole, with the requested lines marked.  Lines the DSE records
+   * do not place on a page are listed apart, as plain passages.
+   * @returns {string} a note about what was left out, or ''.
+   */
+  function renderPages(box, lines, cur) {
+    const version = cur.version.urn;
+    /** @type {string[]} */ const surfaces = [];
+    /** @type {any[]} */ const loose = [];
+    const wanted = new Set();
+    for (const line of lines) {
+      const pk = version + line.ref;
+      const on = pageIndex.surfacesOf.get(pk);
+      if (!on) { loose.push(line); continue; }
+      wanted.add(pk);
+      if (!surfaces.includes(on[0])) surfaces.push(on[0]);
+    }
+    const o = {
+      textKind: () => cur.kind, isHit: () => false, hitLabel: '', hitNoun: '', scroll: false,
+      fillText(el, pk) {
+        el.lang = 'grc';
+        const base = passageText(textIndex, pk, cur.kind).parts;
+        if (!base.length) { el.append('(text not available in this release)'); return; }
+        const alt = WOVEN ? passageText(textIndex, pk, 'normalized').parts : [];
+        base.forEach((p, i) => {
+          if (i) el.append(' ');
+          let holder = el;
+          if (p.part === 'lemma') { holder = document.createElement('span'); holder.className = 'lemma'; el.append(holder); }
+          appendText(holder, p.text, (alt.find(a => a.part === p.part) || {}).text);
+        });
+      },
+    };
+    const holder = document.createElement('div');
+    holder.id = 'page';
+    for (const surface of surfaces.slice(0, MAX_PAGES)) {
+      const pb = document.createElement('div');
+      pb.className = 'pagebox';
+      pageView.showPage(pb, surface, wanted, o);
+      holder.appendChild(pb);
+    }
+    if (ALL) {                                   // the scholia indexed to a requested line in any version
+      const byRef = new Map(lines.map(l => [l.ref, l]));
+      for (const row of holder.querySelectorAll('.line.cur')) {
+        const line = byRef.get(row.dataset.passage.slice(version.length));
+        if (line && line.scholia.length) row.after(renderBreakdown(versionGroups(line)));
+      }
+    }
+    if (surfaces.length) box.appendChild(holder);
+    if (loose.length) {
+      const note = document.createElement('p');
+      note.className = 'loose-note';
+      note.textContent = `${loose.length} ${loose.length === 1 ? 'passage is' : 'passages are'} not placed on a manuscript page in the DSE records:`;
+      box.appendChild(note);
+      const list = document.createElement('div');
+      list.className = 'passages';
+      for (const line of loose) list.appendChild(renderPassage(line, cur));
+      box.appendChild(list);
+    }
+    return surfaces.length > MAX_PAGES ? `The range covers ${surfaces.length} manuscript pages; showing the first ${MAX_PAGES}.` : '';
   }
 
   /**

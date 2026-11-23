@@ -4,8 +4,11 @@
 
 Current version:  **0.9.0**
 
-**0.9.0**, *?*: 
-all apps get normalized menus. `va-facsimile.html` adds parameters for `text`, `image`; new display in text-focused apps `iliad-scholia.html`, `all-scholia.html` and `editorial.html`
+**0.9.0**, *Nov. 23, 2026*: 
+
+- all apps get standardized menus  with links to docs for invidual apps
+- `va-facsimile.html` adds parameters for `text`, `image`
+- new page-oriented display in text-focused apps `iliad-scholia.html`, `all-scholia.html` and `editorial.html`
 
 **0.8.0**, *Nov. 23, 2026*: adds `lemmatizedsearch.html` app.
 
@@ -34,12 +37,16 @@ all apps get normalized menus. `va-facsimile.html` adds parameters for `text`, `
 ## `iliad-scholia.html`
 
 
+**0.2.0**, *Nov. 23, 2026*: Adds standard menu. Changes text display to page orientation.
+
 **0.1.1**, *Nov. 18, 2026*: link to github pages, use app-specific version.
 
 **0.1.0**, *Nov. 17, 2026*: select passage of *Iliad* to read in a particular version. Optionally view scholia on the passage.
 
 
 ## `va-facsimile.html`
+
+**0.3.0**, *Nov. 23, 2026*: adds options to open from reference to a page, an image or a text passage. Adds standard menu to top of page.
 
 **0.2.0**, *Nov. 19, 2026*: add option to use `urn` parameter to open with a specified passage
 
@@ -53,21 +60,28 @@ all apps get normalized menus. `va-facsimile.html` adds parameters for `text`, `
 
 ## `images.html`
 
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
 **0.1.0**, *Nov. 19, 2026*: browse all image collections.
 
 
 ## `all-scholia.html`
+
+**0.2.0**, *Nov. 23, 2026*: Adds standard menu to top of page. Changes to page-oriented text display.
 
 **0.1.0**, *Nov. 19, 2026*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
 
 
 ## `codices.html`
 
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
 
 
 ## `propernames.html`
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 19, 2026*: initial release. See instances of proper names in texts.
 
@@ -75,13 +89,19 @@ all apps get normalized menus. `va-facsimile.html` adds parameters for `text`, `
 
 ## `stringsearch.html`
 
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.
 
 
 ## `stringcounter.html`
 
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
 
 ## `lemmatizedsearch.html`
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 23, 2026*: search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).

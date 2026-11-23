@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.1.0">
+<meta name="app-version" content="0.1.1">
 <title>String search</title>
 <style>
   :root {
@@ -56,8 +56,9 @@
   #passages .vh .n { font-size: .8125rem; font-weight: 400; color: var(--muted); }
 </style>
 <style>
-/* Shared by the apps that show a manuscript page: a list of passages beside the text of the page
-   (see src/page-view.js).  Uses the variables --bg --fg --muted --line --panel --accent --cur. */
+/* Shared by the apps that list passages beside the page they are on (see src/page-view.js): layout and list.
+   The text of the page itself is styled by src/page-text.css, which these apps inline too.
+   Uses the variables --bg --fg --muted --line --panel --accent --cur. */
   #main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(16rem, 26rem) 1fr; }
   #passages, #page { overflow: auto; min-height: 0; padding: .75rem 1rem 2rem; }
   #passages { border-right: 1px solid var(--line); padding-left: .5rem; padding-right: .5rem; }
@@ -71,6 +72,16 @@
   .row .snip { font-size: .9rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; }
   .more { margin: .5rem; }
 
+@media (max-width: 48rem) {
+  #main { display: block; overflow: auto; }
+  #passages { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  #page { overflow: visible; }
+}
+</style>
+<style>
+/* The text of a manuscript page: Iliad lines, each with the scholia of the page that comment on it (see src/page-view.js).
+   Rules are keyed to `#page` (or to classes only page-view.js creates) so they can sit beside an app's own styles.
+   Needs `.btn`, and the variables --bg --fg --muted --line --panel --accent --cur from the app. */
   #page h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
@@ -95,9 +106,6 @@
   details.scholion summary .on { font-size: .8125rem; color: var(--muted); }
   .hasname { font-size: .75rem; border-radius: 999px; padding: 0 .5rem; background: var(--cur); border: 1px solid var(--accent); color: var(--fg); }
 @media (max-width: 48rem) {
-  #main { display: block; overflow: auto; }
-  #passages { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
-  #page { overflow: visible; }
   .panel { margin-left: 1rem; }
 }
 </style>
@@ -106,7 +114,7 @@
 <header>
   <h1>String search</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/stringsearch/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/stringsearch/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -1918,6 +1926,8 @@ function pvEl(tag, cls, text) {
   if (text !== undefined) e.textContent = text;
   return e;
 }
+/** Is `pk` the chosen passage?  `current` is one key, or a set of keys (a range). @param {string | Set<string>} current @param {string} pk */
+const isCur = (current, pk) => typeof current === 'string' ? pk === current : current.has(pk);
 const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
 
 /**
@@ -1936,7 +1946,8 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {(box: HTMLElement, pk: string) => void} fillText   Write the text of a passage, marks included.
  * @property {(pk: string) => boolean} isHit          The passage contains what was looked for.
  * @property {string} hitLabel                         Said in the badges: "with “Achilles”".
- * @property {string} hitNoun                          "name", "match": "Fold scholia without the name".
+ * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
+ * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
  */
 
 /**
@@ -1995,9 +2006,9 @@ function createPageView(data) {
     const d = pvEl('details', 'scholion');
     d.dataset.passage = pk;
     const has = o.isHit(pk);
-    d.open = has || pk === current;
+    d.open = has || isCur(current, pk);
     if (has) d.classList.add('has');
-    if (pk === current) d.classList.add('cur');
+    if (isCur(current, pk)) d.classList.add('cur');
     const sm = pvEl('summary');
     sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
     const target = on || commentedOn(pk);
@@ -2055,7 +2066,7 @@ function createPageView(data) {
       for (const pk of lines) {
         const row = pvEl('div', 'line');
         row.dataset.passage = pk;
-        if (pk === current) row.classList.add('cur');
+        if (isCur(current, pk)) row.classList.add('cur');
         row.appendChild(pvEl('span', 'ref', refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
@@ -2065,7 +2076,7 @@ function createPageView(data) {
         if (!attached) continue;
         const panel = pvEl('div', 'panel');
         for (const a of attached) panel.appendChild(scholionEl(a.key, current, a.from === a.to ? a.from : `${a.from}–${a.to}`, o));
-        const nOpen = attached.filter(a => o.isHit(a.key) || a.key === current).length;
+        const nOpen = attached.filter(a => o.isHit(a.key) || isCur(current, a.key)).length;
         const badge = pvEl('button', 'badge', `${pvPlural(attached.length, 'scholion', 'scholia')}${nOpen ? ` · ${nOpen} with ${o.hitLabel}` : ''}`);
         badge.type = 'button';
         if (nOpen) badge.classList.add('hot');
@@ -2097,7 +2108,7 @@ function createPageView(data) {
           if (b) b.setAttribute('aria-expanded', String(open));
         }
         for (const d of box.querySelectorAll('details.scholion')) d.open = all || d.classList.contains('has') || d.classList.contains('cur');
-        fold.textContent = all ? `Fold scholia without the ${o.hitNoun}` : 'Unfold all scholia';
+        fold.textContent = all ? (o.hitNoun ? `Fold scholia without the ${o.hitNoun}` : 'Fold scholia') : 'Unfold all scholia';
       });
       const top = pvEl('p', 'sub', `${pvPlural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with ${o.hitLabel}. ` : '. '));
       top.appendChild(fold);
@@ -2108,7 +2119,7 @@ function createPageView(data) {
       box.appendChild(pvEl('h3', '', `Other text · ${pvPlural(secs.other.length, 'passage', 'passages')}`));
       for (const pk of secs.other) {
         const row = pvEl('div', 'line');
-        if (pk === current) row.classList.add('cur');
+        if (isCur(current, pk)) row.classList.add('cur');
         row.appendChild(pvEl('span', 'ref', refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
@@ -2117,7 +2128,7 @@ function createPageView(data) {
       }
     }
     const cur = box.querySelector('.cur');
-    if (cur) cur.scrollIntoView({ block: 'center' });
+    if (cur && o.scroll !== false) cur.scrollIntoView({ block: 'center' });
   }
 
   return {
@@ -2131,6 +2142,16 @@ function createPageView(data) {
       const surfaces = surfacesOf.get(pk);
       if (!surfaces) renderLoose(box, pk, o);
       else renderPage(box, surfaces[0], pk, surfaces, o);
+    },
+
+    /**
+     * Show one page, given by its surface URN, with the passages of `current`
+     * marked: one passage key, or a set of keys (the lines of a range).
+     * @param {HTMLElement} box @param {string} surface @param {string | Set<string>} current @param {PageOptions} o
+     */
+    showPage(box, surface, current, o) {
+      box.textContent = '';
+      renderPage(box, surface, current, [surface], o);
     },
   };
 }
