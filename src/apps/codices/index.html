@@ -24,7 +24,8 @@
   header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
   h1 { font-size: 1.15rem; margin: 0; }
   #status { color: var(--muted); font-size: .875rem; }
-  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
+  .appmeta .home { margin-right: auto; }
   .appmeta a { color: var(--accent); }
   button, select, input { font: inherit; }
   button { cursor: pointer; }
@@ -91,7 +92,7 @@
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
