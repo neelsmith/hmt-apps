@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Lemmatized search</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --cur: #f3ecdc;
+    --hit: #ffe27a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --cur: #2c2822;
+            --hit: #7a5f00; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .25rem .65rem; }
+  .btn:hover { border-color: var(--accent); }
+  select, input[type=search] { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; min-width: 0; }
+
+  #controls { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  .group { display: inline-flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  #q { width: 18rem; max-width: 100%; font-size: 1.1rem; }
+  .hit { background: var(--hit); border-radius: 3px; color: inherit; padding: 0 .05em; }
+  .row .snip .hit { color: var(--fg); }
+  .go { font-weight: 600; }
+  #about { flex: 1 1 100%; color: var(--muted); font-size: .875rem; margin: 0; }
+
+
+
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  @media (max-width: 48rem) {
+    header, #controls { padding-left: .75rem; padding-right: .75rem; }
+    #q { width: 100%; }
+    .group.query { flex: 1 1 100%; }
+    .group.menu { flex: 1 1 100%; }
+  }
+  #passages .vh { font-size: 1.0625rem; color: var(--fg); position: sticky; top: 0; background: var(--bg); padding: .25rem 0; margin-top: .5rem; }
+  #passages .vh .n { font-size: .8125rem; font-weight: 400; color: var(--muted); }
+  #loading { padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  #loading .lead { margin: 0 0 .4rem; color: var(--muted); font-size: .875rem; }
+  .ld { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .8rem; font-size: .875rem; padding: .1rem 0; }
+  .ld .t { flex: 0 1 28rem; }
+  .ld progress { flex: 1 1 10rem; max-width: 22rem; accent-color: var(--accent); }
+  .ld.done progress { display: none; }
+  .ld.fail .t { color: var(--accent); }
+  #versioninfo { padding: .4rem 1rem; font-size: .875rem; border-bottom: 1px solid var(--line); color: var(--muted); }
+  #versioninfo.warn { color: var(--fg); background: var(--hit); }
+  .lemmatools { display: flex; gap: .5rem; margin: 0 0 .4rem; }
+  details.lem { border-bottom: 1px solid var(--line); }
+  details.lem > summary { cursor: pointer; padding: .45rem .25rem; }
+  details.lem > summary .lm { font-size: 1.0625rem; }
+  details.lem > summary .n { font-size: .8125rem; color: var(--muted); }
+  details.lem .forms { font-size: .8125rem; color: var(--muted); padding: 0 .5rem .4rem; }
+  details.lem .rows { padding-left: .25rem; }
+  .row .tok { display: block; font-size: 1.0625rem; font-weight: 700; font-family: "Times New Roman", "Noto Serif", serif; }
+  .warnnote { margin: 0 0 .5rem; padding: .35rem .6rem; background: var(--hit); border-radius: 6px; font-size: .875rem; }
+</style>
+<!-- @inline-style src/page-view.css -->
+</head>
+<body>
+<header>
+  <h1>Lemmatized search</h1>
+  <span id="status" role="status">Loading the HMT release and the lemmatization data…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+</header>
+
+<div id="loading" role="status" aria-live="polite">
+  <p class="lead">Loading. The lemmatization data is large (every token of the release), so this can take a minute.</p>
+  <div class="ld" id="ld-release"><span class="t">HMT release: waiting…</span><progress></progress></div>
+  <div class="ld" id="ld-lemmata"><span class="t">Lemmatization data: waiting…</span><progress></progress></div>
+  <div class="ld" id="ld-meta"><span class="t">Lemmatization metadata: waiting…</span><progress></progress></div>
+</div>
+
+<div id="versioninfo" hidden></div>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load saved copies instead: the release (<code>hmt-current.cex</code>), the lemmatization data (<code>lemmata-current.cex</code>) and/or its metadata (<code>lemmata-releases.cex</code>). Drop them here or <input type="file" id="file" accept=".cex,.txt,text/plain" multiple>.</p>
+</div>
+
+<form id="controls" autocomplete="off">
+  <span class="group query">
+    <input type="search" id="q" lang="grc" placeholder="A lemma, Greek letters, no accents: e.g. μηνις" aria-label="Greek string to search for in lemmata" spellcheck="false" disabled>
+    <button type="submit" class="btn go" id="go" disabled>Search</button>
+  </span>
+  <p id="about">Search the lemmata of the lemmatized tokens. Type at least two letters; accents, breathings and capitals do not matter.</p>
+</form>
+
+<div id="main">
+  <section id="passages" aria-label="Matching lemmata and their tokens"><p class="hint">Enter a lemma, or part of one, to search for.</p></section>
+  <section id="page" aria-label="Page"><p class="hint">Choose a token to see its page.</p></section>
+</div>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/page-view.js -->
+<!-- @inline src/stringsearch.js -->
+<!-- @inline src/lemmata.js -->
+<!-- @inline src/apps/lemmatizedsearch/app.js -->
+</body>
+</html>

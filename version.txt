@@ -8,3 +8,4 @@ codices.html    0.1.0
 propernames.html    0.1.0
 stringsearch.html   0.1.0
 stringcounter.html   0.1.0
+lemmatizedsearch.html   0.1.0
