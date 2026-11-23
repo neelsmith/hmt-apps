@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex, textsOfVersion, passageText } from '../src/text-index.js';
 import { imageUrnFromService, parseManifest, iiifImageUrl, matchProtocol } from '../src/iiif.js';
-import { parseRoi, parseImageRoi, indexDse, passageKind, passageLabel, catalogTitles, DSE_URN } from '../src/dse.js';
+import { parseRoi, parseImageRoi, indexDse, passageKind, passageLabel, catalogTitles, dseKey, parseFacsimileParams, DSE_URN } from '../src/dse.js';
 import {
   fitTransform, clampTransform, zoomAt, maxLevel, chooseLevel, visibleTiles, roiToRect, imageToScreen, MAX_SCALE,
 } from '../src/pan-zoom.js';
@@ -253,4 +253,38 @@ test('real release: DSE index and passage text', { skip: !existsSync(REAL) }, ()
   assert.ok(kinds.iliad > 15000 && kinds.scholia > 8000 && kinds.other > 0, JSON.stringify(kinds));
   assert.ok(missing.length < 150, `${missing.length} passages without text, e.g. ${missing.slice(0, 3)}`);
   assert.match(passageText(idx, 'urn:cts:greekLit:tlg0012.tlg001.msA:1.1', 'diplomatic').parts[0].text, /^Μῆνιν ἄειδε/);
+});
+
+// ---- facsimile parameters ---------------------------------------------------
+
+test('dseKey ignores exemplar, subreference and scholion parts', () => {
+  const k = 'urn:cts:greekLit:tlg0012.tlg001.msA:1.1';
+  assert.equal(dseKey(k), k);
+  assert.equal(dseKey('urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1'), k);
+  assert.equal(dseKey('urn:cts:greekLit:tlg0012.tlg001.msA.diplomatic:1.1@μηνιν[1]'), k);
+  assert.equal(dseKey('urn:cts:greekLit:tlg5026.msAint.hmt.diplomatic:1.28.lemma'), 'urn:cts:greekLit:tlg5026.msAint.hmt:1.28');
+  assert.equal(dseKey('urn:cts:greekLit:tlg0012.tlg001.msA:'), null);       // no passage
+  assert.equal(dseKey('urn:cite2:hmt:vaimg.2017a:X'), null);
+  assert.equal(dseKey('nonsense'), null);
+});
+
+test('indexDse also indexes passages to images', () => {
+  const dse = indexDse(parseRelease(REL));
+  assert.deepEqual(dse.byPassage.get('urn:cts:greekLit:tlg0012.tlg001.msA:1.2'), ['urn:cite2:hmt:vaimg.2017a:VA001RN_0002']);
+  assert.deepEqual(dse.byPassage.get(dseKey('urn:cts:greekLit:tlg5026.msAint.hmt:1.28.comment')), ['urn:cite2:hmt:vaimg.2017a:VA012VN_0013']);
+  assert.equal(dse.byPassage.get('urn:cts:greekLit:tlg0012.tlg001.msA:9.9'), undefined);
+  assert.equal(indexDse(parseRelease('#!cexversion\n3.0.0\n')).byPassage.size, 0);
+});
+
+test('parseFacsimileParams reads hash and query', () => {
+  const u = 'urn:cts:greekLit:tlg0012.tlg001.msA:1.1';
+  assert.deepEqual(parseFacsimileParams(''), { page: null, text: null, image: null });
+  assert.deepEqual(parseFacsimileParams('#page=12r'), { page: '12r', text: null, image: null });
+  assert.equal(parseFacsimileParams('#text=' + u).text, u);
+  assert.equal(parseFacsimileParams('#text=' + encodeURIComponent(u)).text, u);
+  assert.equal(parseFacsimileParams('?image=urn:cite2:hmt:vaimg.2017a:VA012RN_0013').image, 'urn:cite2:hmt:vaimg.2017a:VA012RN_0013');
+  assert.equal(parseFacsimileParams('#x=1&text=' + u + '&image=i').image, 'i');
+  assert.equal(parseFacsimileParams('', '?text=' + u).text, u);                    // falls back to the query
+  assert.equal(parseFacsimileParams('#text=a', '?text=b').text, 'a');             // hash first
+  assert.equal(parseFacsimileParams('#xtext=a').text, null);
 });

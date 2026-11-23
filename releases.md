@@ -2,8 +2,10 @@
 
 ## Repository version tag
 
-Current version:  **0.7.0**
+Current version:  **0.9.0**
 
+**0.9.0**, *?*: 
+all apps get normalized menus. `va-facsimile.html` adds parameters for `text`, `image`; new display in text-focused apps `iliad-scholia.html`, `all-scholia.html` and `editorial.html`
 
 **0.8.0**, *Nov. 23, 2026*: adds `lemmatizedsearch.html` app.
 

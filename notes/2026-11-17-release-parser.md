@@ -315,3 +315,9 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - The other apps already right-align `.appmeta` with `margin-left: auto`, so no CSS change was needed.
 - 121 unit tests pass (15 skipped). Not checked visually in a browser. Nothing committed.
 - Follow-up (2026-11-23): in codices, dse-check, images, lemmatizedsearch, propernames, stringcounter, stringsearch and va-facsimile the menu bar sat right-aligned on the title's line. Its CSS is now `order: -1; flex: 0 0 100%` inside the flex `<header>`, so it takes its own line above the h1 (home left, version + Docs right), as in iliad-scholia. CSS-only; HTML unchanged. Checked in Chromium at 1100 and 390 px: bar above the title in all nine apps, no overflow.
+
+## va-facsimile: `text` and `image` parameters (2026-11-23)
+
+- `#text=<CTS URN>` opens the page a passage is indexed to; `#image=<CITE2 URN>` opens an image. Both also work as `?text=` / `?image=` when the page opens. Details in `notes/va-facsimile-usage.md`.
+- Code: `dseKey` and `parseFacsimileParams` in `src/dse.js` (which now imports `ctsVersionOf`); `indexDse` also returns `byPassage` (passage key to images); `tryPending` in `src/apps/va-facsimile/app.js` waits for the manifest (and the release, for `text`), then replaces the hash with `#page=<id>`. Failures leave the light table with a message in the status line.
+- Tests: 3 new unit tests in `test/viewer-modules.test.js` (124 pass). Browser check (Chromium, stubbed manifest/release, 17 checks): exemplar-level and scholion URNs, query and hash forms, unindexed/range/e3/bad URNs, release failure, `#page` precedence, hash set while running. Not run against the real release. Nothing committed.

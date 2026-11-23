@@ -17,6 +17,10 @@
   let current = -1;
   let tableScroll = 0;
   let lastTipKey = '';
+  /** A `text` or `image` parameter waiting for the data it needs. */
+  let pending = null;
+  let notice = '';
+  let releaseFailed = false;
 
   const url = (c, region, size) => matchProtocol(iiifImageUrl(c.service, region, size), proto);
   const regionsOf = c => (dse && c.imageUrn && dse.byImage.get(c.imageUrn)) || [];
@@ -36,6 +40,7 @@
     let msg = parts.join(' · ');
     if (dse && dse.skipped) msg += ` · ${plural(dse.skipped, 'index row', 'index rows')} without a usable region not drawn`;
     if (dse && !dse.found) msg = `${plural(canvases.length, 'image', 'images')} · this release has no ${DSE_URN} index`;
+    if (notice) msg += ` · ${notice}`;
     setStatus(msg);
   }
 
@@ -52,6 +57,7 @@
     $('table-view').hidden = current >= 0;
     updateStatus();
     showFromHash();
+    tryPending();
   }
 
   function onRelease(rel) {
@@ -63,6 +69,7 @@
     updateCounts();
     updateStatus();
     if (current >= 0) renderRegions();
+    tryPending();
   }
 
   async function loadManifest() {
@@ -79,7 +86,9 @@
   async function loadRelease() {
     try { onRelease(await fetchRelease()); }
     catch (e) {
+      releaseFailed = true;
       updateStatus();
+      tryPending();
       showProblem(`Could not load the HMT release (${e.message || e}). Page images still work; indexed text needs the release.`);
     }
   }
@@ -166,7 +175,50 @@
     return m ? decodeURIComponent(m[1]) : null;
   }
 
+  /** Turn a `text` or `image` parameter into a page, once the data it needs has loaded. */
+  function tryPending() {
+    if (!pending || !canvases.length) return;
+    const { kind, value } = pending;
+    let idx = -1, problem = '';
+    if (kind === 'image') {
+      const urn = value.split('@')[0].trim();
+      if (!/^urn:cite2:[^:]+:[^:]+:[^:]+$/.test(urn)) problem = `“${value}” is not an image URN (urn:cite2:…).`;
+      else {
+        idx = canvases.findIndex(c => c.imageUrn === urn);
+        if (idx < 0) problem = `${urn} is not an image of the Venetus A manifest.`;
+      }
+    } else {
+      const key = dseKey(value);
+      if (!key) problem = `“${value}” is not a CTS passage URN (urn:cts:…).`;
+      else if (!dse) {
+        if (!releaseFailed) return;                       // wait for the release
+        problem = `Cannot look up ${value}: the HMT release did not load.`;
+      } else if (!dse.found) problem = `Cannot look up ${value}: this release has no ${DSE_URN} index.`;
+      else {
+        const images = dse.byPassage.get(key) ?? [];
+        idx = canvases.findIndex(c => images.includes(c.imageUrn));
+        if (!images.length) problem = `${value} is not indexed in the DSE records${/-/.test(key.split(':').pop()) ? ' (give a single passage, not a range)' : ''}.`;
+        else if (idx < 0) problem = `${value} is indexed only to images that are not pages of the Venetus A.`;
+      }
+    }
+    pending = null;
+    notice = problem;
+    if (idx >= 0) { goTo(idx, true); }
+    else {
+      history.replaceState(null, '', location.pathname + location.search);
+      showTable();
+    }
+    updateStatus();
+  }
+
   function showFromHash() {
+    const p = parseFacsimileParams(location.hash);
+    if (p.page === null && (p.image || p.text)) {            // #image=… or #text=…
+      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: p.text };
+      notice = '';
+      tryPending();
+      return;
+    }
     const id = hashPage();
     const idx = id === null ? -1 : canvases.findIndex(c => c.id === id);
     if (idx < 0) showTable(); else showViewer(idx);
@@ -375,6 +427,12 @@
     if (e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]);
   });
 
+  {                                                  // ?image=… or ?text=…, used once when the page opens
+    const h = parseFacsimileParams(location.hash), q = parseFacsimileParams(location.search);
+    if (h.page === null && !h.image && !h.text && (q.image || q.text)) {
+      pending = q.image ? { kind: 'image', value: q.image } : { kind: 'text', value: q.text };
+    }
+  }
   loadManifest();
   loadRelease();
 })();

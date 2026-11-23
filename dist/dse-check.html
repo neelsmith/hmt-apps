@@ -576,15 +576,18 @@ function parseImageRoi(value) {
 /**
  * Regions of the DSE relation set, grouped by image.
  * @param {import('./hmt-release.js').HmtRelease} release
- * @returns {{byImage: Map<string, {passage: string, roi: Roi}[]>, rows: number, skipped: number, found: boolean}}
- *   `skipped` counts rows without a usable region; `found` is false if the
- *   release has no such relation set.
+ * @returns {{byImage: Map<string, {passage: string, roi: Roi}[]>, byPassage: Map<string, string[]>, rows: number, skipped: number, found: boolean}}
+ *   `byPassage` maps a passage key (see `dseKey`) to the images it is indexed
+ *   to, in index order, without repeats.  `skipped` counts rows without a
+ *   usable region; `found` is false if the release has no such relation set.
  */
 function indexDse(release) {
   /** @type {Map<string, {passage: string, roi: Roi}[]>} */
   const byImage = new Map();
+  /** @type {Map<string, string[]>} */
+  const byPassage = new Map();
   const set = release.relationSets().find(r => r.urn === DSE_URN);
-  if (!set) return { byImage, rows: 0, skipped: 0, found: false };
+  if (!set) return { byImage, byPassage, rows: 0, skipped: 0, found: false };
   let skipped = 0;
   for (const row of set.rows) {
     const parsed = parseImageRoi(row.imageroi ?? '');
@@ -592,8 +595,14 @@ function indexDse(release) {
     const list = byImage.get(parsed.image) ?? [];
     list.push({ passage: row.passage, roi: parsed.roi });
     byImage.set(parsed.image, list);
+    const key = dseKey(row.passage);
+    if (key) {
+      const images = byPassage.get(key) ?? [];
+      if (!images.includes(parsed.image)) images.push(parsed.image);
+      byPassage.set(key, images);
+    }
   }
-  return { byImage, rows: set.rows.length, skipped, found: true };
+  return { byImage, byPassage, rows: set.rows.length, skipped, found: true };
 }
 
 /** @typedef {'iliad' | 'scholia' | 'other'} PassageKind */
@@ -643,6 +652,47 @@ function passageLabel(urn, titles) {
  */
 function catalogTitles(release) {
   return new Map(release.ctsCatalog().map(c => [c.urn, c.workTitle]));
+}
+
+/**
+ * Key for comparing a passage URN with the passages of the DSE: the
+ * version-level URN with the reference appended, so an exemplar part
+ * (`.diplomatic`, `.normalized`) and a subreference (`@word`) are ignored, as
+ * are the `.lemma` / `.comment` parts of a scholion.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1` gives
+ * `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} urn
+ * @returns {string | null}  Null if this is not a CTS passage URN.
+ */
+function dseKey(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec(urn.trim());
+  if (!m) return null;
+  const version = ctsVersionOf(m[1]);
+  if (!version) return null;
+  let ref = m[2].replace(/@.*$/, '');
+  if (/^urn:cts:[^:]+:tlg5026\./.test(version)) ref = ref.replace(/\.(lemma|comment)$/, '');
+  return ref ? version + ref : null;
+}
+
+/**
+ * Optional parameters of the facsimile page, read from the hash
+ * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
+ * percent-decoded; the first string that has a parameter wins.
+ * @param {...string} sources  e.g. `location.hash`, `location.search`
+ * @returns {{page: string | null, text: string | null, image: string | null}}
+ */
+function parseFacsimileParams(...sources) {
+  /** @type {{page: string | null, text: string | null, image: string | null}} */
+  const out = { page: null, text: null, image: null };
+  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
+    for (const src of sources) {
+      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
+      if (!m) continue;
+      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
+      break;
+    }
+  }
+  return out;
 }
 
 </script>
