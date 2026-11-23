@@ -305,3 +305,5 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - `lemmata-releases.cex` was not available to check; its format is as described (header `release|date|archive|llm`, row `lemmata-current`).
 - `version.txt` needs a line `lemmatizedsearch.html   0.1.0` (user-owned; the build skips the app and `test/build.test.js` fails until it is there).
 - If the server does not send CORS headers, the page cannot fetch the data from another origin; the drop zone then accepts the saved files (it recognises each by its first lines).
+
+- Fetch failures now say why: a TypeError ("Load failed" in Safari, "Failed to fetch" elsewhere) is reported as the browser being unable to read the file (server unreachable, or no CORS permission), and the drop zone is offered. Prompted by a transient network drop on 2026-11-23; the data loaded fine on retry.
