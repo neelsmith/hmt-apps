@@ -5,6 +5,10 @@
 Current version:  **0.7.0**
 
 
+**0.8.0**, *Nov. 23, 2026*: adds `lemmatizedsearch.html` app.
+
+
+
 **0.7.0**, *Nov. 20, 2026*: adds `stringcounter.html` app.
 
 
@@ -75,3 +79,7 @@ Current version:  **0.7.0**
 ## `stringcounter.html`
 
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
+
+## `lemmatizedsearch.html`
+
+**0.1.0**, *Nov. 23, 2026*: search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).

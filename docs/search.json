@@ -18,7 +18,7 @@
     "href": "apps/index.html#text-oriented-apps",
     "title": "Apps to work with HMT data sets",
     "section": "Text-oriented apps",
-    "text": "Text-oriented apps\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses."
+    "text": "Text-oriented apps\n\nIliad + scholia reader: select passage of the Iliad and view any scholia on the selected lines\nCross-manuscript scholia reader: select passage of the Iliad in a given version, and view passage together with scholia from all edited versions\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nLemmatized text search: search text of Iliad and scholia for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns’ LatinCy language models.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context.\nInterwoven diplomatic/normalized reader: read Iliad and scholia texts in diplomatic transcription with editorial normalizations in parentheses."
   },
   {
     "objectID": "apps/index.html#apps-starting-from-physical-artifacts-and-images",
@@ -60,7 +60,7 @@
     "href": "archive/index.html",
     "title": "Where should I start?",
     "section": "",
-    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to browse the HMT project’s collection of manuscripts images: try images.html\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html"
+    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\nif you want to browse the HMT project’s collection of manuscripts images: try images.html"
   },
   {
     "objectID": "about.html",
