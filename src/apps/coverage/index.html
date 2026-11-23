@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Editorial coverage</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --warnbg: #fbe9e6;
+    --s0: #0072b2; --s1: #d55e00; --s2: #009e73; --s3: #cc79a7; --s4: #7a6a00; --s5: #56b4e9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --warnbg: #3a211d;
+            --s0: #56b4e9; --s1: #ff9c4a; --s2: #3ddba8; --s3: #e8a0c8; --s4: #d9c24a; --s5: #8fa8ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
+  .appmeta .home { margin-right: auto; }
+  .appmeta a, a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1rem; }
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  section.chart { margin: 0 0 2rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: .75rem .9rem; }
+  .desc { color: var(--muted); font-size: .875rem; margin: 0 0 .5rem; }
+  .plot { overflow-x: auto; }
+  .plot svg { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; margin: .25rem 0 .5rem; }
+  .key i { display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; vertical-align: -1px; }
+  svg text { fill: var(--fg); font: 12px system-ui, sans-serif; }
+  svg .axis text, svg .tick { fill: var(--muted); }
+  svg .val { font-size: 11px; fill: var(--fg); }
+  svg .ytitle { fill: var(--muted); }
+  svg .grid { stroke: var(--line); stroke-width: 1; }
+  svg .baseline { stroke: var(--muted); stroke-width: 1; }
+  svg .bar:hover rect { opacity: .8; }
+  details { margin-top: .5rem; }
+  summary { cursor: pointer; color: var(--muted); font-size: .875rem; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: .875rem; margin-top: .5rem; }
+  th, td { padding: .2rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  #warnings { background: var(--warnbg); color: var(--err); border-radius: 8px; padding: .5rem .9rem; margin: 0 0 1.5rem; font-size: .875rem; }
+  #warnings ul { margin: .25rem 0; padding-left: 1.2rem; }
+  footer { color: var(--muted); font-size: .8125rem; padding: 0 0 2rem; }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } main { padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Editorial coverage</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/coverage/">Docs</a></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="report" hidden>
+  <div id="warnings" hidden></div>
+
+  <section class="chart" id="c-lines">
+    <h2>Edited lines of the <i>Iliad</i>, by book</h2>
+    <p class="desc" id="d-lines"></p>
+    <div class="legend" id="l-lines"></div>
+    <div class="plot" id="p-lines"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-lines"></div></details>
+  </section>
+
+  <section class="chart" id="c-pages">
+    <h2>Pages with DSE records, by manuscript</h2>
+    <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
+    <div class="plot" id="p-pages"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-pages"></div></details>
+  </section>
+
+  <section class="chart" id="c-pct">
+    <h2>Share of each codex with DSE records</h2>
+    <p class="desc">Pages with DSE records as a percentage of all pages of the codex.</p>
+    <div class="plot" id="p-pct"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-pct"></div></details>
+  </section>
+
+  <footer>
+    A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
+    normalized exemplar; book titles are not counted. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
+    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
+  </footer>
+</main>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/bar-chart.js -->
+<!-- @inline src/coverage.js -->
+<!-- @inline src/apps/coverage/app.js -->
+</body>
+</html>

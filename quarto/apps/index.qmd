@@ -34,5 +34,7 @@ Each app displays an individual version number. Github release numbers refer to 
 
 ## Editorial status
 
+
+1. See [summaries of editorial work](../coverage.html) in each manuscript.
 1. Find [referential inconsistencies](../dse-check.html) in  editorial indexing.
 
