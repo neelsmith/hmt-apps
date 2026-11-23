@@ -6,14 +6,15 @@
 <meta name="app-version" content="@@VERSION@@">
 <title>Iliad scholia</title>
 <!-- @inline-style src/apps/iliad-scholia/style.css -->
+<!-- @inline-style src/page-text.css -->
 </head>
 <body>
 <main>
   <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/iliad-scholia/">Docs</a></p>
   <h1>Iliad scholia</h1>
-  <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line.</p>
+  <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line, in the context of the manuscript page it is on.</p>
 
-  <div class="panel" id="loading-panel">
+  <div class="card" id="loading-panel">
     <p id="status" role="status">Loading the current HMT release…</p>
     <div id="load-error" hidden></div>
     <div id="drop" hidden>
@@ -22,7 +23,7 @@
     </div>
   </div>
 
-  <form class="panel" id="form" autocomplete="off">
+  <form class="card" id="form" autocomplete="off">
     <div class="field">
       <label for="version">Version of the <em>Iliad</em></label>
       <select id="version" disabled></select>
@@ -58,7 +59,12 @@
 
 <!-- @inline src/hmt-release.js -->
 <!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
 <!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/page-view.js -->
 <!-- @inline src/apps/iliad-scholia/app.js -->
 </body>
 </html>

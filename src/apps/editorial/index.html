@@ -6,6 +6,7 @@
 <meta name="app-version" content="@@VERSION@@">
 <title>Iliad scholia: editorial view</title>
 <!-- @inline-style src/apps/iliad-scholia/style.css -->
+<!-- @inline-style src/page-text.css -->
 <style>
   /* Where the normalized text differs from the diplomatic text, it follows in parentheses, same size, in a contrasting colour. */
   :root { --alt: #1a5bb8; --tint: 13%; }
@@ -21,10 +22,10 @@
 <main>
   <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/editorial/">Docs</a></p>
   <h1>Iliad scholia: editorial view</h1>
-  <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line.
+  <p class="sub">Read a passage of the <em>Iliad</em> in a Homer Multitext edition and see how many scholia comment on each line, in the context of the manuscript page it is on.
     The text is the diplomatic edition; where the normalized edition differs, it follows in colored parentheses.</p>
 
-  <div class="panel" id="loading-panel">
+  <div class="card" id="loading-panel">
     <p id="status" role="status">Loading the current HMT release…</p>
     <div id="load-error" hidden></div>
     <div id="drop" hidden>
@@ -33,7 +34,7 @@
     </div>
   </div>
 
-  <form class="panel" id="form" autocomplete="off">
+  <form class="card" id="form" autocomplete="off">
     <div class="field">
       <label for="version">Version of the <em>Iliad</em></label>
       <select id="version" disabled></select>
@@ -69,7 +70,12 @@
 
 <!-- @inline src/hmt-release.js -->
 <!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/codices.js -->
 <!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/page-view.js -->
 <!-- @inline src/interweave.js -->
 <!-- @inline src/apps/iliad-scholia/app.js -->
 </body>

@@ -68,6 +68,8 @@ function pvEl(tag, cls, text) {
   if (text !== undefined) e.textContent = text;
   return e;
 }
+/** Is `pk` the chosen passage?  `current` is one key, or a set of keys (a range). @param {string | Set<string>} current @param {string} pk */
+const isCur = (current, pk) => typeof current === 'string' ? pk === current : current.has(pk);
 const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
 
 /**
@@ -86,7 +88,8 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {(box: HTMLElement, pk: string) => void} fillText   Write the text of a passage, marks included.
  * @property {(pk: string) => boolean} isHit          The passage contains what was looked for.
  * @property {string} hitLabel                         Said in the badges: "with “Achilles”".
- * @property {string} hitNoun                          "name", "match": "Fold scholia without the name".
+ * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
+ * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
  */
 
 /**
@@ -145,9 +148,9 @@ export function createPageView(data) {
     const d = pvEl('details', 'scholion');
     d.dataset.passage = pk;
     const has = o.isHit(pk);
-    d.open = has || pk === current;
+    d.open = has || isCur(current, pk);
     if (has) d.classList.add('has');
-    if (pk === current) d.classList.add('cur');
+    if (isCur(current, pk)) d.classList.add('cur');
     const sm = pvEl('summary');
     sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
     const target = on || commentedOn(pk);
@@ -205,7 +208,7 @@ export function createPageView(data) {
       for (const pk of lines) {
         const row = pvEl('div', 'line');
         row.dataset.passage = pk;
-        if (pk === current) row.classList.add('cur');
+        if (isCur(current, pk)) row.classList.add('cur');
         row.appendChild(pvEl('span', 'ref', refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
@@ -215,7 +218,7 @@ export function createPageView(data) {
         if (!attached) continue;
         const panel = pvEl('div', 'panel');
         for (const a of attached) panel.appendChild(scholionEl(a.key, current, a.from === a.to ? a.from : `${a.from}–${a.to}`, o));
-        const nOpen = attached.filter(a => o.isHit(a.key) || a.key === current).length;
+        const nOpen = attached.filter(a => o.isHit(a.key) || isCur(current, a.key)).length;
         const badge = pvEl('button', 'badge', `${pvPlural(attached.length, 'scholion', 'scholia')}${nOpen ? ` · ${nOpen} with ${o.hitLabel}` : ''}`);
         badge.type = 'button';
         if (nOpen) badge.classList.add('hot');
@@ -247,7 +250,7 @@ export function createPageView(data) {
           if (b) b.setAttribute('aria-expanded', String(open));
         }
         for (const d of box.querySelectorAll('details.scholion')) d.open = all || d.classList.contains('has') || d.classList.contains('cur');
-        fold.textContent = all ? `Fold scholia without the ${o.hitNoun}` : 'Unfold all scholia';
+        fold.textContent = all ? (o.hitNoun ? `Fold scholia without the ${o.hitNoun}` : 'Fold scholia') : 'Unfold all scholia';
       });
       const top = pvEl('p', 'sub', `${pvPlural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with ${o.hitLabel}. ` : '. '));
       top.appendChild(fold);
@@ -258,7 +261,7 @@ export function createPageView(data) {
       box.appendChild(pvEl('h3', '', `Other text · ${pvPlural(secs.other.length, 'passage', 'passages')}`));
       for (const pk of secs.other) {
         const row = pvEl('div', 'line');
-        if (pk === current) row.classList.add('cur');
+        if (isCur(current, pk)) row.classList.add('cur');
         row.appendChild(pvEl('span', 'ref', refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
@@ -267,7 +270,7 @@ export function createPageView(data) {
       }
     }
     const cur = box.querySelector('.cur');
-    if (cur) cur.scrollIntoView({ block: 'center' });
+    if (cur && o.scroll !== false) cur.scrollIntoView({ block: 'center' });
   }
 
   return {
@@ -281,6 +284,16 @@ export function createPageView(data) {
       const surfaces = surfacesOf.get(pk);
       if (!surfaces) renderLoose(box, pk, o);
       else renderPage(box, surfaces[0], pk, surfaces, o);
+    },
+
+    /**
+     * Show one page, given by its surface URN, with the passages of `current`
+     * marked: one passage key, or a set of keys (the lines of a range).
+     * @param {HTMLElement} box @param {string} surface @param {string | Set<string>} current @param {PageOptions} o
+     */
+    showPage(box, surface, current, o) {
+      box.textContent = '';
+      renderPage(box, surface, current, [surface], o);
     },
   };
 }
