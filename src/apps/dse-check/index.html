@@ -20,7 +20,8 @@
   h1 { font-size: 1.15rem; margin: 0; }
   h2 { font-size: 1.05rem; margin: 0; }
   #status { color: var(--muted); font-size: .875rem; }
-  .appmeta { margin-left: auto; display: inline-flex; gap: .4rem 1rem; flex-wrap: wrap; font-size: .875rem; color: var(--muted); }
+  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
+  .appmeta .home { margin-right: auto; }
   .appmeta a, a { color: var(--accent); }
   button { font: inherit; cursor: pointer; }
   .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
@@ -59,7 +60,7 @@
 <header>
   <h1>DSE check</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/dse-check/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>

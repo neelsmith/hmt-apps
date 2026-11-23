@@ -64,5 +64,6 @@
     .scholia { margin-left: .5rem; }
     .byms { margin-left: 4.25rem; }
   }
-  .appmeta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); margin: 0 0 .75rem; }
+  .appmeta { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); margin: 0 0 .75rem; }
   .appmeta a { color: var(--accent); }
+  .appmeta .home { margin-right: auto; }

@@ -307,3 +307,11 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - If the server does not send CORS headers, the page cannot fetch the data from another origin; the drop zone then accepts the saved files (it recognises each by its first lines).
 
 - Fetch failures now say why: a TypeError ("Load failed" in Safari, "Failed to fetch" elsewhere) is reported as the browser being unable to read the file (server unreachable, or no CORS permission), and the drop zone is offered. Prompted by a transient network drop on 2026-11-23; the data loaded fine on retry.
+
+## Standard top menu: Docs link (2026-11-23)
+
+- Every app's `.appmeta` bar is now: "← HMT apps home" (left), "Version X", then "Docs" (right), where Docs links to `https://neelsmith.github.io/hmt-apps/docs/<app-name>/` (no `.html`; e.g. `.../docs/iliad-scholia/`). Added to all 11 `src/apps/*/index.html`; `dist/` rebuilt.
+- `src/apps/iliad-scholia/style.css` (shared by iliad-scholia, editorial, all-scholia): the bar now uses `justify-content: flex-end` with `.home { margin-right: auto }`, so three items keep home left and version + Docs right.
+- The other apps already right-align `.appmeta` with `margin-left: auto`, so no CSS change was needed.
+- 121 unit tests pass (15 skipped). Not checked visually in a browser. Nothing committed.
+- Follow-up (2026-11-23): in codices, dse-check, images, lemmatizedsearch, propernames, stringcounter, stringsearch and va-facsimile the menu bar sat right-aligned on the title's line. Its CSS is now `order: -1; flex: 0 0 100%` inside the flex `<header>`, so it takes its own line above the h1 (home left, version + Docs right), as in iliad-scholia. CSS-only; HTML unchanged. Checked in Chromium at 1100 and 390 px: bar above the title in all nine apps, no overflow.
