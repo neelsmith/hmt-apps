@@ -32,7 +32,8 @@ website:
         file: archive/index.qmd
       - text: "The apps"
         file: apps/index.qmd
-
+      - text: "Docs"
+        file: docs/index.qmd
     right:
       - icon: person-circle
         menu:
@@ -41,3 +42,22 @@ website:
           - text: "Neel Smith"
             href: https://neelsmith.github.io/
         aria-label: Home 
+  sidebar:
+      - title: "Docs"
+        contents:
+          - docs/index.qmd
+          - "---"
+          - docs/va-facsimile/index.qmd
+          - "---"
+          - docs/iliad-scholia/index.qmd
+          - docs/all-scholia/index.qmd
+          - docs/stringsearch/index.qmd
+          - docs/stringcounter/index.qmd
+          - docs/lemmatizedsearch/index.qmd
+          - docs/propernames/index.qmd
+          - docs/editorial/index.qmd
+          - "---"
+          - docs/codices/index.qmd
+          - docs/images/index.qmd
+          - "---"
+          - docs/dse-check/index.qmd

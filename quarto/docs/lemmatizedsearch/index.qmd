@@ -1,0 +1,5 @@
+---
+title: "`lemmatizedsearch`"
+---
+
+*App-specific docs not yet available*

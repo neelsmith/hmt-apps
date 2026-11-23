@@ -56,11 +56,132 @@
     "text": "More info\n\nWhat is a “two-coffee app”? More about the contents of this repository.\nWhere should I start? Get started exploring HMT archival data.\nWhere can I find running versions of all the apps? Find links to all of the apps hosted here.\nCountdown to 1.0.0: See a github milestone with remaining issues for a 1.0 release of this repository."
   },
   {
+    "objectID": "docs/dse-check/index.html",
+    "href": "docs/dse-check/index.html",
+    "title": "va-facsimile",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`va-facsimile`"
+    ]
+  },
+  {
+    "objectID": "docs/all-scholia/index.html",
+    "href": "docs/all-scholia/index.html",
+    "title": "all-scholia",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`all-scholia`"
+    ]
+  },
+  {
+    "objectID": "docs/stringcounter/index.html",
+    "href": "docs/stringcounter/index.html",
+    "title": "stringcounter",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`stringcounter`"
+    ]
+  },
+  {
+    "objectID": "docs/va-facsimile/index.html",
+    "href": "docs/va-facsimile/index.html",
+    "title": "va-facsimile",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`va-facsimile`"
+    ]
+  },
+  {
+    "objectID": "docs/editorial/index.html",
+    "href": "docs/editorial/index.html",
+    "title": "editorial",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`editorial`"
+    ]
+  },
+  {
     "objectID": "archive/index.html",
     "href": "archive/index.html",
     "title": "Where should I start?",
     "section": "",
     "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\nif you want to browse the HMT project’s collection of manuscripts images: try images.html"
+  },
+  {
+    "objectID": "docs/images/index.html",
+    "href": "docs/images/index.html",
+    "title": "images",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`images`"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html",
+    "href": "docs/stringsearch/index.html",
+    "title": "stringsearch",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`stringsearch`"
+    ]
+  },
+  {
+    "objectID": "docs/lemmatizedsearch/index.html",
+    "href": "docs/lemmatizedsearch/index.html",
+    "title": "lemmatizedsearch",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`lemmatizedsearch`"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html",
+    "href": "docs/iliad-scholia/index.html",
+    "title": "iliad-scholia",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`iliad-scholia`"
+    ]
+  },
+  {
+    "objectID": "docs/propernames/index.html",
+    "href": "docs/propernames/index.html",
+    "title": "propernames",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`propernames`"
+    ]
+  },
+  {
+    "objectID": "docs/codices/index.html",
+    "href": "docs/codices/index.html",
+    "title": "codices",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`codices`"
+    ]
   },
   {
     "objectID": "about.html",
