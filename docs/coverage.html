@@ -1,0 +1,1834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="0.1.0">
+<title>Editorial coverage</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --warnbg: #fbe9e6;
+    --s0: #0072b2; --s1: #d55e00; --s2: #009e73; --s3: #cc79a7; --s4: #7a6a00; --s5: #56b4e9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --warnbg: #3a211d;
+            --s0: #56b4e9; --s1: #ff9c4a; --s2: #3ddba8; --s3: #e8a0c8; --s4: #d9c24a; --s5: #8fa8ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
+  .appmeta .home { margin-right: auto; }
+  .appmeta a, a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1rem; }
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  section.chart { margin: 0 0 2rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: .75rem .9rem; }
+  .desc { color: var(--muted); font-size: .875rem; margin: 0 0 .5rem; }
+  .plot { overflow-x: auto; }
+  .plot svg { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; margin: .25rem 0 .5rem; }
+  .key i { display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; vertical-align: -1px; }
+  svg text { fill: var(--fg); font: 12px system-ui, sans-serif; }
+  svg .axis text, svg .tick { fill: var(--muted); }
+  svg .val { font-size: 11px; fill: var(--fg); }
+  svg .ytitle { fill: var(--muted); }
+  svg .grid { stroke: var(--line); stroke-width: 1; }
+  svg .baseline { stroke: var(--muted); stroke-width: 1; }
+  svg .bar:hover rect { opacity: .8; }
+  details { margin-top: .5rem; }
+  summary { cursor: pointer; color: var(--muted); font-size: .875rem; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: .875rem; margin-top: .5rem; }
+  th, td { padding: .2rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  #warnings { background: var(--warnbg); color: var(--err); border-radius: 8px; padding: .5rem .9rem; margin: 0 0 1.5rem; font-size: .875rem; }
+  #warnings ul { margin: .25rem 0; padding-left: 1.2rem; }
+  footer { color: var(--muted); font-size: .8125rem; padding: 0 0 2rem; }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } main { padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Editorial coverage</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/coverage/">Docs</a></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="report" hidden>
+  <div id="warnings" hidden></div>
+
+  <section class="chart" id="c-lines">
+    <h2>Edited lines of the <i>Iliad</i>, by book</h2>
+    <p class="desc" id="d-lines"></p>
+    <div class="legend" id="l-lines"></div>
+    <div class="plot" id="p-lines"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-lines"></div></details>
+  </section>
+
+  <section class="chart" id="c-pages">
+    <h2>Pages with DSE records, by manuscript</h2>
+    <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
+    <div class="plot" id="p-pages"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-pages"></div></details>
+  </section>
+
+  <section class="chart" id="c-pct">
+    <h2>Share of each codex with DSE records</h2>
+    <p class="desc">Pages with DSE records as a percentage of all pages of the codex.</p>
+    <div class="plot" id="p-pct"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-pct"></div></details>
+  </section>
+
+  <footer>
+    A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
+    normalized exemplar; book titles are not counted. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
+    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
+  </footer>
+</main>
+
+<script>
+// @ts-check
+/**
+ * Parsing of an HMT data release (a single CEX text file).
+ *
+ * Design notes
+ * - No imports and no dependencies, so this file runs unchanged in Node
+ *   (tests) and in a browser, and can later be inlined into a single-file app
+ *   by stripping the leading `export` keywords.
+ * - Parsing never throws on irregular data.  Irregularities are collected as
+ *   warnings: see `HmtRelease.validate()`.
+ */
+
+/** Block labels recognised in a release, in the order given in CLAUDE.md. */
+const BLOCK_TYPES = [
+  'cexversion', 'citelibrary', 'citecollections', 'citeproperties',
+  'citedata', 'datamodels', 'ctscatalog', 'ctsdata', 'citerelationset',
+];
+
+/** Default location of the current release. */
+const DEFAULT_RELEASE_URL =
+  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/releases-cex/hmt-current.cex';
+
+/** Block types whose repeated blocks each start with the same header line. */
+const FIXED_HEADER_TYPES = new Set(['citecollections', 'citeproperties', 'datamodels', 'ctscatalog']);
+
+// ---------------------------------------------------------------------------
+// Step 1: split text into labelled blocks
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} Block
+ * @property {string} type       Label without the `#!` prefix.
+ * @property {number} startLine  1-based line number of the header line.
+ * @property {string[]} lines    Data lines: comments and blank lines removed.
+ */
+
+/**
+ * Split CEX text into blocks.  Lines starting with `//` and empty lines are
+ * dropped.  Everything between a `#!` header line and the next belongs to the
+ * first.
+ * @param {string} text
+ * @returns {{blocks: Block[], warnings: string[]}}
+ */
+function splitBlocks(text) {
+  /** @type {Block[]} */
+  const blocks = [];
+  /** @type {string[]} */
+  const warnings = [];
+  /** @type {Block | null} */
+  let current = null;
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('#!')) {
+      const type = line.slice(2).trim();
+      if (!BLOCK_TYPES.includes(type)) {
+        warnings.push(`line ${i + 1}: unrecognized block type "${type}"`);
+      }
+      current = { type, startLine: i + 1, lines: [] };
+      blocks.push(current);
+      continue;
+    }
+    if (line.startsWith('//') || line.trim() === '') continue;
+    if (current === null) {
+      warnings.push(`line ${i + 1}: content before the first block header ignored`);
+      continue;
+    }
+    current.lines.push(line);
+  }
+  return { blocks, warnings };
+}
+
+// ---------------------------------------------------------------------------
+// URN helpers (CITE2 and CTS)
+// ---------------------------------------------------------------------------
+
+/** True for a collection-level CITE2 URN, e.g. `urn:cite2:hmt:e3pages.v1:`. */
+function isCollectionUrn(urn) {
+  return /^urn:cite2:[^:]+:[^:]+:$/.test(urn);
+}
+
+/** Collection-level URN for an object URN, or null if `urn` is not CITE2. */
+function collectionOfObject(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/**
+ * Collection-level URN for a property-level URN, e.g.
+ * `urn:cite2:citebl:burney86pages.v1.sequence:` gives
+ * `urn:cite2:citebl:burney86pages.v1:`.  Null if not property-level.
+ */
+function collectionOfProperty(urn) {
+  const m = /^(urn:cite2:[^:]+:[^:]+)\.[^.:]+:$/.exec(urn);
+  return m ? m[1] + ':' : null;
+}
+
+/** Property-level URN for a property name in a collection. */
+function propertyUrn(collectionUrn, name) {
+  return collectionUrn.slice(0, -1) + '.' + name + ':';
+}
+
+/**
+ * Work-component prefix of a CTS URN (`urn:cts:ns:group.work.version[.exemplar]:`),
+ * which is version-level or exemplar-level depending on the URN.
+ */
+function ctsWorkOf(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)/.exec(urn);
+  return m ? m[1] : null;
+}
+
+/** Version-level CTS URN (`urn:cts:ns:group.work.version:`): drops any exemplar part. */
+function ctsVersionOf(urn) {
+  const m = /^(urn:cts:[^:]+:)([^:]+):/.exec(urn);
+  return m ? m[1] + m[2].split('.').slice(0, 3).join('.') + ':' : null;
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: typed access
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse lines of delimited text into objects keyed by `fields`.  Rows with the
+ * wrong number of values are still returned (padded or truncated); they are
+ * reported through `warn` as one summary message per table.
+ * @param {string[]} lines
+ * @param {string[]} fields
+ * @param {(msg: string) => void} warn
+ * @param {string} label  used in warnings
+ * @returns {Record<string, string>[]}
+ */
+function rowsToObjects(lines, fields, warn, label) {
+  let ragged = 0;
+  let firstBad = 0;
+  const out = lines.map((line, i) => {
+    const vals = line.split('|');
+    if (vals.length !== fields.length) {
+      if (!ragged) firstBad = i + 1;
+      ragged++;
+    }
+    /** @type {Record<string, string>} */
+    const obj = {};
+    fields.forEach((f, j) => { obj[f] = vals[j] ?? ''; });
+    return obj;
+  });
+  if (ragged) {
+    warn(`${label}: ${ragged} of ${lines.length} rows do not have ${fields.length} values (first: row ${firstBad})`);
+  }
+  return out;
+}
+
+class HmtRelease {
+  /** @param {string} text  Full text of a CEX release. */
+  constructor(text) {
+    const { blocks, warnings } = splitBlocks(text);
+    /** @type {Block[]} */
+    this.blocks = blocks;
+    /** @type {string[]} */
+    this._warnings = [...warnings];
+    /** @type {Map<string, any>} */
+    this._cache = new Map();
+  }
+
+  /** @param {string} msg */
+  _warn(msg) { if (!this._warnings.includes(msg)) this._warnings.push(msg); }
+
+  /**
+   * @template T
+   * @param {string} key
+   * @param {() => T} compute
+   * @returns {T}
+   */
+  _memo(key, compute) {
+    if (!this._cache.has(key)) this._cache.set(key, compute());
+    return this._cache.get(key);
+  }
+
+  /** Block types actually present, in order of first appearance. */
+  blockTypes() {
+    return [...new Set(this.blocks.map(b => b.type))];
+  }
+
+  /**
+   * Data lines of all blocks of one type, composited into a single array.
+   * For types with one fixed header line (citecollections, citeproperties,
+   * datamodels, ctscatalog) the first line of each repeated block is treated
+   * as its header and dropped, so the result has a single header line at the
+   * start.  For `citedata` and
+   * `citerelationset` the composite is a plain concatenation; use `citeData()`
+   * or `relationSets()` to get the per-block structure.
+   * @param {string} type
+   * @returns {string[]}
+   */
+  getBlock(type) {
+    return this._memo('block:' + type, () => {
+      const same = this.blocks.filter(b => b.type === type);
+      if (!FIXED_HEADER_TYPES.has(type)) return same.flatMap(b => b.lines);
+      /** @type {string[]} */
+      const out = [];
+      for (const b of same) {
+        if (out.length === 0) { out.push(...b.lines); continue; }
+        // Later blocks repeat the header line; drop it.
+        if (b.lines[0] !== out[0]) {
+          this._warn(`${type} (line ${b.startLine}): header "${b.lines[0]}" differs from first header "${out[0]}"`);
+        }
+        out.push(...b.lines.slice(1));
+      }
+      return out;
+    });
+  }
+
+  /** The CEX version string, or null if absent. */
+  get cexVersion() {
+    const lines = this.getBlock('cexversion');
+    if (this.blocks.filter(b => b.type === 'cexversion').length > 1) {
+      this._warn('more than one #!cexversion block');
+    }
+    return lines.length ? lines[0].trim() : null;
+  }
+
+  /**
+   * Library metadata from the `#!citelibrary` block.
+   * @returns {{name: string, urn: string, license: string,
+   *            namespaces: {abbreviation: string, uri: string}[]}}
+   */
+  get library() {
+    return this._memo('library', () => {
+      if (this.blocks.filter(b => b.type === 'citelibrary').length > 1) {
+        this._warn('more than one #!citelibrary block');
+      }
+      const lib = { name: '', urn: '', license: '', namespaces: /** @type {{abbreviation: string, uri: string}[]} */ ([]) };
+      for (const line of this.getBlock('citelibrary')) {
+        const [key, ...rest] = line.split('|');
+        if (key === 'namespace') {
+          if (rest.length !== 2) this._warn(`citelibrary: malformed namespace line "${line}"`);
+          lib.namespaces.push({ abbreviation: rest[0] ?? '', uri: rest[1] ?? '' });
+        } else if (key === 'name' || key === 'urn' || key === 'license') {
+          lib[key] = rest.join('|');
+        } else {
+          this._warn(`citelibrary: unrecognized key "${key}"`);
+        }
+      }
+      return lib;
+    });
+  }
+
+  /** @returns {{urn: string, description: string, labellingProperty: string, orderingProperty: string, license: string}[]} */
+  collections() {
+    return this._memo('collections', () => {
+      const [, ...rows] = this.getBlock('citecollections');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'description', 'labellingProperty', 'orderingProperty', 'license'],
+        m => this._warn(m), 'citecollections'));
+    });
+  }
+
+  /** @returns {{urn: string, label: string, type: string, authorityList: string}[]} */
+  properties() {
+    return this._memo('properties', () => {
+      const [, ...rows] = this.getBlock('citeproperties');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['urn', 'label', 'type', 'authorityList'], m => this._warn(m), 'citeproperties'));
+    });
+  }
+
+  /** @returns {{collection: string, model: string, label: string, description: string}[]} */
+  dataModels() {
+    return this._memo('datamodels', () => {
+      const [, ...rows] = this.getBlock('datamodels');
+      return /** @type {any} */ (rowsToObjects(rows,
+        ['collection', 'model', 'label', 'description'], m => this._warn(m), 'datamodels'));
+    });
+  }
+
+  /** @returns {Record<string, string>[]}  Keys: urn, citationScheme, groupName, workTitle, versionLabel, exemplarLabel, online, language. */
+  ctsCatalog() {
+    return this._memo('ctscatalog', () => {
+      const [, ...rows] = this.getBlock('ctscatalog');
+      return rowsToObjects(rows,
+        ['urn', 'citationScheme', 'groupName', 'workTitle', 'versionLabel', 'exemplarLabel', 'online', 'language'],
+        m => this._warn(m), 'ctscatalog');
+    });
+  }
+
+  /**
+   * Passages of all `#!ctsdata` blocks.  Each line is split at its first `|`.
+   * @returns {{urn: string, text: string}[]}
+   */
+  ctsData() {
+    return this._memo('ctsdata', () => {
+      /** @type {{urn: string, text: string}[]} */
+      const out = [];
+      for (const line of this.getBlock('ctsdata')) {
+        const i = line.indexOf('|');
+        if (i < 0) { this._warn(`ctsdata: line without "|": "${line.slice(0, 60)}"`); continue; }
+        if (line.indexOf('|', i + 1) >= 0) this._warn(`ctsdata: extra "|" in passage ${line.slice(0, i)}`);
+        out.push({ urn: line.slice(0, i), text: line.slice(i + 1) });
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Tables of all `#!citedata` blocks.  Each block has its own header.
+   * `collections` lists the distinct collection URNs of the rows' `urn` values.
+   * @returns {{header: string[], rows: Record<string, string>[], collections: string[], startLine: number}[]}
+   */
+  citeData() {
+    return this._memo('citedata', () => this.blocks.filter(b => b.type === 'citedata').map(b => {
+      const header = (b.lines[0] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(1), header, m => this._warn(m), `citedata (line ${b.startLine})`);
+      const cols = new Set();
+      const urnField = header.find(h => h.toLowerCase() === 'urn');
+      if (urnField !== undefined) {
+        for (const r of rows) {
+          const c = collectionOfObject(r[urnField]);
+          if (c) cols.add(c);
+        }
+      } else if (b.lines.length) {
+        this._warn(`citedata (line ${b.startLine}): no "urn" column, collection unknown`);
+      }
+      return { header, rows, collections: [...cols], startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Relation sets, one per `#!citerelationset` block: `urn` and `label`
+   * key-value lines, then a header line, then rows.
+   * @returns {{urn: string, label: string, header: string[], rows: Record<string, string>[], startLine: number}[]}
+   */
+  relationSets() {
+    return this._memo('relationsets', () => this.blocks.filter(b => b.type === 'citerelationset').map(b => {
+      let urn = '', label = '';
+      let i = 0;
+      for (; i < b.lines.length; i++) {
+        const [key, ...rest] = b.lines[i].split('|');
+        if (key === 'urn' && rest.length === 1 && !urn) urn = rest[0];
+        else if (key === 'label' && !label) label = rest.join('|');
+        else break;
+      }
+      if (!urn) this._warn(`citerelationset (line ${b.startLine}): no urn`);
+      const header = (b.lines[i] ?? '').split('|');
+      const rows = rowsToObjects(b.lines.slice(i + 1), header, m => this._warn(m), `citerelationset ${urn || b.startLine}`);
+      return { urn, label, header, rows, startLine: b.startLine };
+    }));
+  }
+
+  /**
+   * Check the release for consistency.  Never throws; returns warnings
+   * (including any irregularities noticed while parsing), empty if none.
+   * @returns {string[]}
+   */
+  validate() {
+    // Run every typed parser so their warnings are collected.
+    this.cexVersion; this.library; this.ctsData();
+    const collections = this.collections();
+    const properties = this.properties();
+    const models = this.dataModels();
+    const catalog = this.ctsCatalog();
+    const citeData = this.citeData();
+    const relSets = this.relationSets();
+    const warn = (/** @type {string} */ m) => this._warn(m);
+
+    const collUrns = new Set(collections.map(c => c.urn));
+    const propUrns = new Set(properties.map(p => p.urn));
+    const propLower = new Set(properties.map(p => p.urn.toLowerCase()));
+
+    for (const c of collections) {
+      if (!isCollectionUrn(c.urn)) warn(`citecollections: "${c.urn}" is not a collection-level CITE2 URN`);
+      if (!propUrns.has(c.labellingProperty)) {
+        warn(`citecollections: labelling property "${c.labellingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+      if (c.orderingProperty && !propUrns.has(c.orderingProperty)) {
+        warn(`citecollections: ordering property "${c.orderingProperty}" of ${c.urn} is not documented in citeproperties`);
+      }
+    }
+    for (const p of properties) {
+      const c = collectionOfProperty(p.urn);
+      if (!c) warn(`citeproperties: "${p.urn}" is not a property-level CITE2 URN`);
+      else if (!collUrns.has(c)) warn(`citeproperties: collection ${c} of property ${p.urn} is not documented in citecollections`);
+    }
+    for (const t of citeData) {
+      for (const c of t.collections) {
+        if (!collUrns.has(c)) warn(`citedata (line ${t.startLine}): collection ${c} is not documented in citecollections`);
+        const undocumented = t.header.filter(name => !propUrns.has(propertyUrn(c, name)))
+          .map(name => propLower.has(propertyUrn(c, name).toLowerCase()) ? `${name} (documented with different capitalization)` : name);
+        if (undocumented.length) {
+          warn(`citedata (line ${t.startLine}): ${undocumented.length} of ${t.header.length} properties of ${c} not documented in citeproperties: ${undocumented.join(', ')}`);
+        }
+      }
+    }
+    for (const m of models) {
+      if (!collUrns.has(m.collection) && !relSets.some(r => r.urn === m.collection)) {
+        warn(`datamodels: ${m.collection} is neither a documented collection nor a relation set`);
+      }
+    }
+    const modelled = new Set(models.map(m => m.collection));
+    for (const r of relSets) {
+      if (r.urn && !modelled.has(r.urn)) warn(`citerelationset: ${r.urn} has no entry in datamodels`);
+    }
+    const versions = new Set(catalog.map(c => c.urn));
+    const missing = new Set();
+    for (const p of this.ctsData()) {
+      const w = ctsWorkOf(p.urn);
+      const v = ctsVersionOf(p.urn);
+      if (!(w && versions.has(w)) && !(v && versions.has(v))) missing.add(w ?? p.urn);
+    }
+    for (const v of missing) warn(`ctsdata: no ctscatalog entry for version ${v}`);
+
+    return [...this._warnings];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+/** Parse release text. */
+function parseRelease(text) {
+  return new HmtRelease(text);
+}
+
+/**
+ * Fetch and parse a release.  Works when the page is served over http(s);
+ * browsers block fetch from file:// pages, where apps should instead use
+ * `readReleaseFile` with a file picker or drop target.
+ * @param {string} [url]
+ */
+async function fetchRelease(url = DEFAULT_RELEASE_URL) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Could not load ${url}: HTTP ${resp.status}`);
+  return parseRelease(await resp.text());
+}
+
+/** Parse a release from a `File`/`Blob` (file picker or drag-and-drop). */
+async function readReleaseFile(file) {
+  return parseRelease(await file.text());
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Shared lookup of CTS passage text in a release.  Used by several apps.
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/**
+ * Passages of one text (a version or exemplar), in the order of the release.
+ * @typedef {Object} TextIndex
+ * @property {string} urn                     Work-component URN, ending in ":".
+ * @property {string[]} refs                  Passage references, in order.
+ * @property {string[]} texts                 Passage text, parallel to `refs`.
+ * @property {Map<string, number>} pos        Reference -> position in `refs`.
+ */
+
+/** Preferred order of exemplar kinds when listing the texts of a version. */
+const KIND_ORDER = ['normalized', 'diplomatic'];
+
+/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
+function exemplarName(workUrn) {
+  const parts = workUrn.split(':')[3].split('.');
+  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+}
+
+/**
+ * Index every text in the release by work-component URN.  The order of
+ * passages in the release is the order of the text (references like
+ * `1.title` or `6.386del` do not sort numerically).
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, TextIndex>}
+ */
+function buildTextIndex(release) {
+  /** @type {Map<string, TextIndex>} */
+  const map = new Map();
+  for (const { urn, text } of release.ctsData()) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+    if (!m) continue;
+    let t = map.get(m[1]);
+    if (!t) { t = { urn: m[1], refs: [], texts: [], pos: new Map() }; map.set(m[1], t); }
+    if (!t.pos.has(m[2])) t.pos.set(m[2], t.refs.length);
+    t.refs.push(m[2]);
+    t.texts.push(text);
+  }
+  return map;
+}
+
+/** @type {WeakMap<Map<string, TextIndex>, Map<string, {urn: string, kind: string}[]>>} */
+const versionTexts = new WeakMap();
+
+/**
+ * The texts (exemplars, or the version itself) available for a version URN,
+ * `normalized` first.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} versionUrn  e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`
+ * @returns {{urn: string, kind: string}[]}
+ */
+function textsOfVersion(textIndex, versionUrn) {
+  let byVersion = versionTexts.get(textIndex);
+  if (!byVersion) {
+    byVersion = new Map();
+    for (const key of textIndex.keys()) {
+      const v = ctsVersionOf(key);
+      if (!v) continue;
+      const list = byVersion.get(v) ?? [];
+      list.push({ urn: key, kind: exemplarName(key) });
+      byVersion.set(v, list);
+    }
+    const rank = (/** @type {string} */ k) => KIND_ORDER.indexOf(k) + 1 || 99;
+    for (const list of byVersion.values()) list.sort((a, b) => rank(a.kind) - rank(b.kind));
+    versionTexts.set(textIndex, byVersion);
+  }
+  return byVersion.get(versionUrn) ?? [];
+}
+
+/**
+ * Text of a passage, from the exemplar of the requested kind when the version
+ * has one (otherwise the first available).  A passage with its own text gives
+ * one part with an empty `part` name; a scholion, whose text is stored as
+ * `<ref>.lemma` and `<ref>.comment`, gives those parts.  Nothing found gives
+ * no parts.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} urn   Passage URN at version level, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} kind  `diplomatic` or `normalized`.
+ * @returns {{parts: {part: string, text: string}[]}}
+ */
+function passageText(textIndex, urn, kind) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+  if (!m) return { parts: [] };
+  const version = ctsVersionOf(m[1]);
+  const texts = version ? textsOfVersion(textIndex, version) : [];
+  const pick = texts.find(t => t.kind === kind) ?? texts[0];
+  const t = pick ? textIndex.get(pick.urn) : undefined;
+  if (!t) return { parts: [] };
+  const direct = t.pos.get(m[2]);
+  if (direct !== undefined) return { parts: [{ part: '', text: t.texts[direct] }] };
+  /** @type {{part: string, text: string}[]} */
+  const parts = [];
+  for (const part of ['lemma', 'comment']) {
+    const i = t.pos.get(m[2] + '.' + part);
+    if (i !== undefined) parts.push({ part, text: t.texts[i] });
+  }
+  return { parts };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Digital scholarly edition (DSE) index: the relation set that links text
+ * passages to regions of interest (ROI) on manuscript images.
+ * No DOM access.
+ */
+
+/** Relation set linking passages, image regions, and manuscript surfaces. */
+const DSE_URN = 'urn:cite2:hmt:hmtdse.v1:all';
+
+/**
+ * @typedef {Object} Roi
+ * @property {number} x  Left edge, as a fraction (0–1) of the image width.
+ * @property {number} y  Top edge, as a fraction of the image height.
+ * @property {number} w  Width, as a fraction of the image width.
+ * @property {number} h  Height, as a fraction of the image height.
+ */
+
+/**
+ * Parse `x,y,w,h` (fractions of the image size).  Whitespace around values
+ * is tolerated.  Returns null if there are not four numbers, or the region is
+ * empty or lies outside the image.  A region that sticks out past the right or
+ * bottom edge by up to 0.02 of the image size (rounding in the source data,
+ * e.g. x+w = 1.004) is clipped to the image.
+ * @param {string} text
+ * @returns {Roi | null}
+ */
+function parseRoi(text) {
+  const parts = text.split(',').map(s => s.trim());
+  if (parts.length !== 4 || parts.some(p => !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(p))) return null;
+  const [x, y, w, h] = parts.map(Number);
+  const eps = 0.02;
+  if (x < 0 || y < 0 || !(w > 0) || !(h > 0) || x + w > 1 + eps || y + h > 1 + eps) return null;
+  return { x, y, w: Math.min(w, 1 - x), h: Math.min(h, 1 - y) };
+}
+
+/**
+ * Split an `imageroi` value such as
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013@0.0611,0.2252,0.4675,0.0901`.
+ * @param {string} value
+ * @returns {{image: string, roi: Roi} | null}  Null if there is no usable region.
+ */
+function parseImageRoi(value) {
+  const at = value.indexOf('@');
+  if (at < 0) return null;
+  const roi = parseRoi(value.slice(at + 1));
+  const image = value.slice(0, at).trim();
+  return roi && image ? { image, roi } : null;
+}
+
+/**
+ * Regions of the DSE relation set, grouped by image.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{byImage: Map<string, {passage: string, roi: Roi}[]>, byPassage: Map<string, string[]>, rows: number, skipped: number, found: boolean}}
+ *   `byPassage` maps a passage key (see `dseKey`) to the images it is indexed
+ *   to, in index order, without repeats.  `skipped` counts rows without a
+ *   usable region; `found` is false if the release has no such relation set.
+ */
+function indexDse(release) {
+  /** @type {Map<string, {passage: string, roi: Roi}[]>} */
+  const byImage = new Map();
+  /** @type {Map<string, string[]>} */
+  const byPassage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { byImage, byPassage, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    if (!parsed || !row.passage) { skipped++; continue; }
+    const list = byImage.get(parsed.image) ?? [];
+    list.push({ passage: row.passage, roi: parsed.roi });
+    byImage.set(parsed.image, list);
+    const key = dseKey(row.passage);
+    if (key) {
+      const images = byPassage.get(key) ?? [];
+      if (!images.includes(parsed.image)) images.push(parsed.image);
+      byPassage.set(key, images);
+    }
+  }
+  return { byImage, byPassage, rows: set.rows.length, skipped, found: true };
+}
+
+/** @typedef {'iliad' | 'scholia' | 'other'} PassageKind */
+
+/**
+ * Kind of text a passage belongs to: the Iliad (tlg0012.tlg001), scholia
+ * (tlg5026), or anything else.
+ * @param {string} urn
+ * @returns {PassageKind}
+ */
+function passageKind(urn) {
+  const m = /^urn:cts:[^:]+:([^:.]+)\.([^:.]+)/.exec(urn);
+  if (!m) return 'other';
+  if (m[1] === 'tlg0012' && m[2] === 'tlg001') return 'iliad';
+  if (m[1] === 'tlg5026') return 'scholia';
+  return 'other';
+}
+
+const SCHOLIA_ZONES = {
+  msA: 'main', msAint: 'interior', msAext: 'exterior', msAextra: 'extra',
+  msAil: 'interlinear', msAim: 'intermarginal', msAimLater: 'later intermarginal', msAmeta: 'meta',
+};
+
+/**
+ * Short label for a passage: `Iliad 5.506`, `Scholion 1.28 (interior)`,
+ * otherwise the work title from the CTS catalog when known.
+ * @param {string} urn
+ * @param {Map<string, string>} [titles]  Version URN -> work title, from the CTS catalog.
+ */
+function passageLabel(urn, titles) {
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return urn;
+  const kind = passageKind(urn);
+  if (kind === 'iliad') return `Iliad ${m[2]}`;
+  if (kind === 'scholia') {
+    const zone = /** @type {Record<string, string>} */ (SCHOLIA_ZONES)[m[1].split('.')[1]];
+    return `Scholion ${m[2]}${zone ? ` (${zone})` : ''}`;
+  }
+  const version = `urn:cts:${urn.split(':')[2]}:${m[1].split('.').slice(0, 3).join('.')}:`;
+  return `${titles?.get(version) ?? m[1]} ${m[2]}`;
+}
+
+/**
+ * Work titles by version URN, from the CTS catalog.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, string>}
+ */
+function catalogTitles(release) {
+  return new Map(release.ctsCatalog().map(c => [c.urn, c.workTitle]));
+}
+
+/**
+ * Key for comparing a passage URN with the passages of the DSE: the
+ * version-level URN with the reference appended, so an exemplar part
+ * (`.diplomatic`, `.normalized`) and a subreference (`@word`) are ignored, as
+ * are the `.lemma` / `.comment` parts of a scholion.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1` gives
+ * `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} urn
+ * @returns {string | null}  Null if this is not a CTS passage URN.
+ */
+function dseKey(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec(urn.trim());
+  if (!m) return null;
+  const version = ctsVersionOf(m[1]);
+  if (!version) return null;
+  let ref = m[2].replace(/@.*$/, '');
+  if (/^urn:cts:[^:]+:tlg5026\./.test(version)) ref = ref.replace(/\.(lemma|comment)$/, '');
+  return ref ? version + ref : null;
+}
+
+/**
+ * Optional parameters of the facsimile page, read from the hash
+ * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
+ * percent-decoded; the first string that has a parameter wins.
+ * @param {...string} sources  e.g. `location.hash`, `location.search`
+ * @returns {{page: string | null, text: string | null, image: string | null}}
+ */
+function parseFacsimileParams(...sources) {
+  /** @type {{page: string | null, text: string | null, image: string | null}} */
+  const out = { page: null, text: null, image: null };
+  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
+    for (const src of sources) {
+      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
+      if (!m) continue;
+      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
+      break;
+    }
+  }
+  return out;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the images app: the image collections of a release, their items,
+ * where the pictures are served, paging, and the location hash.
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** Data model of image collections. */
+const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
+
+/**
+ * Base of the HMT IIIF image server.  The release lists images by CITE2 URN
+ * only, so their location follows the server's convention:
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013` is the image
+ * `<base>hmt/vaimg/2017a/VA012RN_0013.tif`.  (Verified for the `hmt` namespace
+ * from the Venetus A manifest; the other namespaces assume the same layout.)
+ */
+const IMAGE_SERVICE_BASE =
+  'http://www.homermultitext.org/iipsrv?IIIF=/project/homer/pyramidal/deepzoom/';
+
+/**
+ * @typedef {Object} ImageItem
+ * @property {string} urn      Image URN.
+ * @property {string} id       Object part of the URN, e.g. `VA012RN_0013`.
+ * @property {string} caption
+ * @property {string} rights
+ * @property {string} label    Short label for a grid cell, e.g. `folio 12, recto`.
+ */
+
+/**
+ * @typedef {Object} ImageCollection
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:vaimg.2017a:`.
+ * @property {string} label
+ * @property {string} license
+ * @property {ImageItem[]} items  In the order of the release.
+ */
+
+/**
+ * Short label for an image: the part of its caption that says which page it
+ * is (`folio 12, recto`, `front cover`, `page 7`), else the whole caption's
+ * tail, else the id.
+ * @param {string} caption
+ * @param {string} id
+ */
+function cellLabel(caption, id) {
+  const m = /\b(?:bifolio|folio|page|front|inside|back|rear|spine|cover|fly)\b.*$/i.exec(caption);
+  const s = (m ? m[0] : '').replace(/[\s.]+$/, '').trim();
+  return s && s.length <= 48 ? s : id;
+}
+
+/**
+ * Every collection documented in `datamodels` as following the image model,
+ * with its items, ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {ImageCollection[]}
+ */
+function imageCollections(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === IMAGE_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, ImageCollection>} */
+  const out = new Map();
+  for (const urn of wanted) {
+    const c = info.get(urn);
+    out.set(urn, { urn, label: c?.description || urn, license: c?.license || '', items: [] });
+  }
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const coll = out.get(collectionOfObject(urn) ?? '');
+      if (!coll) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const caption = row.caption ?? '';
+      coll.items.push({ urn, id, caption, rights: row.rights ?? '', label: cellLabel(caption, id) });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * IIIF Image API base URL of an image.
+ * @param {string} imageUrn  e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`
+ * @param {string} [base]
+ * @returns {string | null}
+ */
+function imageService(imageUrn, base = IMAGE_SERVICE_BASE) {
+  const m = /^urn:cite2:([^:]+):([^:.]+)\.([^:]+):([^:]+)$/.exec(imageUrn);
+  return m ? `${base}${m[1]}/${m[2]}/${m[3]}/${m[4]}.tif` : null;
+}
+
+/**
+ * Width and height from an IIIF Image API `info.json` (any version).
+ * @param {any} info
+ * @returns {{width: number, height: number} | null}
+ */
+function parseInfo(info) {
+  const width = Number(info?.width), height = Number(info?.height);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/**
+ * One page of a list.  Out-of-range pages are clamped.
+ * @param {number} total
+ * @param {number} pageSize
+ * @param {number} page  1-based
+ * @returns {{page: number, pages: number, start: number, end: number}}  `start`..`end` is a half-open index range.
+ */
+function paginate(total, pageSize, page) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages);
+  const start = (p - 1) * pageSize;
+  return { page: p, pages, start, end: Math.min(total, start + pageSize) };
+}
+
+/**
+ * Location hash for a collection page or one image.
+ * @param {{urn: string, page?: number}} where
+ */
+function formatHash(where) {
+  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
+  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+}
+
+/**
+ * Read a location hash written by `formatHash`.
+ * @param {string} hash
+ * @returns {{urn: string, page: number} | null}
+ */
+function parseHash(hash) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const urn = params.get('urn');
+  if (!urn || !/^urn:cite2:/.test(urn)) return null;
+  const page = parseInt(params.get('page') ?? '', 10);
+  return { urn, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the codices app: the codices (manuscripts) of a release, their
+ * pages, and for each page the image and indexed text regions given by the
+ * DSE records.  Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/** Data model of codices (collections of pages). */
+const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
+
+/**
+ * @typedef {Object} CodexPage
+ * @property {string} urn       Page (surface) URN, e.g. `urn:cite2:hmt:msA.v1:12r`.
+ * @property {string} id        Object part of the URN, e.g. `12r`.
+ * @property {string} label     Label from the release.
+ * @property {string} short     Short label for a menu, e.g. `folio 12, recto`.
+ * @property {number} sequence  Position in the codex (the release's `sequence`), else order of appearance.
+ * @property {string} image     Image URN the catalog gives for the page, or "".
+ */
+
+/**
+ * @typedef {Object} Codex
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:msA.v1:`.
+ * @property {string} label
+ * @property {CodexPage[]} pages  In codex order.
+ */
+
+/**
+ * Every collection documented as following the codex model, with its pages,
+ * ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Codex[]}
+ */
+function codices(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === CODEX_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, Codex>} */
+  const out = new Map();
+  for (const urn of wanted) out.set(urn, { urn, label: info.get(urn)?.description || urn, pages: [] });
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const codex = out.get(collectionOfObject(urn) ?? '');
+      if (!codex) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const label = row.label ?? '';
+      const seq = parseFloat(row.sequence ?? '');
+      codex.pages.push({
+        urn, id, label, short: cellLabel(label, id),
+        sequence: Number.isFinite(seq) ? seq : codex.pages.length,
+        image: (row.image ?? '').trim(),
+      });
+    }
+  }
+  for (const c of out.values()) c.pages.sort((a, b) => a.sequence - b.sequence);   // stable: ties keep release order
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * @typedef {Object} PageRegion
+ * @property {string} passage  Passage URN as in the DSE record.
+ * @property {string} image    Image URN of the record.
+ * @property {import('./dse.js').Roi} roi
+ */
+
+/**
+ * Indexed regions of the DSE records, by surface (page) URN.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{bySurface: Map<string, PageRegion[]>, rows: number, skipped: number, found: boolean}}
+ *   `skipped` counts records without a usable surface, passage or region.
+ */
+function indexRegionsBySurface(release) {
+  /** @type {Map<string, PageRegion[]>} */
+  const bySurface = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { bySurface, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    const surface = (row.surface ?? '').trim();
+    const passage = (row.passage ?? '').trim();
+    if (!parsed || !surface || !passage) { skipped++; continue; }
+    const list = bySurface.get(surface) ?? [];
+    list.push({ passage, image: parsed.image, roi: parsed.roi });
+    bySurface.set(surface, list);
+  }
+  return { bySurface, rows: set.rows.length, skipped, found: true };
+}
+
+/**
+ * What to show for a page: the image of its DSE records and the regions on it.
+ * The DSE records decide the image: the one they name most often among the
+ * images of the catalog (a record may carry a different image from the
+ * catalog's page image, e.g. another scan).  Without usable records the
+ * catalog's image for the page is shown, without regions.
+ * @param {CodexPage} page
+ * @param {PageRegion[]} regions        DSE regions of the page
+ * @param {Set<string>} catalogImages   Image URNs of the image catalog
+ * @returns {{image: string, regions: PageRegion[], elsewhere: number, source: 'dse' | 'catalog' | 'none'}}
+ *   `elsewhere` counts regions on other images, which are not shown.
+ */
+function pageView(page, regions, catalogImages) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const r of regions) if (catalogImages.has(r.image)) counts.set(r.image, (counts.get(r.image) ?? 0) + 1);
+  let best = '';
+  for (const [image, n] of counts) if (n > (counts.get(best) ?? 0)) best = image;
+  if (best) {
+    const shown = regions.filter(r => r.image === best);
+    return { image: best, regions: shown, elsewhere: regions.length - shown.length, source: 'dse' };
+  }
+  return { image: page.image, regions: [], elsewhere: regions.length, source: page.image ? 'catalog' : 'none' };
+}
+
+/**
+ * Location hash for a page, and its reading.
+ * @param {string} pageUrn
+ */
+const formatPageHash = pageUrn => `#urn=${encodeURIComponent(pageUrn)}`;
+
+/** @param {string} hash @returns {string | null} */
+function parsePageHash(hash) {
+  const urn = new URLSearchParams(hash.replace(/^#/, '')).get('urn');
+  return urn && /^urn:cite2:/.test(urn) ? urn : null;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the Iliad-scholia app: Iliad versions, passage-range resolution,
+ * and scholia attached to passages through the `commentary` data model.
+ * Pure functions over an `HmtRelease`; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+/** Data model whose relation sets link scholia to the passages they comment on. */
+const COMMENTARY_MODEL = 'urn:cite2:cite:datamodels.v1:commentarymodel';
+
+/** Version-level URN of any version of the Iliad (tlg0012.tlg001). */
+const ILIAD_VERSION = /^urn:cts:[^:]+:tlg0012\.tlg001\.[^.:]+:$/;
+
+/** @typedef {import('./text-index.js').TextIndex} TextIndex */
+
+/**
+ * All Iliad versions listed in the CTS catalog, with the texts available for each.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, TextIndex>} textIndex
+ * @returns {{urn: string, label: string, online: boolean,
+ *            texts: {urn: string, kind: string}[]}[]}
+ */
+function iliadVersions(release, textIndex) {
+  return release.ctsCatalog()
+    .filter(c => ILIAD_VERSION.test(c.urn))
+    .map(c => {
+      const texts = [...textIndex.keys()]
+        .filter(k => ctsVersionOf(k) === c.urn)
+        .map(k => ({ urn: k, kind: exemplarName(k) }))
+        .sort((a, b) => (KIND_ORDER.indexOf(a.kind) + 1 || 99) - (KIND_ORDER.indexOf(b.kind) + 1 || 99));
+      return { urn: c.urn, label: c.versionLabel, online: c.online === 'true' && texts.length > 0, texts };
+    });
+}
+
+/**
+ * Short name of a version for tight places: its label without the parenthesis
+ * (`Venetus A (Marciana 454 = 822)` gives `Venetus A`).
+ * @param {string} label
+ */
+function shortVersionLabel(label) {
+  return label.replace(/\s*\([^)]*\)\s*$/, '').trim() || label;
+}
+
+/**
+ * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
+ * optionally a text of it (exemplar), and optionally a passage or range.
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
+ *   urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5           + a specific text
+ *   urn:cts:greekLit:tlg0012.tlg001.msA:                         version only
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {string} param
+ * @returns {{version: ReturnType<typeof iliadVersions>[number], kind: string | null, ref: string, note?: string}
+ *          | {error: string}}
+ */
+function parseUrnParam(versions, param) {
+  const urn = (param || '').trim();
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return { error: `"${urn}" is not a CTS URN (expected something like urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10).` };
+  const parts = m[1].split('.');
+  if (parts.length < 3) return { error: `"${urn}" does not name a version of the Iliad: add the version, as in tlg0012.tlg001.msA.` };
+  const versionUrn = ctsVersionOf(urn);
+  const version = versions.find(v => v.urn === versionUrn);
+  if (!version) return { error: `${versionUrn} is not a version of the Iliad in this release.` };
+  if (!version.online) return { error: `${version.label} has no online text in this release.` };
+  /** @type {string | null} */ let kind = null;
+  /** @type {string | undefined} */ let note;
+  if (parts[3]) {
+    if (version.texts.some(t => t.kind === parts[3])) kind = parts[3];
+    else note = `${version.label} has no ${parts[3]} text; showing ${version.texts[0].kind} instead.`;
+  }
+  return { version, kind, ref: m[2].trim(), ...(note ? { note } : {}) };
+}
+
+// ---------------------------------------------------------------------------
+// Passage references and ranges
+// ---------------------------------------------------------------------------
+
+/**
+ * Split a reference such as `1.1-1.10` into its endpoints.  Tolerates
+ * subreferences (`15.339@word`), trailing dots, and Unicode dashes.
+ * @param {string} input
+ * @returns {string[]}  One endpoint for a single passage, two for a range.
+ */
+function splitReference(input) {
+  const s = input.replace(/[‐-―]/g, '-').replace(/@.*?(?=-\d+\.\d|$)/g, '').trim();
+  const i = s.indexOf('-');
+  const clean = (/** @type {string} */ x) => x.trim().replace(/\.$/, '');
+  return i < 0 ? [clean(s)] : [clean(s.slice(0, i)), clean(s.slice(i + 1))];
+}
+
+/**
+ * Ways to read the end of a range given its start.  `1.1-10` and
+ * `14.205-207` mean the same book; `14.75-6` abbreviates 14.76.
+ * @param {string} a start
+ * @param {string} b end as written
+ */
+function endCandidates(a, b) {
+  const dot = a.indexOf('.');
+  if (b.includes('.') || dot < 0) return [b];
+  const book = a.slice(0, dot);
+  const line = a.slice(dot + 1);
+  const out = [book + '.' + b];
+  if (/^\d+$/.test(b) && /^\d+$/.test(line) && b.length < line.length) {
+    out.push(book + '.' + line.slice(0, line.length - b.length) + b);
+  }
+  return out;
+}
+
+/** First and last position of the passages in a book, or null. */
+function bookBounds(text, book) {
+  const prefix = book + '.';
+  let first = -1, last = -1;
+  for (let i = 0; i < text.refs.length; i++) {
+    if (text.refs[i].startsWith(prefix)) { if (first < 0) first = i; last = i; }
+  }
+  return first < 0 ? null : { first, last };
+}
+
+/**
+ * Resolve a reference to positions in a text.  Both ends are inclusive and
+ * follow the order of the text.  Accepts `1.5`, `1.1-1.10`, `1.1-10`, and
+ * (unless `allowBook` is false) whole books: `1`, `1-3`.
+ * @param {TextIndex} text
+ * @param {string} input
+ * @param {{allowBook?: boolean}} [opts]
+ * @returns {{start: number, end: number} | {error: string}}
+ */
+function resolveRange(text, input, opts = {}) {
+  const allowBook = opts.allowBook !== false;
+  const [a, b] = splitReference(input);
+  if (!a) return { error: 'Enter a passage reference, for example 1.1-1.10.' };
+  const isBook = (/** @type {string} */ x) => /^\d+$/.test(x);
+
+  if (isBook(a)) {
+    if (!allowBook) return { error: `"${a}" is not a passage reference.` };
+    const first = bookBounds(text, a);
+    if (!first) return { error: `Book ${a} is not in this text.` };
+    if (b === undefined) return { start: first.first, end: first.last };
+    if (!isBook(b)) return { error: `A range of books needs a book number at both ends ("${a}-${b}").` };
+    const last = bookBounds(text, b);
+    if (!last) return { error: `Book ${b} is not in this text.` };
+    if (last.last < first.first) return { error: 'The range ends before it starts.' };
+    return { start: first.first, end: last.last };
+  }
+
+  const start = text.pos.get(a);
+  if (start === undefined) return { error: `Passage ${a} is not in this text.` };
+  if (b === undefined) return { start, end: start };
+  for (const cand of endCandidates(a, b)) {
+    const end = text.pos.get(cand);
+    if (end !== undefined && end >= start) return { start, end };
+  }
+  const missing = endCandidates(a, b).some(c => text.pos.has(c));
+  return { error: missing ? 'The range ends before it starts.' : `Passage ${endCandidates(a, b)[0]} is not in this text.` };
+}
+
+// ---------------------------------------------------------------------------
+// Commentary relations
+// ---------------------------------------------------------------------------
+
+/**
+ * Scholion–passage pairs from every relation set documented in `datamodels`
+ * as following the commentary model.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{scholion: string, target: string}[]}
+ */
+function commentaryPairs(release) {
+  const modelled = new Set(release.dataModels()
+    .filter(m => m.model === COMMENTARY_MODEL).map(m => m.collection));
+  /** @type {{scholion: string, target: string}[]} */
+  const pairs = [];
+  for (const rs of release.relationSets()) {
+    if (!modelled.has(rs.urn)) continue;
+    const [c1, c2] = rs.header;
+    for (const row of rs.rows) {
+      pairs.push({ scholion: row.scholion ?? row[c1] ?? '', target: row.iliad ?? row[c2] ?? '' });
+    }
+  }
+  return pairs;
+}
+
+/**
+ * Resolve the passages commented on in one Iliad version to positions in a
+ * text of that version.  Relations that cannot be resolved (for example
+ * `13.UNKNOWN`) are counted, not guessed at.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {string} versionUrn
+ * @param {TextIndex} text
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number}}
+ *          `version` of a span is the version its relation names.
+ */
+function commentarySpans(pairs, versionUrn, text) {
+  const spans = [];
+  let unresolved = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || ctsVersionOf(m[1]) !== versionUrn) continue;
+    const r = resolveRange(text, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    spans.push({ scholion: p.scholion, start: r.start, end: r.end, version: versionUrn });
+  }
+  return { spans, unresolved };
+}
+
+/**
+ * Like `commentarySpans`, but for scholia commenting on the same passages in
+ * *any* version of the Iliad.  A scholion indexed to `1.1-1.3` of Venetus B
+ * counts for 1.1, 1.2 and 1.3 of whichever text is shown.
+ *
+ * Each relation is resolved in the text of the version it names (a range
+ * follows the order of that text, and may run through passages the shown text
+ * lacks), and the passages found are then matched to the shown text by their
+ * references.  Relations that cannot be resolved in their own version, or that
+ * name a version with no text, are counted, not guessed at.  A relation whose
+ * passages are all missing from the shown text is neither a span nor unresolved.
+ * @param {{scholion: string, target: string}[]} pairs
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {TextIndex} shown  the text being displayed
+ * @returns {{spans: {scholion: string, start: number, end: number, version: string}[], unresolved: number, relations: number}}
+ *          `relations` is how many Iliad relations were considered (`unresolved` of them could not be resolved).
+ */
+function commentarySpansAllVersions(pairs, versions, textIndex, shown) {
+  /** @type {Map<string, TextIndex | null>} */
+  const own = new Map(versions.map(v => [v.urn, v.texts.length ? (textIndex.get(v.texts[0].urn) ?? null) : null]));
+  const spans = [];
+  let unresolved = 0, relations = 0;
+  for (const p of pairs) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+    if (!m || !ILIAD_VERSION.test(ctsVersionOf(m[1]))) continue;      // not a passage of the Iliad
+    relations++;
+    const version = ctsVersionOf(m[1]);
+    const vtext = own.get(version);
+    if (!vtext) { unresolved++; continue; }
+    const r = resolveRange(vtext, m[2], { allowBook: false });
+    if ('error' in r) { unresolved++; continue; }
+    // positions in the shown text of the passages the relation covers, as runs of neighbours
+    let runStart = -1, runEnd = -1;
+    for (let i = r.start; i <= r.end; i++) {
+      const at = shown.pos.get(vtext.refs[i]);
+      if (at === undefined) continue;
+      if (runStart >= 0 && at === runEnd + 1) { runEnd = at; continue; }
+      if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+      runStart = runEnd = at;
+    }
+    if (runStart >= 0) spans.push({ scholion: p.scholion, start: runStart, end: runEnd, version });
+  }
+  return { spans, unresolved, relations };
+}
+
+/**
+ * The passages of a range with the distinct scholia commenting on each, and
+ * for each passage the same scholia grouped by the version of the Iliad their
+ * relation names (`byVersion`: version URN to scholia; spans without a
+ * version go under the empty string).
+ * @param {TextIndex} text
+ * @param {{start: number, end: number}} range
+ * @param {{scholion: string, start: number, end: number, version?: string}[]} spans
+ * @returns {{lines: {ref: string, text: string, scholia: string[], byVersion: Record<string, string[]>}[], scholiaTotal: number}}
+ */
+function annotateRange(text, range, spans) {
+  /** @type {Map<number, Set<string>>} */
+  const perLine = new Map();
+  /** @type {Map<number, Map<string, Set<string>>>} */
+  const perLineVersion = new Map();
+  const all = new Set();
+  for (const sp of spans) {
+    if (sp.end < range.start || sp.start > range.end) continue;
+    const to = Math.min(sp.end, range.end);
+    for (let i = Math.max(sp.start, range.start); i <= to; i++) {
+      let s = perLine.get(i);
+      if (!s) { s = new Set(); perLine.set(i, s); }
+      s.add(sp.scholion);
+      all.add(sp.scholion);
+      let vs = perLineVersion.get(i);
+      if (!vs) { vs = new Map(); perLineVersion.set(i, vs); }
+      const key = sp.version ?? '';
+      if (!vs.has(key)) vs.set(key, new Set());
+      vs.get(key)?.add(sp.scholion);
+    }
+  }
+  const lines = [];
+  for (let i = range.start; i <= range.end; i++) {
+    const byVersion = Object.fromEntries([...(perLineVersion.get(i) ?? [])].map(([v, set]) => [v, [...set]]));
+    lines.push({ ref: text.refs[i], text: text.texts[i], scholia: [...(perLine.get(i) ?? [])], byVersion });
+  }
+  return { lines, scholiaTotal: all.size };
+}
+
+/**
+ * Lemma and comment of a scholion, taken from the same kind of text
+ * (normalized or diplomatic) as the Iliad being shown when that exists.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} scholionUrn  e.g. `urn:cts:greekLit:tlg5026.msAint.hmt:1.28`
+ * @param {string} kind         e.g. `normalized`
+ * @returns {{label: string, lemma: string, comment: string}}
+ */
+function scholionPassage(textIndex, scholionUrn, kind) {
+  const m = /^(urn:cts:[^:]+:)([^:]+):(.*)$/.exec(scholionUrn);
+  if (!m) return { label: scholionUrn, lemma: '', comment: '' };
+  const { parts } = passageText(textIndex, scholionUrn, kind);
+  const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
+  return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * A grouped bar chart drawn as SVG, with its data table: used by the coverage app.
+ * The scale functions are pure (and tested); drawing needs a DOM.
+ *
+ * Series colours are the CSS variables `--s0`, `--s1`, … of the page, so the page sets
+ * them for its light and dark themes.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * Round tick values for a value axis from 0 up to at least `max`.  Counts get whole-number steps;
+ * percentages get steps of 5, 10, 20, 25 or 50.
+ * @param {number} max
+ * @param {boolean} [percent]
+ * @returns {number[]}
+ */
+function axisTicks(max, percent = false) {
+  if (!(max > 0)) return [0, 1];
+  let step;
+  if (percent) {
+    step = [5, 10, 20, 25, 50].find(s => max / s <= 5) ?? 50;
+  } else {
+    const raw = max / 4;
+    const mag = 10 ** Math.floor(Math.log10(raw));
+    step = Math.max(1, [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) ?? 1);   // counts are whole numbers
+  }
+  const out = [];
+  for (let v = 0; ; v += step) { out.push(v); if (v >= max) break; }
+  return out;
+}
+
+/**
+ * Break a label into lines of at most `width` characters at spaces, in at most `maxLines` lines
+ * (the last takes the rest, cut with an ellipsis if still too long).
+ * @param {string} label
+ * @param {number} [width]
+ * @param {number} [maxLines]
+ * @returns {string[]}
+ */
+function wrapLabel(label, width = 14, maxLines = 3) {
+  const lines = [];
+  let cur = '';
+  for (const word of label.split(/\s+/).filter(Boolean)) {
+    if (cur && (cur + ' ' + word).length > width) { lines.push(cur); cur = word; } else cur = cur ? `${cur} ${word}` : word;
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    const rest = lines.splice(maxLines - 1).join(' ');
+    lines.push(rest.length > width ? rest.slice(0, width - 1) + '…' : rest);
+  }
+  return lines;
+}
+
+/**
+ * @typedef {Object} BarSeries
+ * @property {string} name
+ * @property {number[]} values   One per category.
+ * @property {string} [color]    CSS colour; default `var(--s<index>)`.
+ * @property {string[]} [tips]   Tooltip text per category; default "<series>, <category>: <value>".
+ */
+
+/**
+ * @typedef {Object} BarSpec
+ * @property {string[]} categories
+ * @property {BarSeries[]} series
+ * @property {string} yTitle
+ * @property {boolean} [percent]            Value axis in percent.
+ * @property {(v: number) => string} [format]   Text of a value (default: thousands separators).
+ * @property {boolean} [wrap]               Wrap long category labels instead of printing them in one line.
+ * @property {number} [minGroup]            Least width of a group of bars, in px.
+ * @property {string} description           For screen readers.
+ */
+
+const fmtDefault = v => v.toLocaleString('en');
+
+/** @param {string} tag @param {Record<string, string | number>} [attrs] @param {string} [text] */
+function svg(tag, attrs = {}, text) {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+/** The colour of series `i`. @param {BarSeries} s @param {number} i */
+const seriesColor = (s, i) => s.color ?? `var(--s${i % 6})`;
+
+/**
+ * Draw the chart into `box` (replacing its content), as wide as the box or wider if the bars need
+ * the room (the box should then scroll sideways).
+ * @param {HTMLElement} box
+ * @param {BarSpec} spec
+ */
+function drawBars(box, spec) {
+  box.textContent = '';
+  const fmt = spec.format ?? fmtDefault;
+  const n = spec.categories.length, k = spec.series.length;
+  if (!n || !k) return;
+  const max = Math.max(0, ...spec.series.flatMap(s => s.values));
+  const ticks = axisTicks(max, spec.percent);
+  const top = ticks[ticks.length - 1];
+  const wrapped = spec.categories.map(c => (spec.wrap ? wrapLabel(c) : [c]));
+  const labelRows = Math.max(...wrapped.map(w => w.length));
+  const left = 56, right = 12, topPad = 22, plotH = 220, bottom = 16 + labelRows * 15;
+  const minGroup = spec.minGroup ?? (spec.wrap ? 96 : 34);
+  const width = Math.max(box.clientWidth || 0, left + right + n * minGroup);
+  const group = (width - left - right) / n;
+  const bw = Math.min(40, (group * 0.78) / k);
+  const height = topPad + plotH + bottom;
+  const y = v => topPad + plotH - (v / top) * plotH;
+
+  const s = svg('svg', { width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': spec.description });
+  const grid = svg('g', { class: 'axis' });
+  for (const t of ticks) {
+    grid.appendChild(svg('line', { class: 'grid', x1: left, x2: width - right, y1: y(t), y2: y(t) }));
+    grid.appendChild(svg('text', { x: left - 6, y: y(t) + 4, 'text-anchor': 'end' }, spec.percent ? `${t}%` : fmt(t)));
+  }
+  grid.appendChild(svg('text', { class: 'ytitle', x: 12, y: topPad + plotH / 2, 'text-anchor': 'middle', transform: `rotate(-90 12 ${topPad + plotH / 2})` }, spec.yTitle));
+  s.appendChild(grid);
+
+  spec.categories.forEach((cat, ci) => {
+    const x0 = left + group * ci + (group - bw * k) / 2;
+    const g = svg('g', { class: 'cat' });
+    spec.series.forEach((ser, si) => {
+      const v = ser.values[ci] ?? 0;
+      const h = v > 0 ? Math.max(1, (v / top) * plotH) : 0;
+      const x = x0 + bw * si;
+      const bar = svg('g', { class: 'bar' });
+      bar.appendChild(svg('title', {}, ser.tips?.[ci] ?? `${ser.name}, ${cat}: ${spec.percent ? fmt(v) : fmt(v)}`));
+      bar.appendChild(svg('rect', { x: x + 0.5, y: y(v), width: Math.max(1, bw - 1), height: h, rx: Math.min(3, bw / 4), fill: seriesColor(ser, si) }));
+      if (bw >= 22 || (k === 1 && bw >= 14)) {
+        bar.appendChild(svg('text', { class: 'val', x: x + bw / 2, y: y(v) - 4, 'text-anchor': 'middle' }, fmt(v)));
+      }
+      g.appendChild(bar);
+    });
+    wrapped[ci].forEach((line, li) => {
+      g.appendChild(svg('text', { class: 'tick', x: left + group * ci + group / 2, y: topPad + plotH + 16 + li * 15, 'text-anchor': 'middle' }, line));
+    });
+    s.appendChild(g);
+  });
+  s.appendChild(svg('line', { class: 'baseline', x1: left, x2: width - right, y1: y(0), y2: y(0) }));
+  box.appendChild(s);
+}
+
+/**
+ * A legend: a swatch and the name of each series.
+ * @param {HTMLElement} box
+ * @param {BarSeries[]} series
+ */
+function drawLegend(box, series) {
+  box.textContent = '';
+  series.forEach((s, i) => {
+    const item = document.createElement('span');
+    item.className = 'key';
+    const sw = document.createElement('i');
+    sw.style.background = seriesColor(s, i);
+    item.append(sw, ' ', s.name);
+    box.appendChild(item);
+  });
+}
+
+/**
+ * The data of the chart as a table: a row per category, a column per series.
+ * @param {BarSpec} spec
+ * @param {string} firstHeader  Header of the column of categories.
+ * @returns {HTMLTableElement}
+ */
+function chartTable(spec, firstHeader) {
+  const fmt = spec.format ?? fmtDefault;
+  const t = document.createElement('table');
+  const head = t.createTHead().insertRow();
+  for (const h of [firstHeader, ...spec.series.map(s => s.name)]) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.textContent = h;
+    head.appendChild(th);
+  }
+  const body = t.createTBody();
+  spec.categories.forEach((c, ci) => {
+    const r = body.insertRow();
+    r.insertCell().textContent = c;
+    for (const s of spec.series) r.insertCell().textContent = fmt(s.values[ci] ?? 0);
+  });
+  return t;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the coverage app: how much of each manuscript the HMT has edited, from the texts of
+ * a release (lines of the Iliad by book) and from its DSE records (pages of each codex).
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/** Books of the Iliad. */
+const BOOKS = 24;
+
+/**
+ * @typedef {Object} IliadCoverage
+ * @property {string} urn      Version URN, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`.
+ * @property {string} label    Label from the catalogue.
+ * @property {string} short    Label without the parenthesis, e.g. `Venetus A`.
+ * @property {number[]} byBook Edited lines in books 1 to 24 (index 0 is book 1).
+ * @property {number} total    Sum of `byBook`.
+ * @property {number} titles   Book titles (`1.title`), not counted as lines.
+ * @property {number} other    Passages that are neither a line of books 1-24 nor a title.
+ */
+
+/**
+ * For every Iliad version with texts in the release, the lines that have text, by book.  A line is a
+ * passage `book.line` (a letter or `del` after the line number is allowed) that has text in either
+ * exemplar, diplomatic or normalized; titles are counted apart.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @returns {IliadCoverage[]}
+ */
+function iliadLinesByBook(release, textIndex) {
+  /** @type {IliadCoverage[]} */
+  const out = [];
+  for (const v of iliadVersions(release, textIndex)) {
+    if (!v.texts.length) continue;
+    const refs = new Set();
+    for (const t of v.texts) {
+      const ex = textIndex.get(t.urn);
+      if (!ex) continue;
+      ex.refs.forEach((ref, i) => { if ((ex.texts[i] ?? '').trim()) refs.add(ref); });
+    }
+    const byBook = new Array(BOOKS).fill(0);
+    let titles = 0, other = 0;
+    for (const ref of refs) {
+      const m = /^(\d+)\.(.+)$/.exec(ref);
+      if (!m) { other++; continue; }
+      if (m[2] === 'title') { titles++; continue; }
+      const book = Number(m[1]);
+      if (book >= 1 && book <= BOOKS && /^\d+/.test(m[2])) byBook[book - 1]++; else other++;
+    }
+    out.push({ urn: v.urn, label: v.label, short: shortVersionLabel(v.label), byBook, total: byBook.reduce((a, b) => a + b, 0), titles, other });
+  }
+  return out;
+}
+
+/**
+ * @typedef {Object} CodexCoverage
+ * @property {string} urn
+ * @property {string} label
+ * @property {number} total      Pages of the codex in the release.
+ * @property {number} pages      Distinct pages (surfaces) of the codex named in DSE records.
+ * @property {number} percent    `pages` as a percentage of `total`, to one decimal place.
+ * @property {number} records    DSE records on those pages.
+ * @property {string[]} unlisted Pages named in DSE records that are not among the codex's pages.
+ */
+
+/**
+ * For every codex of the release, the number of distinct pages that appear in DSE records, and the
+ * share of the codex's pages that is.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{codices: CodexCoverage[], found: boolean, rows: number, skipped: number, elsewhere: string[]}}
+ *   `elsewhere` lists surfaces of the DSE records that belong to no codex; `skipped` counts records
+ *   without a usable surface, passage or region.
+ */
+function dsePagesByCodex(release) {
+  const cs = codices(release);
+  const { bySurface, rows, skipped, found } = indexRegionsBySurface(release);
+  /** @type {Map<string, string[]>} */
+  const surfacesOf = new Map();
+  /** @type {string[]} */
+  const elsewhere = [];
+  const known = new Set(cs.map(c => c.urn));
+  for (const s of bySurface.keys()) {
+    const coll = collectionOfObject(s) ?? '';
+    if (!known.has(coll)) { elsewhere.push(s); continue; }
+    const list = surfacesOf.get(coll) ?? [];
+    list.push(s);
+    surfacesOf.set(coll, list);
+  }
+  return {
+    found, rows, skipped, elsewhere,
+    codices: cs.map(c => {
+      const surfaces = surfacesOf.get(c.urn) ?? [];
+      const listed = new Set(c.pages.map(p => p.urn));
+      const total = c.pages.length;
+      return {
+        urn: c.urn, label: c.label, total, pages: surfaces.length,
+        percent: total ? Math.round((1000 * surfaces.length) / total) / 10 : 0,
+        records: surfaces.reduce((n, s) => n + (bySurface.get(s)?.length ?? 0), 0),
+        unlisted: surfaces.filter(s => !listed.has(s)),
+      };
+    }),
+  };
+}
+
+</script>
+<script>
+// Browser UI for the coverage summary: three bar charts of how much the HMT has edited.
+// Uses the shared sources inlined ahead of this file (see index.html).
+(function () {
+  const $ = id => document.getElementById(id);
+  const n = x => x.toLocaleString('en');
+  const plural = (x, one, many) => `${n(x)} ${x === 1 ? one : many}`;
+
+  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>} | null} */
+  let data = null;
+
+  function setStatus(msg) { $('status').textContent = msg; }
+
+  /** Draw a chart with its optional legend and data table. */
+  function chart(plotId, tableId, legendId, spec, firstHeader) {
+    const plot = $(plotId);
+    drawBars(plot, spec);
+    if (legendId) drawLegend($(legendId), spec.series);
+    const t = $(tableId);
+    t.textContent = '';
+    t.appendChild(chartTable(spec, firstHeader));
+  }
+
+  /** Draw all three charts from `data`. */
+  function draw() {
+    if (!data) return;
+    const { lines, pages } = data;
+
+    const shown = lines.filter(l => l.total > 0);
+    const books = Array.from({ length: BOOKS }, (_, i) => String(i + 1));
+    $('d-lines').textContent = shown.length
+      ? `Manuscripts with edited lines: ${shown.map(l => `${l.short} (${n(l.total)})`).join(', ')}.`
+      : 'No manuscript has edited lines in this release.';
+    chart('p-lines', 't-lines', 'l-lines', {
+      categories: books,
+      series: shown.map(l => ({
+        name: l.short, values: l.byBook,
+        tips: l.byBook.map((v, i) => `${l.short}, book ${i + 1}: ${plural(v, 'line', 'lines')}`),
+      })),
+      yTitle: 'Edited lines',
+      description: `Bar chart of edited lines of the Iliad in books 1 to 24 for ${shown.map(l => l.short).join(', ')}.`,
+    }, 'Book');
+
+    const cs = pages.codices.filter(c => c.pages > 0);
+    const names = cs.map(c => c.label);
+    chart('p-pages', 't-pages', '', {
+      categories: names, wrap: true,
+      series: [{ name: 'Pages with DSE records', values: cs.map(c => c.pages), color: 'var(--s0)',
+        tips: cs.map(c => `${c.label}: ${plural(c.pages, 'page', 'pages')} with DSE records`) }],
+      yTitle: 'Pages',
+      description: 'Bar chart of the number of pages with DSE records in each manuscript.',
+    }, 'Manuscript');
+    chart('p-pct', 't-pct', '', {
+      categories: names, wrap: true, percent: true,
+      format: v => `${Number.isInteger(v) ? v : v.toFixed(1)}%`,
+      series: [{ name: 'Pages with DSE records (%)', values: cs.map(c => c.percent), color: 'var(--s1)',
+        tips: cs.map(c => `${c.label}: ${n(c.pages)} of ${n(c.total)} pages (${c.percent}%)`) }],
+      yTitle: 'Percent of pages',
+      description: 'Bar chart of the percentage of the pages of each codex that have DSE records.',
+    }, 'Manuscript');
+  }
+
+  /** Warnings about the data, shown above the charts. */
+  function warnings(d) {
+    const w = [];
+    if (!d.pages.found) w.push('This release has no DSE records.');
+    if (d.pages.skipped) w.push(`${plural(d.pages.skipped, 'DSE record was', 'DSE records were')} skipped because of a missing or malformed passage, region or surface.`);
+    for (const c of d.pages.codices) {
+      if (c.unlisted.length) w.push(`${c.label}: ${plural(c.unlisted.length, 'page', 'pages')} named in DSE records ${c.unlisted.length === 1 ? 'is' : 'are'} not in the codex’s list of pages (${c.unlisted.slice(0, 3).map(u => u.split(':').pop()).join(', ')}${c.unlisted.length > 3 ? ', …' : ''}).`);
+    }
+    if (d.pages.elsewhere.length) w.push(`${plural(d.pages.elsewhere.length, 'surface', 'surfaces')} named in DSE records belong to no codex of the release.`);
+    for (const l of d.lines) if (l.other) w.push(`${l.short}: ${plural(l.other, 'passage', 'passages')} not counted (not a numbered line of books 1–24 or a title).`);
+    const box = $('warnings');
+    box.textContent = '';
+    box.hidden = !w.length;
+    if (w.length) {
+      const h = document.createElement('strong');
+      h.textContent = 'Warnings';
+      const ul = document.createElement('ul');
+      for (const t of w) { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }
+      box.append(h, ul);
+    }
+  }
+
+  function start(rel) {
+    data = { lines: iliadLinesByBook(rel, buildTextIndex(rel)), pages: dsePagesByCodex(rel) };
+    $('drop').hidden = true;
+    $('report').hidden = false;
+    warnings(data);
+    draw();
+    const edited = data.pages.codices.reduce((s, c) => s + c.pages, 0);
+    setStatus(`${rel.library.name}: ${plural(data.lines.reduce((s, l) => s + l.total, 0), 'edited line', 'edited lines')}, ${plural(edited, 'page', 'pages')} with DSE records`);
+  }
+
+  function showProblem(msg) {
+    setStatus('');
+    $('problem').textContent = msg;
+    $('drop').hidden = false;
+  }
+
+  async function loadFile(file) {
+    setStatus(`Reading ${file.name}…`);
+    try { start(await readReleaseFile(file)); }
+    catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
+  }
+
+  $('file').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+  window.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave', () => document.body.classList.remove('dragging'));
+  window.addEventListener('drop', e => {
+    e.preventDefault(); document.body.classList.remove('dragging');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(draw, 150); });
+
+  (async function init() {
+    try { start(await fetchRelease()); }
+    catch (e) { showProblem(`Could not load the HMT release (${e.message || e}). If you are offline, load a copy of the release from your computer.`); }
+  })();
+})();
+
+</script>
+</body>
+</html>

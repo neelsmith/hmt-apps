@@ -331,3 +331,10 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - Code: `page-view.js` gained `showPage(box, surface, current, options)`, and `current` may be a set of keys (a range); `options.scroll` and an empty `hitNoun` are supported. `src/page-view.css` was split: `src/page-view.css` (list layout) and new `src/page-text.css` (the page text); propernames, stringsearch, stringcounter and lemmatizedsearch now inline both. The three apps now inline dse, images, codices, propernames and page-view too (about 110 KB each).
 - Style clashes avoided by renaming the apps' own classes: `.panel` (form box) is now `.card`; `.badge`, `.scholion`, `.scholion .id/.lemma` rules in `src/apps/iliad-scholia/style.css` are scoped to `.passage` / `.scholia`.
 - Tests: 124 unit tests pass (no new ones; the change is DOM code). Browser test (Chromium, 17 checks) against a synthetic release with two pages and an unplaced line: single page, range across two pages, partly unplaced, fully unplaced, badges and panels, text-kind switch, all-scholia chips, editorial weaving (lines and scholia), style leakage, 390 px width, no errors. **Not run against the real release** (no network here); propernames/stringsearch were not re-checked in a browser after the CSS split (the rules moved unchanged). Nothing committed.
+
+## coverage.html (0.1.0)
+
+- New app `coverage.html`: bar charts of edited Iliad lines by book (one series per manuscript with lines), pages with DSE records per codex (count and percent of the codex's pages).
+- New `src/bar-chart.js` (generic SVG grouped bars, ticks, legend, table), `src/coverage.js` (`iliadLinesByBook`, `dsePagesByCodex`), tests in `test/coverage.test.js`.
+- A line = passage `book.line[suffix]` with text in either exemplar; titles excluded. Real release 2024c: msA 15,639, msB 709, e3 1,692.
+- DSE pages: msA 631 of 662 (95.3%), e3 71 of 660 (10.8%), others 0. Warnings: 1 DSE record skipped; msA surface `211v1` is not in the codex page list (still counted in the numerator).

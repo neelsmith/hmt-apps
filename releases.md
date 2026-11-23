@@ -2,7 +2,9 @@
 
 ## Repository version tag
 
-Current version:  **0.9.0**
+Current version:  **0.10.0**
+
+**0.10.0**, *Nov. 23, 2026*:  adds new `coverage.html` app.
 
 **0.9.0**, *Nov. 23, 2026*: 
 
@@ -105,3 +107,8 @@ Current version:  **0.9.0**
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 23, 2026*: search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).
+
+
+## `coverage.html`
+
+**0.1.0**, *Nov. 23, 2026*: summarize coverage of editing of *Iliad* in different MSS of the HMT project.
