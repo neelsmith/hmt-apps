@@ -8,7 +8,7 @@ Current version:  **0.11.0**
 
 - adds scholia summary to `coverage.html` app
 - adds new `commentary-check.html` app
-- adds uniform bookmarking with `text`, `image`, and `page` parameters to all text browsing apps
+- adds uniform bookmarking with `text`, `image`, and `page` parameters across all browsing apps (texts, images, manuscript pages)
 - adds uniform previous/next navigation to all text displays
 - expands documentation for individual apps
 
