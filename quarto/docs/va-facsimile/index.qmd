@@ -19,9 +19,10 @@ In light table view:
 
 In single-image view:
 
-- **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
-- **Iliad**, **Scholia** and **Other** checkboxes show or hide those texts
-- **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
+- **‹ ›** (or `[` `]`): move to previous or next page.
+- **← Pages** or Esc: return to light table.
+- **Iliad**, **Scholia** and **Other** checkboxes show or hide those texts.
+- **diplomatic** or **normalized**: text versopm shown when you hover (or tap) a region.
 - **Navigation**: drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
 
