@@ -27,6 +27,12 @@ test('parseVersions reads "<name>.html <version>" lines (any spacing, no final n
   assert.throws(() => parseVersions('editorial.html 0.1.0 extra'), /expected/);
 });
 
+test('parseVersions ignores blank lines and // comment lines, including indented ones', () => {
+  const v = parseVersions('// facsimiles\nva-facsimile.html   0.3.0\n\n  // text browsing\niliad-scholia.html  0.2.0\r\n\t\n// last\n');
+  assert.deepEqual([...v], [['va-facsimile.html', '0.3.0'], ['iliad-scholia.html', '0.2.0']]);
+  assert.throws(() => parseVersions('editorial.html // note'), /expected/);
+});
+
 test('buildApp puts the version into every @@VERSION@@ and leaves none behind', () => {
   const t = '<meta name="app-version" content="@@VERSION@@">\n<p>Version @@VERSION@@</p>\n';
   assert.equal(buildApp(t, () => '', '1.2.3'), '<meta name="app-version" content="1.2.3">\n<p>Version 1.2.3</p>\n');
