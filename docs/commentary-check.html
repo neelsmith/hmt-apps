@@ -1702,6 +1702,7 @@ function chartTable(spec, firstHeader) {
 
 
 
+
 /** Books of the Iliad. */
 const BOOKS = 24;
 
@@ -1745,6 +1746,101 @@ function iliadLinesByBook(release, textIndex) {
       if (book >= 1 && book <= BOOKS && /^\d+/.test(m[2])) byBook[book - 1]++; else other++;
     }
     out.push({ urn: v.urn, label: v.label, short: shortVersionLabel(v.label), byBook, total: byBook.reduce((a, b) => a + b, 0), titles, other });
+  }
+  return out;
+}
+
+/**
+ * @typedef {Object} BookPages
+ * @property {string} first   Id of the first page (in codex order) holding edited lines of the book, e.g. `12r`; "" if none.
+ * @property {string} last    Id of the last such page; equals `first` for a single page.
+ * @property {string} firstUrn
+ * @property {string} lastUrn
+ * @property {number} pages   Distinct pages holding edited lines of the book.
+ * @property {number} span    Pages of the codex from first to last, inclusive (`pages` less than `span` means gaps).
+ * @property {number} lines   Edited lines of the book.
+ * @property {number} unplaced Edited lines with no DSE record on a page of the codex.
+ */
+
+/**
+ * @typedef {Object} IliadPages
+ * @property {string} urn      Version URN of the manuscript's Iliad text.
+ * @property {string} label
+ * @property {string} short
+ * @property {string} codex    URN of the codex the pages belong to, or "" when no line is placed on a page.
+ * @property {BookPages[]} byBook  Books 1 to 24 (index 0 is book 1).
+ */
+
+/**
+ * For every manuscript with edited lines of the Iliad (see `iliadLinesByBook`), and every book, the range of its
+ * codex pages that hold edited lines of that book.  A line is placed on the pages of the DSE records whose
+ * passage is that line (exemplar parts are ignored); the range runs from the first to the last such page in codex
+ * order.  The codex of a manuscript is the one holding most of its placed lines.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @returns {IliadPages[]}
+ */
+function iliadPagesByBook(release, textIndex) {
+  const { bySurface } = indexRegionsBySurface(release);
+  /** @type {Map<string, Set<string>>} passage key -> surfaces */
+  const surfacesOf = new Map();
+  for (const [surface, regions] of bySurface) {
+    for (const r of regions) {
+      const k = dseKey(r.passage);
+      if (!k) continue;
+      const set = surfacesOf.get(k) ?? new Set();
+      set.add(surface);
+      surfacesOf.set(k, set);
+    }
+  }
+  /** @type {Map<string, {id: string, seq: number, order: number}>} */
+  const pageInfo = new Map();
+  /** @type {Map<string, number>} */
+  const codexSize = new Map();
+  for (const c of codices(release)) {
+    codexSize.set(c.urn, c.pages.length);
+    c.pages.forEach((p, i) => pageInfo.set(p.urn, { id: p.id, seq: p.sequence, order: i }));
+  }
+  /** @type {IliadPages[]} */
+  const out = [];
+  for (const v of iliadVersions(release, textIndex)) {
+    if (!v.texts.length) continue;
+    const refs = new Set();
+    for (const t of v.texts) {
+      const ex = textIndex.get(t.urn);
+      if (!ex) continue;
+      ex.refs.forEach((ref, i) => { if ((ex.texts[i] ?? '').trim()) refs.add(ref); });
+    }
+    /** @type {Set<string>[]} */
+    const pagesOfBook = Array.from({ length: BOOKS }, () => new Set());
+    const lines = new Array(BOOKS).fill(0);
+    const unplaced = new Array(BOOKS).fill(0);
+    /** @type {Map<string, number>} */
+    const codexVotes = new Map();
+    for (const ref of refs) {
+      const m = /^(\d+)\.(\d.*)$/.exec(ref);
+      const book = m ? Number(m[1]) : 0;
+      if (book < 1 || book > BOOKS) continue;
+      lines[book - 1]++;
+      const found = [...(surfacesOf.get(v.urn + ref) ?? [])].filter(s => pageInfo.has(s));
+      if (!found.length) { unplaced[book - 1]++; continue; }
+      for (const s of found) {
+        pagesOfBook[book - 1].add(s);
+        const c = collectionOfObject(s) ?? '';
+        codexVotes.set(c, (codexVotes.get(c) ?? 0) + 1);
+      }
+    }
+    if (!lines.some(n => n > 0)) continue;
+    const codex = [...codexVotes].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    const byBook = pagesOfBook.map((set, i) => {
+      const own = [...set].filter(s => (collectionOfObject(s) ?? '') === codex)
+        .sort((a, b) => /** @type {any} */ (pageInfo.get(a)).order - /** @type {any} */ (pageInfo.get(b)).order);
+      const empty = { first: '', last: '', firstUrn: '', lastUrn: '', pages: 0, span: 0, lines: lines[i], unplaced: unplaced[i] };
+      if (!own.length) return empty;
+      const f = /** @type {any} */ (pageInfo.get(own[0])), l = /** @type {any} */ (pageInfo.get(own[own.length - 1]));
+      return { ...empty, first: f.id, last: l.id, firstUrn: own[0], lastUrn: own[own.length - 1], pages: own.length, span: l.order - f.order + 1 };
+    });
+    out.push({ urn: v.urn, label: v.label, short: shortVersionLabel(v.label), codex, byBook });
   }
   return out;
 }
