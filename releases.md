@@ -48,6 +48,8 @@ Current version:  **0.11.0**
 
 ### `va-facsimile.html`
 
+**0.4.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
 **0.3.0**, *Nov. 23, 2026*: adds options to open from reference to a page, an image or a text passage. Adds standard menu to top of page.
 
 **0.2.0**, *Nov. 19, 2026*: add option to use `urn` parameter to open with a specified passage
@@ -62,6 +64,7 @@ Current version:  **0.11.0**
 
 ### `iliad-scholia.html`
 
+**0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.2.0**, *Nov. 23, 2026*: Adds standard menu. Changes text display to page orientation.
 
@@ -71,10 +74,17 @@ Current version:  **0.11.0**
 
 ### `all-scholia.html`
 
+**0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
 **0.2.0**, *Nov. 23, 2026*: Adds standard menu to top of page. Changes to page-oriented text display.
 
 **0.1.0**, *Nov. 19, 2026*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
 
+### `editorial.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
+**0.1.0**, *Nov. 18, 2026*: Browse *Iliad* and *scholia* texts, see diplomatic transcription with interleaved normalized text.
 
 ## Text searching apps
 
@@ -111,6 +121,8 @@ Current version:  **0.11.0**
 
 ### `images.html`
 
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 19, 2026*: browse all image collections.
@@ -118,6 +130,8 @@ Current version:  **0.11.0**
 
 
 ### `codices.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
