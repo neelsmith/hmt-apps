@@ -77,6 +77,33 @@
       tr.appendChild(el('td', x.runs.length ? 'bad' : '', n(x.runs.length)));
       ctable.appendChild(tr);
     }
+    // pages with problems, by book of the Iliad
+    const msName = v => v.label.split(' — ').pop().replace(/\s*\(.*\)$/, '');
+    const ip = c.iliadPages;
+    const itable = $('iliad-pages');
+    itable.textContent = '';
+    $('iliad-pages-head').hidden = $('iliad-pages-note').hidden = $('iliad-pages-wrap').hidden = !ip.length;
+    if (ip.length) {
+      $('iliad-pages-note').textContent = `Pages named by DSE records for lines of the Iliad that are not in the textual edition (${ip.map(v => msName(v)).join(', ')}). Hover a cell for the number of records.`;
+      const ihead = el('tr');
+      ihead.appendChild(el('th', '', 'Book'));
+      for (const v of ip) ihead.appendChild(el('th', '', msName(v)));
+      itable.appendChild(ihead);
+      for (let i = 0; i < 24; i++) {
+        if (!ip.some(v => v.byBook[i].records)) continue;
+        const tr = el('tr');
+        tr.appendChild(el('td', '', String(i + 1)));
+        for (const v of ip) {
+          const b = v.byBook[i];
+          const td = el('td', 'pages', b.records ? b.text : '—');
+          if (b.records) td.title = `${plural(b.records, 'record', 'records')} on ${plural(b.pages, 'page', 'pages')}`;
+          tr.appendChild(td);
+        }
+        itable.appendChild(tr);
+      }
+      const other = ip.filter(v => v.other);
+      if (other.length) $('iliad-pages-note').textContent += ` Not placed in a book: ${other.map(v => `${msName(v)} ${plural(v.other, 'record', 'records')}`).join('; ')}.`;
+    }
     $('codex-summary-head').hidden = $('codex-summary-wrap').hidden = !c.codices.length;
 
     // 1. text passages missing from DSE

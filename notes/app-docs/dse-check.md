@@ -24,3 +24,7 @@ None.
 - Four groups, each with a count badge: text passages missing from the DSE; DSE records for passages not in the textual editions; references to images not in the image catalog; and **codex pages without DSE records**. Each folds open to a list (200 at a time, with a "show more" button).
 - Codex pages without DSE records: for each codex, the pages are taken in codex order, and a page counts as covered if any DSE record names it as its surface. The pages that are not covered are reported as runs of consecutive pages (e.g. *inside front cover to folio 11, verso (25 pages)*, then *folio 211, verso*). A codex that no record mentions at all is reported as a single run and flagged. A DSE surface that is not a page of the codex (such as `211v1` of the Venetus A) is ignored here.
 - Findings are warnings only.
+
+## Pages with DSE problems, by book of the *Iliad*
+
+A table below the "By codex" table: a row for each book that has any, a column for each *Iliad* version with DSE records for lines that are not in the textual edition (group 2). Each cell lists the pages those records name as surface, in codex order, consecutive pages joined (`12r–13v`); hover for the number of records. Records whose passage is not a numbered line of books 1–24 are counted in a note under the table.

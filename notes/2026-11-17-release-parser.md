@@ -404,3 +404,9 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - New table: a row per book of the Iliad, a column per manuscript with edited lines, each cell the range of codex pages holding edited lines of that book. `iliadPagesByBook(release, textIndex)` in `src/coverage.js`: an edited line (same definition as `iliadLinesByBook`) is placed on the surfaces of DSE records whose `dseKey(passage)` is the version URN plus the line reference; pages are ordered by codex order (`codices()`), and the manuscript's codex is the one holding most of its placed lines. Each book gives `first`/`last` page ids, `pages`, `span`, `lines`, `unplaced`.
 - Release 2024c: Venetus A runs from 12r (book 1) to 326v (book 24), every book on a contiguous run of pages (book 16 has 30 lines with no DSE page); Escorial Y 1.1 covers books 8-10 (98r-134r); Venetus B has 709 edited lines in book 9 but no DSE records, so the cell reads "no page".
 - Tests: `test/coverage.test.js` (synthetic and real release; 163 unit tests in all).
+
+## dse-check.html: pages with DSE problems, by book
+
+- New table: for each Iliad version with DSE records whose passage is not in the text (problem 2), the pages those records name, by book. `iliadProblemPages(release, versions)` in `src/dse-check.js`, returned by `checkDse` as `iliadPages` (`byBook[24]` of `{records, pages, text}`, plus `records` and `other`). Pages come in codex order with consecutive pages joined; pages not in the codex follow by id. Only this problem type is included (the request was cut off after it; "text passage missing from DSE" has no page of its own, and "image not in catalog" was not asked for).
+- Release 2024c: Venetus A only: book 4 (58v), 7 (98v), 14 (188v), 16 (213v, 214v, 218r, 219v), 24 (324v); 5 more records are not lines of books 1-24.
+- Tests: `test/dse-check.test.js` (synthetic, ordering and real release; 165 unit tests in all).

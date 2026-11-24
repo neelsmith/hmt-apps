@@ -16,7 +16,7 @@
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
 import { ctsVersionOf } from './hmt-release.js';
-import { DSE_URN } from './dse.js';
+import { DSE_URN, passageKind } from './dse.js';
 import { imageCollections } from './images.js';
 import { codices } from './codices.js';
 
@@ -85,6 +85,23 @@ import { codices } from './codices.js';
  * @property {number} imagesChecked       Distinct image URNs the records refer to.
  * @property {number} catalogImages       Images in the image catalog.
  * @property {CodexCoverage[]} codices    Every codex of the release with at least one page.
+ * @property {IliadProblemPages[]} iliadPages  Pages with DSE records for Iliad lines not in the text, by manuscript and book.
+ */
+
+/**
+ * @typedef {Object} BookProblemPages
+ * @property {number} records   DSE records for lines of this book that are not in the text.
+ * @property {number} pages     Distinct pages those records name.
+ * @property {string} text      The pages in codex order with consecutive pages joined, e.g. `12r–13v, 20r`; "" if none.
+ */
+
+/**
+ * @typedef {Object} IliadProblemPages
+ * @property {string} version   Version URN of the Iliad.
+ * @property {string} label
+ * @property {BookProblemPages[]} byBook   Books 1 to 24 (index 0 is book 1).
+ * @property {number} records   All records counted, including those of no book 1-24 (`other`).
+ * @property {number} other     Records whose passage is not a line of books 1-24.
  */
 
 /** Strip a subreference from a passage reference. */
@@ -216,6 +233,7 @@ export function checkDse(release) {
   return {
     found: !!set,
     codices: codexCoverage(release, surfaces),
+    iliadPages: iliadProblemPages(release, [...versions.values()]),
     records: rows.length,
     versions: [...versions.values()],
     badPassages,
@@ -223,6 +241,67 @@ export function checkDse(release) {
     imagesChecked: images.size,
     catalogImages: catalogItems.size,
   };
+}
+
+/**
+ * For each Iliad version with DSE records whose passage is not in the text, the pages those records name, by book.
+ * Pages are in codex order, consecutive pages joined into ranges; a page that is not in the codex's list follows, by its id.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {VersionCheck[]} versions
+ * @returns {IliadProblemPages[]}
+ */
+export function iliadProblemPages(release, versions) {
+  /** @type {Map<string, {id: string, order: number, coll: string}>} */
+  const info = new Map();
+  for (const c of codices(release)) c.pages.forEach((p, i) => info.set(p.urn, { id: p.id, order: i, coll: c.urn }));
+  /** @type {IliadProblemPages[]} */
+  const out = [];
+  for (const v of versions) {
+    if (!v.unknown.length || passageKind(v.version) !== 'iliad') continue;
+    /** @type {Map<number, {records: number, pages: Set<string>}>} */
+    const books = new Map();
+    let other = 0;
+    for (const r of v.unknown) {
+      const m = /^(\d+)\.\d/.exec(r.ref);
+      const book = m ? Number(m[1]) : 0;
+      if (book < 1 || book > ILIAD_BOOKS) { other++; continue; }
+      const b = books.get(book) ?? { records: 0, pages: new Set() };
+      b.records++;
+      if (r.surface) b.pages.add(r.surface);
+      books.set(book, b);
+    }
+    const byBook = Array.from({ length: ILIAD_BOOKS }, (_, i) => {
+      const b = books.get(i + 1);
+      return b ? { records: b.records, pages: b.pages.size, text: joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '' };
+    });
+    out.push({ version: v.version, label: v.label, byBook, records: v.unknown.length, other });
+  }
+  return out;
+}
+
+/** Books of the Iliad. */
+const ILIAD_BOOKS = 24;
+
+/**
+ * Page URNs as text: pages of a codex in codex order, runs of consecutive pages as `12r–13v`; others last, in URN order.
+ * @param {string[]} urns
+ * @param {Map<string, {id: string, order: number, coll: string}>} info
+ */
+function joinPages(urns, info) {
+  const known = urns.filter(u => info.has(u)).sort((a, b) => {
+    const x = /** @type {any} */ (info.get(a)), y = /** @type {any} */ (info.get(b));
+    return x.coll === y.coll ? x.order - y.order : x.coll.localeCompare(y.coll);
+  });
+  const parts = [];
+  for (let i = 0; i < known.length;) {
+    let j = i;
+    const at = (/** @type {number} */ k) => /** @type {any} */ (info.get(known[k]));
+    while (j + 1 < known.length && at(j + 1).coll === at(i).coll && at(j + 1).order === at(j).order + 1) j++;
+    parts.push(i === j ? at(i).id : `${at(i).id}–${at(j).id}`);
+    i = j + 1;
+  }
+  for (const u of urns.filter(u => !info.has(u)).sort()) parts.push(u.slice(u.lastIndexOf(':') + 1) || u);
+  return parts.join(', ');
 }
 
 /**

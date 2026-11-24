@@ -36,6 +36,8 @@
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
   th, td { padding: .3rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
+  td.pages { text-align: left; white-space: normal; min-width: 8rem; max-width: 28rem; }
+  .note { color: var(--muted); font-size: .875rem; margin: 0 0 .25rem; }
   td.bad { color: var(--err); font-weight: 600; }
   section.group { margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
   section.group > .gh { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; padding: .6rem .9rem; }
@@ -75,6 +77,9 @@
   <div class="tablewrap"><table id="summary"></table></div>
   <h2 id="codex-summary-head">By codex</h2>
   <div class="tablewrap" id="codex-summary-wrap"><table id="codex-summary"></table></div>
+  <h2 id="iliad-pages-head">Pages with DSE problems, by book of the <i>Iliad</i></h2>
+  <p class="note" id="iliad-pages-note"></p>
+  <div class="tablewrap" id="iliad-pages-wrap"><table id="iliad-pages"></table></div>
   <div id="groups"></div>
   <footer>
     Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar
@@ -1144,6 +1149,23 @@ function pageNeighbours(list) {
  * @property {number} imagesChecked       Distinct image URNs the records refer to.
  * @property {number} catalogImages       Images in the image catalog.
  * @property {CodexCoverage[]} codices    Every codex of the release with at least one page.
+ * @property {IliadProblemPages[]} iliadPages  Pages with DSE records for Iliad lines not in the text, by manuscript and book.
+ */
+
+/**
+ * @typedef {Object} BookProblemPages
+ * @property {number} records   DSE records for lines of this book that are not in the text.
+ * @property {number} pages     Distinct pages those records name.
+ * @property {string} text      The pages in codex order with consecutive pages joined, e.g. `12r–13v, 20r`; "" if none.
+ */
+
+/**
+ * @typedef {Object} IliadProblemPages
+ * @property {string} version   Version URN of the Iliad.
+ * @property {string} label
+ * @property {BookProblemPages[]} byBook   Books 1 to 24 (index 0 is book 1).
+ * @property {number} records   All records counted, including those of no book 1-24 (`other`).
+ * @property {number} other     Records whose passage is not a line of books 1-24.
  */
 
 /** Strip a subreference from a passage reference. */
@@ -1275,6 +1297,7 @@ function checkDse(release) {
   return {
     found: !!set,
     codices: codexCoverage(release, surfaces),
+    iliadPages: iliadProblemPages(release, [...versions.values()]),
     records: rows.length,
     versions: [...versions.values()],
     badPassages,
@@ -1282,6 +1305,67 @@ function checkDse(release) {
     imagesChecked: images.size,
     catalogImages: catalogItems.size,
   };
+}
+
+/**
+ * For each Iliad version with DSE records whose passage is not in the text, the pages those records name, by book.
+ * Pages are in codex order, consecutive pages joined into ranges; a page that is not in the codex's list follows, by its id.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {VersionCheck[]} versions
+ * @returns {IliadProblemPages[]}
+ */
+function iliadProblemPages(release, versions) {
+  /** @type {Map<string, {id: string, order: number, coll: string}>} */
+  const info = new Map();
+  for (const c of codices(release)) c.pages.forEach((p, i) => info.set(p.urn, { id: p.id, order: i, coll: c.urn }));
+  /** @type {IliadProblemPages[]} */
+  const out = [];
+  for (const v of versions) {
+    if (!v.unknown.length || passageKind(v.version) !== 'iliad') continue;
+    /** @type {Map<number, {records: number, pages: Set<string>}>} */
+    const books = new Map();
+    let other = 0;
+    for (const r of v.unknown) {
+      const m = /^(\d+)\.\d/.exec(r.ref);
+      const book = m ? Number(m[1]) : 0;
+      if (book < 1 || book > ILIAD_BOOKS) { other++; continue; }
+      const b = books.get(book) ?? { records: 0, pages: new Set() };
+      b.records++;
+      if (r.surface) b.pages.add(r.surface);
+      books.set(book, b);
+    }
+    const byBook = Array.from({ length: ILIAD_BOOKS }, (_, i) => {
+      const b = books.get(i + 1);
+      return b ? { records: b.records, pages: b.pages.size, text: joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '' };
+    });
+    out.push({ version: v.version, label: v.label, byBook, records: v.unknown.length, other });
+  }
+  return out;
+}
+
+/** Books of the Iliad. */
+const ILIAD_BOOKS = 24;
+
+/**
+ * Page URNs as text: pages of a codex in codex order, runs of consecutive pages as `12r–13v`; others last, in URN order.
+ * @param {string[]} urns
+ * @param {Map<string, {id: string, order: number, coll: string}>} info
+ */
+function joinPages(urns, info) {
+  const known = urns.filter(u => info.has(u)).sort((a, b) => {
+    const x = /** @type {any} */ (info.get(a)), y = /** @type {any} */ (info.get(b));
+    return x.coll === y.coll ? x.order - y.order : x.coll.localeCompare(y.coll);
+  });
+  const parts = [];
+  for (let i = 0; i < known.length;) {
+    let j = i;
+    const at = (/** @type {number} */ k) => /** @type {any} */ (info.get(known[k]));
+    while (j + 1 < known.length && at(j + 1).coll === at(i).coll && at(j + 1).order === at(j).order + 1) j++;
+    parts.push(i === j ? at(i).id : `${at(i).id}–${at(j).id}`);
+    i = j + 1;
+  }
+  for (const u of urns.filter(u => !info.has(u)).sort()) parts.push(u.slice(u.lastIndexOf(':') + 1) || u);
+  return parts.join(', ');
 }
 
 /**
@@ -1434,6 +1518,33 @@ function reportCsv(check) {
       tr.appendChild(el('td', x.uncovered ? 'bad' : '', n(x.uncovered)));
       tr.appendChild(el('td', x.runs.length ? 'bad' : '', n(x.runs.length)));
       ctable.appendChild(tr);
+    }
+    // pages with problems, by book of the Iliad
+    const msName = v => v.label.split(' — ').pop().replace(/\s*\(.*\)$/, '');
+    const ip = c.iliadPages;
+    const itable = $('iliad-pages');
+    itable.textContent = '';
+    $('iliad-pages-head').hidden = $('iliad-pages-note').hidden = $('iliad-pages-wrap').hidden = !ip.length;
+    if (ip.length) {
+      $('iliad-pages-note').textContent = `Pages named by DSE records for lines of the Iliad that are not in the textual edition (${ip.map(v => msName(v)).join(', ')}). Hover a cell for the number of records.`;
+      const ihead = el('tr');
+      ihead.appendChild(el('th', '', 'Book'));
+      for (const v of ip) ihead.appendChild(el('th', '', msName(v)));
+      itable.appendChild(ihead);
+      for (let i = 0; i < 24; i++) {
+        if (!ip.some(v => v.byBook[i].records)) continue;
+        const tr = el('tr');
+        tr.appendChild(el('td', '', String(i + 1)));
+        for (const v of ip) {
+          const b = v.byBook[i];
+          const td = el('td', 'pages', b.records ? b.text : '—');
+          if (b.records) td.title = `${plural(b.records, 'record', 'records')} on ${plural(b.pages, 'page', 'pages')}`;
+          tr.appendChild(td);
+        }
+        itable.appendChild(tr);
+      }
+      const other = ip.filter(v => v.other);
+      if (other.length) $('iliad-pages-note').textContent += ` Not placed in a book: ${other.map(v => `${msName(v)} ${plural(v.other, 'record', 'records')}`).join('; ')}.`;
     }
     $('codex-summary-head').hidden = $('codex-summary-wrap').hidden = !c.codices.length;
 

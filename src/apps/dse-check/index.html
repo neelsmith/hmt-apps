@@ -36,6 +36,8 @@
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
   th, td { padding: .3rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
+  td.pages { text-align: left; white-space: normal; min-width: 8rem; max-width: 28rem; }
+  .note { color: var(--muted); font-size: .875rem; margin: 0 0 .25rem; }
   td.bad { color: var(--err); font-weight: 600; }
   section.group { margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
   section.group > .gh { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; padding: .6rem .9rem; }
@@ -75,6 +77,9 @@
   <div class="tablewrap"><table id="summary"></table></div>
   <h2 id="codex-summary-head">By codex</h2>
   <div class="tablewrap" id="codex-summary-wrap"><table id="codex-summary"></table></div>
+  <h2 id="iliad-pages-head">Pages with DSE problems, by book of the <i>Iliad</i></h2>
+  <p class="note" id="iliad-pages-note"></p>
+  <div class="tablewrap" id="iliad-pages-wrap"><table id="iliad-pages"></table></div>
   <div id="groups"></div>
   <footer>
     Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar

@@ -189,6 +189,50 @@ urn:cts:greekLit:tlg0012.tlg001.msA:1.2|u:i@0,0,1,1|urn:cite2:hmt:x.v1:d
   assert.equal(c.covered, 2);
 });
 
+test('5. pages with DSE records for Iliad lines not in the text, by manuscript and book', () => {
+  const c = checkDse(parseRelease(CEX));
+  assert.equal(c.iliadPages.length, 1, 'only Iliad versions with such records');
+  const a = c.iliadPages[0];
+  assert.equal(a.version, `${T}.msA:`);
+  assert.equal(a.byBook.length, 24);
+  assert.deepEqual([a.byBook[0].records, a.byBook[0].pages, a.byBook[0].text], [1, 1, '1r'], '1.77 on 1r');
+  assert.deepEqual([a.byBook[1].records, a.byBook[1].text !== ''], [1, true], '2.1');
+  assert.equal(a.byBook[2].records, 0);
+  assert.equal(a.byBook[2].text, '');
+  assert.equal(a.records, a.byBook.reduce((n, b) => n + b.records, 0) + a.other);
+});
+
+test('5. consecutive pages are joined in codex order; pages outside the codex follow', () => {
+  const rel = parseRelease(`#!datamodels
+Collection|Model|Label|Description
+urn:cite2:hmt:msA.v1:|urn:cite2:hmt:datamodels.v1:codexmodel|Codex|x
+#!citecollections
+URN|Description|Labelling property|Ordering property|License
+urn:cite2:hmt:msA.v1:|Venetus A|urn:cite2:hmt:msA.v1.label:|urn:cite2:hmt:msA.v1.sequence:|CC
+#!citedata
+sequence|urn|rv|label|image
+1|urn:cite2:hmt:msA.v1:1r|recto|f1r|
+2|urn:cite2:hmt:msA.v1:1v|verso|f1v|
+3|urn:cite2:hmt:msA.v1:2r|recto|f2r|
+4|urn:cite2:hmt:msA.v1:2v|verso|f2v|
+#!citerelationset
+urn|urn:cite2:hmt:hmtdse.v1:all
+label|DSE
+
+passage|imageroi|surface
+${T}.msA:3.1|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:2v
+${T}.msA:3.2|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:1v
+${T}.msA:3.3|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:2r
+${T}.msA:3.4|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:1r
+${T}.msA:3.5|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:99r
+${T}.msA:x.1|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:1r
+`);
+  const a = checkDse(rel).iliadPages[0];
+  assert.equal(a.byBook[2].text, '1r–2v, 99r');
+  assert.equal(a.byBook[2].pages, 5);
+  assert.equal(a.other, 1);
+});
+
 test('a release with no DSE relation set', () => {
   const c = checkDse(parseRelease('#!ctsdata\nurn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1|x\n'));
   assert.equal(c.found, false);
@@ -222,6 +266,10 @@ test('real release: figures that were checked by hand', { skip: !existsSync(REAL
   assert.equal(c.badPassages.length, 0);
   const va = c.versions.find(v => v.version === `${T}.msA:`);
   assert.deepEqual([va.passages, va.records, va.indexed, va.missing.length, va.unknown.length], [15645, 15618, 15602, 43, 15]);
+  const ip = c.iliadPages.find(v => v.version.endsWith('.msA:'));
+  assert.deepEqual(ip.byBook.map((b, i) => b.records ? [i + 1, b.records, b.text] : null).filter(Boolean),
+    [[4, 1, '58v'], [7, 1, '98v'], [14, 1, '188v'], [16, 6, '213v, 214v, 218r, 219v'], [24, 1, '324v']]);
+  assert.equal(ip.other, 5);
   const vb = c.versions.find(v => v.version === `${T}.msB:`);
   assert.deepEqual([vb.records, vb.missing.length], [0, 710]);
   assert.equal(c.versions.filter(v => !v.hasText).length, 2);        // msAmeta, msAimLater
