@@ -1,5 +1,5 @@
 // facsiiles
-va-facsimile.html   0.4.0
+va-facsimile.html   0.4.1
 
 // text browsing
 iliad-scholia.html  0.3.0
