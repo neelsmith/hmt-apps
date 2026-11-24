@@ -36,7 +36,8 @@ import { codices } from './codices.js';
  * @property {number} passages    Passages in the text (0 if no text).
  * @property {number} records     DSE records naming a passage of this version.
  * @property {number} indexed     Passages of the text that at least one DSE record names.
- * @property {{ref: string, text: string}[]} missing      Text passages no DSE record names, in text order.
+ * @property {{ref: string, text: string, texts: {exemplar: string, text: string}[]}[]} missing
+ *     Text passages no DSE record names, in text order; `text` is the one shown first, `texts` every exemplar's text (`exemplar` is e.g. `diplomatic`, or "").
  * @property {(DseRecord & {ref: string})[]} unknown      DSE records for passages not in the text.
  */
 
@@ -93,6 +94,7 @@ import { codices } from './codices.js';
  * @property {number} records   DSE records for lines of this book that are not in the text.
  * @property {number} pages     Distinct pages those records name.
  * @property {string} text      The pages in codex order with consecutive pages joined, e.g. `12r–13v, 20r`; "" if none.
+ * @property {{from: {id: string, urn: string}, to: {id: string, urn: string}}[]} parts  The same, one entry for each page or range (`to` is `from` for a single page).
  */
 
 /**
@@ -134,6 +136,8 @@ export function checkDse(release) {
   const textOf = new Map();
   /** @type {Map<string, string>} the exemplar whose text is kept for display, by version */
   const shownExemplar = new Map();
+  /** @type {Map<string, Map<string, Map<string, string>>>} ref -> exemplar -> text, by version, all exemplars */
+  const allTexts = new Map();
 
   const versionFor = (/** @type {string} */ urn) => {
     let v = versions.get(urn);
@@ -158,6 +162,15 @@ export function checkDse(release) {
     if (!refs) { refs = new Set(); textRefs.set(version, refs); textOf.set(version, new Map()); }
     refs.add(ref);                                    // a passage is in the text if any exemplar has it
     const exemplar = m[1];
+    {   // every exemplar's text, for display
+      const work = exemplar.split(':')[3] ?? '', own = version.split(':')[3] ?? '';
+      const name = work.length > own.length ? work.slice(own.length + 1) : '';
+      let byRef = allTexts.get(version);
+      if (!byRef) { byRef = new Map(); allTexts.set(version, byRef); }
+      let byEx = byRef.get(ref);
+      if (!byEx) { byEx = new Map(); byRef.set(ref, byEx); }
+      byEx.set(name, byEx.has(name) ? `${byEx.get(name)} ${text}` : text);
+    }
     if (!shownExemplar.has(version)) shownExemplar.set(version, exemplar);
     if (shownExemplar.get(version) === exemplar) {   // display text: one exemplar; lemma and comment read as one
       const t = /** @type {Map<string, string>} */ (textOf.get(version));
@@ -225,7 +238,7 @@ export function checkDse(release) {
     if (refs) {
       const shown = textOf.get(version);
       for (const ref of refs) {
-        if (n.has(ref)) v.indexed++; else v.missing.push({ ref, text: shown?.get(ref) ?? '' });
+        if (n.has(ref)) v.indexed++; else v.missing.push({ ref, text: shown?.get(ref) ?? '', texts: [...(allTexts.get(version)?.get(ref) ?? [])].map(([exemplar, text]) => ({ exemplar, text })) });
       }
     }
   }
@@ -272,7 +285,7 @@ export function iliadProblemPages(release, versions) {
     }
     const byBook = Array.from({ length: ILIAD_BOOKS }, (_, i) => {
       const b = books.get(i + 1);
-      return b ? { records: b.records, pages: b.pages.size, text: joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '' };
+      return b ? { records: b.records, pages: b.pages.size, ...joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '', parts: [] };
     });
     out.push({ version: v.version, label: v.label, byBook, records: v.unknown.length, other });
   }
@@ -286,22 +299,28 @@ const ILIAD_BOOKS = 24;
  * Page URNs as text: pages of a codex in codex order, runs of consecutive pages as `12r–13v`; others last, in URN order.
  * @param {string[]} urns
  * @param {Map<string, {id: string, order: number, coll: string}>} info
+ * @returns {{text: string, parts: BookProblemPages['parts']}}
  */
 function joinPages(urns, info) {
   const known = urns.filter(u => info.has(u)).sort((a, b) => {
     const x = /** @type {any} */ (info.get(a)), y = /** @type {any} */ (info.get(b));
     return x.coll === y.coll ? x.order - y.order : x.coll.localeCompare(y.coll);
   });
+  /** @type {BookProblemPages['parts']} */
   const parts = [];
   for (let i = 0; i < known.length;) {
     let j = i;
     const at = (/** @type {number} */ k) => /** @type {any} */ (info.get(known[k]));
     while (j + 1 < known.length && at(j + 1).coll === at(i).coll && at(j + 1).order === at(j).order + 1) j++;
-    parts.push(i === j ? at(i).id : `${at(i).id}–${at(j).id}`);
+    parts.push({ from: { id: at(i).id, urn: known[i] }, to: { id: at(j).id, urn: known[j] } });
     i = j + 1;
   }
-  for (const u of urns.filter(u => !info.has(u)).sort()) parts.push(u.slice(u.lastIndexOf(':') + 1) || u);
-  return parts.join(', ');
+  for (const u of urns.filter(u => !info.has(u)).sort()) {
+    const x = { id: u.slice(u.lastIndexOf(':') + 1) || u, urn: u };
+    parts.push({ from: x, to: x });
+  }
+  const text = parts.map(p => p.from.urn === p.to.urn ? p.from.id : `${p.from.id}–${p.to.id}`).join(', ');
+  return { text, parts };
 }
 
 /**

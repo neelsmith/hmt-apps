@@ -230,7 +230,22 @@ ${T}.msA:x.1|u:i@0,0,1,1|urn:cite2:hmt:msA.v1:1r
   const a = checkDse(rel).iliadPages[0];
   assert.equal(a.byBook[2].text, '1r–2v, 99r');
   assert.equal(a.byBook[2].pages, 5);
+  assert.deepEqual(a.byBook[2].parts.map(p => [p.from.urn, p.to.urn]),
+    [['urn:cite2:hmt:msA.v1:1r', 'urn:cite2:hmt:msA.v1:2v'], ['urn:cite2:hmt:msA.v1:99r', 'urn:cite2:hmt:msA.v1:99r']]);
   assert.equal(a.other, 1);
+});
+
+test('missing passages carry the text of every exemplar', () => {
+  const rel = parseRelease(`#!ctsdata
+${T}.msA.diplomatic:1.1|dip
+${T}.msA.normalized:1.1|norm
+${T}.msA.normalized:1.2|only norm
+`);
+  const m = checkDse(rel).versions[0].missing;
+  assert.deepEqual(m.map(x => x.ref), ['1.1', '1.2']);
+  assert.deepEqual(m[0].texts, [{ exemplar: 'diplomatic', text: 'dip' }, { exemplar: 'normalized', text: 'norm' }]);
+  assert.equal(m[0].text, 'dip');
+  assert.deepEqual(m[1].texts, [{ exemplar: 'normalized', text: 'only norm' }]);
 });
 
 test('a release with no DSE relation set', () => {

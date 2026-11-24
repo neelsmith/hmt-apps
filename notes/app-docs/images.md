@@ -15,6 +15,7 @@ A light box of the image collections in a release, and a pannable, zoomable view
 Query-string parameters (`?name=value`), never `#` tags. The address follows what is shown, so bookmarks, links and the Back and Forward buttons work.
 
 - `image` — an image URN opens that image in the viewer; a collection URN shows the light box of that collection, e.g. `?image=urn:cite2:hmt:vaimg.2017a:`.
+- `image` may end with a region of interest, `@x,y,w,h` as fractions of the image size, e.g. `?image=urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.214,0.5184,0.171,0.0225`: the viewer opens that single image, outlines the region in yellow and zooms to it (never past full resolution); Fit shows the whole image with the region still marked. The region stays in the address; moving to another image drops it. A region that is not four numbers inside the image is ignored and removed from the address.
 - `page` — a page URN, e.g. `urn:cite2:hmt:msA.v1:12r`: opens the image of that page.
 - `text` — a passage URN: opens the image the DSE puts it on. For a range, only its first passage is used; the viewer shows one image at a time, so move on with ‹ ›.
 - If several are given, `image` wins, then `page`, then `text`. The address is then rewritten as `?image=…`.

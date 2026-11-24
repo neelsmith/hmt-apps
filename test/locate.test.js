@@ -126,6 +126,9 @@ test('resolvePage and resolveImage: precedence and errors', () => {
   assert.deepEqual(resolvePage(loc, { ...n, page: P + '9r', text: MSA + '1.2' }), { page: P + '1r' }, 'a bad page falls through');
   assert.ok('error' in resolvePage(loc, { ...n, text: MSA + '2.2' }));
   assert.deepEqual(resolveImage(loc, { ...n, image: IMG + 'X', page: P + '1r' }), { image: IMG + 'X' }, 'image as given');
+  assert.deepEqual(resolveImage(loc, { ...n, image: IMG + 'I1R@0.214,0.5184,0.171,0.0225' }),
+    { image: IMG + 'I1R', roi: { x: 0.214, y: 0.5184, w: 0.171, h: 0.0225 }, roiText: '0.214,0.5184,0.171,0.0225' }, 'image with a region');
+  assert.deepEqual(resolveImage(loc, { ...n, image: IMG + 'I1R@nonsense' }), { image: IMG + 'I1R', roi: null, roiText: 'nonsense' }, 'unusable region');
   assert.deepEqual(resolveImage(loc, { ...n, page: P + '1v', text: MSA + '1.1' }), { image: IMG + 'I1V' });
   assert.deepEqual(resolveImage(loc, { ...n, text: MSA + '1.1' }), { image: IMG + 'I1R' });
   assert.ok('error' in resolveImage(loc, { ...n, text: MSA + '2.2' }));

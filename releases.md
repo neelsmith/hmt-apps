@@ -8,6 +8,7 @@ Current version:  **0.11.3**
 
 - additional reporting on pages covered by DSE records in `dse-check.html`.
 - additional reporting on pages edited per MS in `coverage.html`.
+- fixes a bug in `images.html` when `image` parameter has an RoI subreference.
 
 
 **0.11.2**, *Nov. 24, 2026*: updated functionality and lightbox interface in `images.html`. Expanded documentation on several individual apps.
@@ -143,6 +144,7 @@ Current version:  **0.11.3**
 
 ### `images.html`
 
+**0.3.1**, *Nov. 24, 2026*:  fixes a bug handling image URNs with RoI.
 
 **0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
 

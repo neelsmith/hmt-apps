@@ -7,7 +7,7 @@
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
-import { DSE_URN, dseKey, firstPassageKey, parseImageRoi } from './dse.js';
+import { DSE_URN, dseKey, firstPassageKey, parseImageRoi, parseRoi } from './dse.js';
 import { codices, indexRegionsBySurface, pageView } from './codices.js';
 import { imageCollections } from './images.js';
 
@@ -91,14 +91,20 @@ export function resolvePage(loc, p) {
 }
 
 /**
- * The image to open for the parameters of an address: `image` first (as it is; the caller checks it), then `page`,
- * then `text`.
+ * The image to open for the parameters of an address: `image` first (the caller checks it), then `page`,
+ * then `text`.  An `image` may carry a region of interest, `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.214,0.5184,0.171,0.0225`;
+ * the image is then the URN without it, and `roi` the region (null if it is not a usable one) with `roiText` as written.
  * @param {Locator} loc
  * @param {LocationParams} p
- * @returns {{image: string} | {error: string} | null}  Null if no parameter is given.
+ * @returns {{image: string, roi?: import('./dse.js').Roi | null, roiText?: string} | {error: string} | null}  Null if no parameter is given.
  */
 export function resolveImage(loc, p) {
-  if (p.image) return { image: p.image };
+  if (p.image) {
+    const at = p.image.indexOf('@');
+    if (at < 0) return { image: p.image };
+    const roiText = p.image.slice(at + 1).trim();
+    return { image: p.image.slice(0, at).trim(), roi: parseRoi(roiText), roiText };
+  }
   const fromPage = p.page ? loc.imageOfPage(p.page) : '';
   if (fromPage) return { image: fromPage };
   const fromText = p.text ? loc.imagesOfPassage(p.text)[0] : '';

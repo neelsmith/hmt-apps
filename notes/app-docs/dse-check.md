@@ -28,3 +28,11 @@ None.
 ## Pages with DSE problems, by book of the *Iliad*
 
 A table below the "By codex" table: a row for each book that has any, a column for each *Iliad* version with DSE records for lines that are not in the textual edition (group 2). Each cell lists the pages those records name as surface, in codex order, consecutive pages joined (`12r–13v`); hover for the number of records. Records whose passage is not a numbered line of books 1–24 are counted in a note under the table.
+
+Each page in that table is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's full CITE2 URN (for a range, each end links to its own page).
+
+In "Text passage missing from DSE", hovering or focusing (Tab) a passage reference opens a popover with the passage's text in every exemplar that has it (diplomatic and normalized, labelled); Escape closes it. Passages with no text have no popover.
+
+Clicking a passage reference in that list (or pressing Enter or Space on it) copies the passage's diplomatic text to the clipboard (the first exemplar with text if there is no diplomatic one). The popover and status line confirm the copy, or say it failed.
+
+In "DSE record for text passage not in textual editions", the image of each record is a link to the images app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/images.html?image=` followed by the record's image reference as written, region included, so the images app opens that image with the region highlighted. (The image references of "Reference to image not in catalog" are not linked: those images are not in the catalog.)

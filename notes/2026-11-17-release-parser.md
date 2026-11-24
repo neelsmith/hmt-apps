@@ -410,3 +410,15 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - New table: for each Iliad version with DSE records whose passage is not in the text (problem 2), the pages those records name, by book. `iliadProblemPages(release, versions)` in `src/dse-check.js`, returned by `checkDse` as `iliadPages` (`byBook[24]` of `{records, pages, text}`, plus `records` and `other`). Pages come in codex order with consecutive pages joined; pages not in the codex follow by id. Only this problem type is included (the request was cut off after it; "text passage missing from DSE" has no page of its own, and "image not in catalog" was not asked for).
 - Release 2024c: Venetus A only: book 4 (58v), 7 (98v), 14 (188v), 16 (213v, 214v, 218r, 219v), 24 (324v); 5 more records are not lines of books 1-24.
 - Tests: `test/dse-check.test.js` (synthetic, ordering and real release; 165 unit tests in all).
+
+- dse-check.html: each page in the by-book table links to `https://neelsmith.github.io/hmt-apps/codices.html?page=PAGEURN` (built with `formatPageQuery`). `byBook[n].parts` gives `{from, to}` as `{id, urn}` for each page or range alongside `text`.
+
+- dse-check.html: the title tooltip on missing passages is now a styled popover (immediate, wraps, keyboard-focusable) showing all exemplars. `VersionCheck.missing[]` gained `texts: {exemplar, text}[]` next to `text` (the first exemplar). Test added in `test/dse-check.test.js` (166 unit tests).
+
+- dse-check.html: clicking (or Enter/Space on) a missing-passage reference copies its diplomatic text (`navigator.clipboard`, with a `execCommand('copy')` fallback for non-secure contexts); chips have `role=button`.
+
+## images.html: image references with a region of interest (bug fix)
+
+- `?image=<image URN>@x,y,w,h` used to fail as "not in this release" because the whole string was taken as the image URN. `resolveImage` (`src/locate.js`) now splits at `@`: `{image, roi, roiText}` (`roi` is null, and ignored, if `parseRoi` rejects it). The images app opens the single image, draws a `rect.roi-hl` in the viewer overlay, zooms to the region (at most full resolution, at least fit) and keeps `@roi` in the canonical address; stepping to another image drops it. Tests in `test/locate.test.js`; UI test in the scratchpad (`ui-test-images.js`).
+
+- dse-check.html: in group 2 (and its "not a CTS passage URN" records) the `imageroi` of each record links to `images.html?image=<imageroi>` on GitHub Pages. Group 3 is deliberately not linked.
