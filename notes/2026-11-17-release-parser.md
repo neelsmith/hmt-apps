@@ -380,3 +380,10 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 
 - These apps show one page or image at a time, so a `text` range uses only its first passage and opens that page or image; the user moves on with the normal page navigation. va-facsimile previously refused ranges; it now uses `firstPassageKey`, which moved from `src/locate.js` to `src/dse.js` so va-facsimile can use it without inlining the locator.
 - Text-oriented apps (iliad-scholia, all-scholia, editorial, and the search apps' page views) still show whole ranges, over as many pages as they span.
+
+## va-facsimile now starts from the codex model
+
+- The light table is built from the Venetus A codex (`urn:cite2:hmt:msA.v1:`) of the release: one cell per page, showing the documentary image indexed to the page (`pageView`: the image of its DSE records, else the catalog image). The IIIF manifest `vaimg.2017a.json` is no longer fetched or accepted; image size comes from each image's `info.json` on opening (as in codices), thumbnails take their shape from the loaded picture.
+- Addresses resolve through `createLocator`/`resolvePage` (as codices), restricted to pages of the Venetus A. Release 2024c: 662 pages, all with images, 630 with DSE regions.
+- `parseManifest`, `VA_MANIFEST_URL` and `imageUrnFromService` in `src/iiif.js` are now unused by any app (still tested); remove if you like.
+- The `quarto` page for va-facsimile and `notes/va-facsimile-usage.md` may still describe the manifest (not touched).

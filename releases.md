@@ -2,7 +2,9 @@
 
 ## Repository version tag
 
-Current version:  **0.11.0**
+Current version:  **0.11.1**
+
+**0.11.1**, *Nov. 24, 2026*: fixes a bug in sequencing of pages in `va-facsimile.html`.
 
 **0.11.0**, *Nov. 24, 2026*:
 
@@ -48,6 +50,8 @@ Current version:  **0.11.0**
 ## Facsimile apps
 
 ### `va-facsimile.html`
+
+**0.4.1**, *Nov. 24, 2026*:  corrects behavior for forming sequence of pages in facsimile.
 
 **0.4.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 

@@ -1,30 +1,37 @@
 // Browser UI for the Venetus A facsimile app: a light table of all pages and a
 // pannable, zoomable viewer with the indexed text regions drawn over the image.
+// The pages come from the codex model of the Venetus A in the HMT release (`urn:cite2:hmt:msA.v1:`); each page is
+// shown by the documentary image indexed to it (the image of its DSE records, else the catalog's image).
 // Uses the shared sources inlined ahead of this file (see index.html).
 (function () {
-  const VA_PAGES = 'urn:cite2:hmt:msA.v1:';   // the pages of the Venetus A; a page's object id is its canvas id in the manifest
+  const VA_CODEX = 'urn:cite2:hmt:msA.v1:';   // the codex of the Venetus A
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
   const THUMB_W = 240;
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
 
-  /** @type {any[]} */ let canvases = [];
+  /**
+   * The pages of the Venetus A that have an image, in codex order.
+   * @type {{id: string, urn: string, label: string, fullLabel: string, gridLabel: string, imageUrn: string, service: string, regions: any[], elsewhere: number, width?: number, height?: number}[]}
+   */
+  let canvases = [];
   /** @type {any} */ let release = null;
+  /** @type {any} */ let locator = null;
   /** @type {Map<string, any>} */ let textIndex = new Map();
-  /** @type {any} */ let dse = null;
+  /** @type {{found: boolean, skipped: number} | null} */ let dse = null;
   /** @type {Map<string, string>} */ let titles = new Map();
+  /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
   let current = -1;
+  let openToken = 0;
   let tableScroll = 0;
   let lastTipKey = '';
-  /** A `text` or `image` parameter waiting for the data it needs. */
-  let pending = null;
   let notice = '';
-  let releaseFailed = false;
+  let noImage = 0;
 
   const url = (c, region, size) => matchProtocol(iiifImageUrl(c.service, region, size), proto);
-  const regionsOf = c => (dse && c.imageUrn && dse.byImage.get(c.imageUrn)) || [];
+  const regionsOf = c => c.regions;
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
 
   // --- status and loading ---------------------------------------------------
@@ -32,15 +39,16 @@
   function setStatus(msg) { $('status').textContent = msg; }
 
   function updateStatus() {
-    if (!canvases.length) return;
+    if (!release) return;
+    if (!canvases.length) { setStatus(`${release.library.name}: no pages of the Venetus A (${VA_CODEX}) with an image`); return; }
     let regions = 0, pages = 0;
     for (const c of canvases) { const n = regionsOf(c).length; if (n) { regions += n; pages++; } }
-    const parts = [plural(canvases.length, 'image', 'images')];
-    if (dse) parts.push(`${plural(regions, 'indexed region', 'indexed regions')} on ${plural(pages, 'page', 'pages')}`);
-    else parts.push('loading indexed text…');
+    const parts = [plural(canvases.length, 'page', 'pages')];
+    if (dse && dse.found) parts.push(`${plural(regions, 'indexed region', 'indexed regions')} on ${plural(pages, 'page', 'pages')}`);
     let msg = parts.join(' · ');
-    if (dse && dse.skipped) msg += ` · ${plural(dse.skipped, 'index row', 'index rows')} without a usable region not drawn`;
-    if (dse && !dse.found) msg = `${plural(canvases.length, 'image', 'images')} · this release has no ${DSE_URN} index`;
+    if (dse && dse.found && dse.skipped) msg += ` · ${plural(dse.skipped, 'index row', 'index rows')} without a usable region not drawn`;
+    if (dse && !dse.found) msg += ` · this release has no ${DSE_URN} index`;
+    if (noImage) msg += ` · ${plural(noImage, 'page', 'pages')} without an image left out`;
     if (notice) msg += ` · ${notice}`;
     setStatus(msg);
   }
@@ -50,61 +58,61 @@
     $('drop').hidden = false;
   }
 
-  function onManifest(json) {
-    const m = parseManifest(json);
-    if (!m.canvases.length) throw new Error('the manifest has no usable images');
-    canvases = m.canvases;
-    buildGrid();
-    $('table-view').hidden = current >= 0;
-    updateStatus();
-    showFromLocation();
-  }
-
+  /** Build the pages of the Venetus A from a release, and show what the address asks for. */
   function onRelease(rel) {
     release = rel;
     textIndex = buildTextIndex(rel);
     titles = catalogTitles(rel);
-    dse = indexDse(rel);
-    if (!$('problem').textContent.startsWith('Could not load the manifest')) { $('problem').textContent = ''; $('drop').hidden = true; }
-    updateCounts();
-    updateStatus();
-    if (current >= 0) renderRegions();
-    tryPending();
-  }
-
-  async function loadManifest() {
-    try {
-      const resp = await fetch(VA_MANIFEST_URL);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      onManifest(await resp.json());
-    } catch (e) {
-      setStatus('');
-      showProblem(`Could not load the manifest (${e.message || e}).`);
+    locator = createLocator(rel);
+    const idx = indexRegionsBySurface(rel);
+    dse = { found: idx.found, skipped: idx.skipped };
+    const catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
+    const codex = codices(rel).find(c => c.urn === VA_CODEX);
+    canvases = []; noImage = 0; current = -1;
+    for (const p of codex ? codex.pages : []) {
+      const view = pageView(p, idx.bySurface.get(p.urn) ?? [], catalogImages);
+      const service = view.image ? imageService(view.image) : null;
+      if (!service) { noImage++; continue; }
+      canvases.push({
+        id: p.id, urn: p.urn, label: p.short || p.id, fullLabel: p.label || p.short || p.id,
+        gridLabel: /^\d+[rv]$/.test(p.id) ? p.id : (p.short || p.id),
+        imageUrn: view.image, service, regions: view.regions, elsewhere: view.elsewhere,
+      });
     }
+    if (!codex) showProblem(`This release has no codex ${VA_CODEX} (the Venetus A).`);
+    else { $('problem').textContent = ''; $('drop').hidden = true; }
+    buildGrid();
+    $('table-view').hidden = false;
+    updateStatus();
+    showFromLocation();
   }
 
   async function loadRelease() {
     try { onRelease(await fetchRelease()); }
     catch (e) {
-      releaseFailed = true;
-      updateStatus();
-      tryPending();
-      showProblem(`Could not load the HMT release (${e.message || e}). Page images still work; indexed text needs the release.`);
+      setStatus('');
+      showProblem(`Could not load the HMT release (${e.message || e}). The pages and images come from the release; load a saved copy.`);
     }
   }
 
   async function loadFiles(files) {
     for (const file of files) {
-      try {
-        const text = await file.text();
-        if (/\.json$/i.test(file.name) || text.trimStart().startsWith('{')) onManifest(JSON.parse(text));
-        else onRelease(parseRelease(text));
-        $('problem').textContent = '';
-        $('drop').hidden = true;
-      } catch (e) {
-        showProblem(`${file.name}: ${e.message || e}`);
-      }
+      try { onRelease(parseRelease(await file.text())); }
+      catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
     }
+  }
+
+  /** Pixel size of an image, from its IIIF info.json (asked once per image). */
+  function imageSize(service) {
+    let p = sizes.get(service);
+    if (!p) {
+      p = fetch(matchProtocol(`${service}/info.json`, proto))
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(j => parseInfo(j) || Promise.reject(new Error('no width and height in the image information')));
+      p.catch(() => sizes.delete(service));
+      sizes.set(service, p);
+    }
+    return p;
   }
 
   // --- light table ----------------------------------------------------------
@@ -114,36 +122,26 @@
     grid.textContent = '';
     const frag = document.createDocumentFragment();
     canvases.forEach((c, i) => {
+      const n = regionsOf(c).length;
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'cell'; b.dataset.index = String(i);
-      b.title = c.fullLabel;
+      b.title = n ? `${c.fullLabel}: ${plural(n, 'indexed region', 'indexed regions')}` : c.fullLabel;
       const thumb = document.createElement('span');
       thumb.className = 'thumb';
-      thumb.style.aspectRatio = `${c.width} / ${c.height}`;
+      thumb.style.aspectRatio = '3 / 4';   // until the picture says which shape it is
       const img = document.createElement('img');
       img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+      img.addEventListener('load', () => { if (img.naturalWidth && img.naturalHeight) thumb.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; });
       img.src = url(c, 'full', `${THUMB_W},`);
       thumb.appendChild(img);
       const lbl = document.createElement('span');
       lbl.className = 'lbl'; lbl.textContent = c.gridLabel;
       const count = document.createElement('span');
-      count.className = 'count'; count.hidden = true;
+      count.className = 'count'; count.hidden = n === 0; count.textContent = String(n);
       b.append(thumb, lbl, count);
       frag.appendChild(b);
     });
     grid.appendChild(frag);
-    applyFilter();
-  }
-
-  function updateCounts() {
-    const cells = $('grid').children;
-    canvases.forEach((c, i) => {
-      const n = regionsOf(c).length;
-      const badge = cells[i].querySelector('.count');
-      badge.hidden = n === 0;
-      badge.textContent = String(n);
-      cells[i].title = n ? `${c.fullLabel}: ${plural(n, 'indexed region', 'indexed regions')}` : c.fullLabel;
-    });
     applyFilter();
   }
 
@@ -171,78 +169,30 @@
   // --- navigation (address of the page) -----------------------------------
   //
   // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
-  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage (the app then shows it as
-  // `?page=…`).  There is no `#`.
-
-  const pageUrn = c => VA_PAGES + c.id;
-
-  /** Open the page named by a `page` parameter, or say why not and show the light table. */
-  function openPage(value) {
-    const urn = value.split('@')[0].trim();
-    let idx = -1, problem = '';
-    if (!urn.startsWith(VA_PAGES)) problem = `“${value}” is not a page of the Venetus A (${VA_PAGES}…).`;
-    else {
-      idx = canvases.findIndex(c => pageUrn(c) === urn);
-      if (idx < 0) problem = `${urn} is not a page of the Venetus A manifest.`;
-    }
-    notice = problem;
-    if (idx >= 0) showViewer(idx);
-    else { setQuery({}, true); showTable(); }
-    updateStatus();
-  }
-
-  /** Turn a `text` or `image` parameter into a page, once the data it needs has loaded. */
-  function tryPending() {
-    if (!pending || !canvases.length) return;
-    const { kind, value } = pending;
-    let idx = -1, problem = '';
-    if (kind === 'image') {
-      const urn = value.split('@')[0].trim();
-      if (!/^urn:cite2:[^:]+:[^:]+:[^:]+$/.test(urn)) problem = `“${value}” is not an image URN (urn:cite2:…).`;
-      else {
-        idx = canvases.findIndex(c => c.imageUrn === urn);
-        if (idx < 0) problem = `${urn} is not an image of the Venetus A manifest.`;
-      }
-    } else {
-      const key = firstPassageKey(value);           // for a range, its first passage
-      if (!key) problem = `“${value}” is not a CTS passage URN (urn:cts:…).`;
-      else if (!dse) {
-        if (!releaseFailed) return;                       // wait for the release
-        problem = `Cannot look up ${value}: the HMT release did not load.`;
-      } else if (!dse.found) problem = `Cannot look up ${value}: this release has no ${DSE_URN} index.`;
-      else {
-        const images = dse.byPassage.get(key) ?? [];
-        idx = canvases.findIndex(c => images.includes(c.imageUrn));
-        if (!images.length) problem = `${value} is not indexed in the DSE records.`;
-        else if (idx < 0) problem = `${value} is indexed only to images that are not pages of the Venetus A.`;
-      }
-    }
-    pending = null;
-    notice = problem;
-    if (idx >= 0) { goTo(idx, true); }
-    else {
-      setQuery({}, true);
-      showTable();
-    }
-    updateStatus();
-  }
+  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
+  // (the app then shows it as `?page=…`).  There is no `#`.
 
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
-    const p = readParams(location.search);
-    pending = null;
+    if (!release) return;
     notice = '';
-    if (p.page) { openPage(p.page); return; }
-    if (p.image || p.text) {
-      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: /** @type {string} */ (p.text) };
-      tryPending();
-      return;
+    const p = readParams(location.search);
+    for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
+    const r = resolvePage(locator, p);
+    if (!r) { showTable(); updateStatus(); return; }
+    if ('error' in r) { notice = r.error; setQuery({}, true); showTable(); updateStatus(); return; }
+    const idx = canvases.findIndex(c => c.urn === r.page);
+    if (idx < 0) {
+      notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
+      setQuery({}, true); showTable(); updateStatus(); return;
     }
-    showTable();
+    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    showViewer(idx);
     updateStatus();
   }
 
   function showTable() {
+    openToken++;
     if (viewer) viewer.close();
     current = -1;
     hideTip();
@@ -254,7 +204,7 @@
 
   /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
-    setQuery({ page: pageUrn(canvases[idx]) }, replace);
+    setQuery({ page: canvases[idx].urn }, replace);
     showViewer(idx);
   }
 
@@ -268,10 +218,11 @@
 
   function kind() { return document.querySelector('input[name=kind]:checked').value; }
 
-  function showViewer(idx) {
+  async function showViewer(idx) {
     if (idx === current && !$('viewer-view').hidden) return;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
+    const token = ++openToken;
     const c = canvases[idx];
     $('table-view').hidden = true;
     $('viewer-view').hidden = false;
@@ -281,10 +232,20 @@
       bindHover();
     }
     hideTip();
+    viewer.close();
+    viewer.overlay.textContent = '';
     $('viewer-title').textContent = c.label;
     document.title = `${c.label} – Venetus A facsimile`;
     $('prev').disabled = idx === 0;
     $('next').disabled = idx === canvases.length - 1;
+    $('viewer-note').textContent = 'Loading the image…';
+    try {
+      if (!c.width) Object.assign(c, await imageSize(c.service));
+    } catch (e) {
+      if (token === openToken) $('viewer-note').textContent = `Could not load the image of ${c.label} (${e.message || e}).`;
+      return;
+    }
+    if (token !== openToken) return;
     viewer.open({
       width: c.width, height: c.height,
       urlFor: (region, size) => url(c, region, size),
@@ -317,7 +278,7 @@
     overlay.appendChild(frag);
     applyLayers();
     const note = $('viewer-note');
-    if (!dse) note.textContent = release ? '' : 'Loading indexed text…';
+    if (!dse || !dse.found) note.textContent = '';
     else if (!regions.length) note.textContent = 'No indexed text on this page.';
     else {
       const bits = [];
@@ -326,6 +287,7 @@
       if (counts.other) bits.push(`${counts.other} other`);
       note.textContent = `${plural(regions.length, 'region', 'regions')}: ${bits.join(', ')}`;
     }
+    if (c.elsewhere) note.textContent += ` · ${plural(c.elsewhere, 'region', 'regions')} on another image not shown`;
   }
 
   function applyLayers() {
@@ -452,6 +414,5 @@
     if (e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]);
   });
 
-  loadManifest();
   loadRelease();
 })();

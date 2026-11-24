@@ -5,12 +5,21 @@ title: "Venetus A facsimile"
 
 ## Summary
 
-`va-facsimile`: a light table of the pages of the Venetus A manuscript and a zoomable viewer showing indexed text.
+[`va-facsimile`](https://neelsmith.github.io/hmt-apps/va-facsimile.html): a light table of the pages of the Venetus A manuscript, and a zoomable page viewer showing edited text.
 
 ## User options and display
 
-- Light table: **Find** (e.g. `12r`, `cover`, `flyleaf`), **Only pages with indexed text**, a **Size** slider for the thumbnails; click a page to open it.
-- Image viewer: **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
+In light table view: 
+
+- **Find** (e.g. `12r`, `cover`, `flyleaf`): search captions of images
+- **Only pages with indexed text**: limit pages in light table
+- **Size** slider: adjust size of the thumbnails
+-  Selct a page to open it.
+
+
+In single-image view:
+
+- **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
 - **Iliad**, **Scholia** and **Other** checkboxes show or hide those regions; **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
 - Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
