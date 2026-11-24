@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-23">
+<meta name="dcterms.date" content="2026-11-24">
 
-<title>stringsearch – hmt-apps</title>
+<title>Simple text search – hmt-apps</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -138,7 +138,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../docs/stringsearch/index.html"><code>stringsearch</code></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../docs/stringsearch/index.html">Simple text search</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -167,7 +167,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/iliad-scholia/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>iliad-scholia</code></span></a>
+ <span class="menu-text"><em>Iliad</em> + <em>scholia</em> reader</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -186,7 +186,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/stringsearch/index.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><code>stringsearch</code></span></a>
+ <span class="menu-text">Simple text search</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -217,7 +217,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/images/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>images</code></span></a>
+ <span class="menu-text">Browse images</span></a>
   </div>
 </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -233,20 +233,36 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text"><code>dse-check</code></span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../docs/commentary-check/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>commentary-check</code></span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#summary" id="toc-summary" class="nav-link active" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#user-options-and-display" id="toc-user-options-and-display" class="nav-link" data-scroll-target="#user-options-and-display">User options and display</a></li>
+  <li><a href="#optional-url-parameters" id="toc-optional-url-parameters" class="nav-link" data-scroll-target="#optional-url-parameters">Optional URL parameters</a></li>
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data sources</a></li>
+  <li><a href="#output-options" id="toc-output-options" class="nav-link" data-scroll-target="#output-options">Output options</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><code>stringsearch</code></h1>
+<h1 class="title">Simple text search</h1>
 </div>
 
 
@@ -257,7 +273,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 23, 2026</p>
+      <p class="date">November 24, 2026</p>
     </div>
   </div>
   
@@ -269,9 +285,40 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><em>App-specific docs not yet available</em></p>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p><a href="https://neelsmith.github.io/hmt-apps/stringsearch.html"><code>stringsearch</code></a> : Find passages containing a Greek string, and read passage in the context of their manuscript page.</p>
+</section>
+<section id="user-options-and-display" class="level2">
+<h2 class="anchored" data-anchor-id="user-options-and-display">User options and display</h2>
+<ul>
+<li>Type a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter). Press <strong>Search</strong>; typing also searches after a short pause.</li>
+<li>Choose where to search: <strong>all texts</strong>, <strong>Iliad</strong> or <strong>scholia</strong>; and the text searched and shown: <strong>diplomatic</strong> or <strong>normalized</strong>.</li>
+<li>Matching passages are listed under the word forms that contain the string, by version (60 at a time, with a “show more” button). Choosing one shows its manuscript page: the <em>Iliad</em> lines and scholia on it, every match marked, the scholia panels with a match unfolded.</li>
+<li>Every manuscript page in the page view has <strong>‹ Previous page</strong> and <strong>Next page ›</strong> buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.</li>
+</ul>
+</section>
+<section id="optional-url-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="optional-url-parameters">Optional URL parameters</h2>
+<p>Unlike the browsing apps, this app still keeps its state in a <code>#</code> hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.</p>
+<ul>
+<li><code>#q=&lt;string&gt;&amp;s=&lt;all|iliad|scholia&gt;&amp;t=&lt;diplomatic|normalized&gt;[&amp;p=&lt;passage&gt;]</code> — the string; where to search (<code>s</code>, default <code>all</code>); the text searched and shown (<code>t</code>, default <code>diplomatic</code>); and the passage chosen (<code>p</code>).</li>
+</ul>
+</section>
+<section id="data-sources" class="level2">
+<h2 class="anchored" data-anchor-id="data-sources">Data sources</h2>
+<ul>
+<li><code>#!ctscatalog</code> and <code>#!ctsdata</code>: the texts searched.</li>
+<li>For the page view of a chosen passage: <code>#!citerelationset</code> (the DSE <code>urn:cite2:hmt:hmtdse.v1:all</code> and the commentary index <code>urn:cite2:hmt:commentary.v1:all</code>, found through <code>#!datamodels</code>), <code>#!datamodels</code>, <code>#!citecollections</code> and <code>#!citedata</code> (codex pages and their labels); <code>#!citelibrary</code> (release name in the status line).</li>
+<li>The release (<code>hmt-current.cex</code>) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.</li>
+</ul>
+</section>
+<section id="output-options" class="level2">
+<h2 class="anchored" data-anchor-id="output-options">Output options</h2>
+<p>None.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -681,7 +728,7 @@ ul.task-list li input[type="checkbox"] {
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p><code>hmt-apps</code> release <strong>0.11.0</strong>, website last updated November 23, 2026</p>
+<p><code>hmt-apps</code> release <strong>0.11.2</strong>, website last updated November 24, 2026</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

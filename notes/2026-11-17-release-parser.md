@@ -387,3 +387,8 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - Addresses resolve through `createLocator`/`resolvePage` (as codices), restricted to pages of the Venetus A. Release 2024c: 662 pages, all with images, 630 with DSE regions.
 - `parseManifest`, `VA_MANIFEST_URL` and `imageUrnFromService` (and their tests) are removed from `src/iiif.js` and `test/viewer-modules.test.js`; `iiif.js` keeps `iiifImageUrl` and `matchProtocol`.
 - The `quarto` page for va-facsimile and `notes/va-facsimile-usage.md` may still describe the manifest (not touched).
+
+## images.html: light box like the Venetus A one
+
+- The light box of `images.html` now follows `va-facsimile.html`: **Find** (matches the typed text in the caption, or the id when there is no caption; `imageMatches` in `src/images.js`), a **Size** slider, and the whole collection on one scrolling page (thumbnails load lazily). Paging is removed: no Per page menu, no pagers, no `n` parameter; `paginate` is deleted (and its test), `formatImageQuery`/`imageParams`/`parseImageQuery` now deal only with `image`. Thumbnails take the aspect ratio of the loaded picture.
+- The grid is built once per collection and kept when you open an image and come back; it is rebuilt when the collection changes. The "none of the thumbnails loaded" note now appears when the first six thumbnails all fail.

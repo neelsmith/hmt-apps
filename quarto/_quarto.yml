@@ -2,7 +2,7 @@ project:
   type: website
   output-dir: quarto_build
 
-version: "0.11.0"
+version: "0.11.2"
 metadata:
   date: today
   
@@ -63,3 +63,4 @@ website:
           - "---"
           - docs/coverage/index.qmd          
           - docs/dse-check/index.qmd
+          - docs/commentary-check/index.qmd

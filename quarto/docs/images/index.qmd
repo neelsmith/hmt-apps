@@ -1,5 +1,54 @@
 ---
-title: "`images`"
+title: "Browse images"
 ---
 
-*App-specific docs not yet available*
+## Summary
+
+[`images.html`](https://neelsmith.github.io/hmt-apps/images.html): a light box of HMT image collections, with pannable, zoomable views of individual images.
+
+
+## User options and display
+
+In light-table view:
+
+- **Collection** menu: choose an image collection.
+- **Find**: search caption of images.
+- **Size** slider: adjust width of the thumbnails.
+- **Select an image** to open it in single-image view.
+
+In single-image view:
+
+- **‹ ›** (or `[` and `]`): move to  previous or next image of the collection.
+- **Rights**: shows/hide rights statement.
+- **← Images** (or Esc): return to light box view.
+- **Navigation**: drag to pan; scroll or pinch to zoom; **+**, **−** and **Fit** (or the `+`, `-` and `0` keys).
+
+If the image server cannot be reached, the thumbnails show "no image".
+
+
+
+## Optional URL parameters
+
+
+- `image` — an image URN. Collection-level URN opens in lightbox view,  e.g. `?image=urn:cite2:hmt:vaimg.2017a:`. Object-level URN opens in single image view, e.g. `urn:cite2:hmt:vaimg.2017a:VA091RN_0092`
+- `page` — a page URN, e.g. `urn:cite2:hmt:msA.v1:12r`: opens the reference image for that page.
+- `text` — a CTS URN. Opens the image the passage is indexed to.
+
+
+If multiple parameters are given, `image` takes priority, then `page`, then `text`
+
+
+
+## Data sources
+
+From the HMT release:
+
+- `#!datamodels` (image model `urn:cite2:cite:datamodels.v1:imagemodel`), `#!citecollections` and `#!citedata`: the image collections and their items (URN, caption, rights).
+- Only for the `page` and `text` parameters: the codex pages (`#!datamodels` codex model, `#!citedata`) and the DSE (`#!citerelationset`, `urn:cite2:hmt:hmtdse.v1:all`).
+- `#!citelibrary`: the release name in the status line.
+- The pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture's pixel size is read from its IIIF `info.json` when it is opened.
+- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+
+## Output options
+
+None.

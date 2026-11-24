@@ -14,14 +14,16 @@ In light table view:
 - **Find** (e.g. `12r`, `cover`, `flyleaf`): search captions of images
 - **Only pages with indexed text**: limit pages in light table
 - **Size** slider: adjust size of the thumbnails
--  Selct a page to open it.
+-  **Select a page** to open it in single-image view.
 
 
 In single-image view:
 
-- **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
-- **Iliad**, **Scholia** and **Other** checkboxes show or hide those regions; **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
-- Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
+- **‹ ›** (or `[` `]`): move to previous or next page.
+- **← Pages** or Esc: return to light table.
+- **Iliad**, **Scholia** and **Other** checkboxes show or hide those texts.
+- **diplomatic** or **normalized**: text versopm shown when you hover (or tap) a region.
+- **Navigation**: drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
 
 ## Optional URL parameters

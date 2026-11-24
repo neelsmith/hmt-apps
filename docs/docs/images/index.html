@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-23">
+<meta name="dcterms.date" content="2026-11-24">
 
-<title>images – hmt-apps</title>
+<title>Browse images – hmt-apps</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -138,7 +138,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../docs/images/index.html"><code>images</code></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../docs/images/index.html">Browse images</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -167,7 +167,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/iliad-scholia/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>iliad-scholia</code></span></a>
+ <span class="menu-text"><em>Iliad</em> + <em>scholia</em> reader</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -186,7 +186,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/stringsearch/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>stringsearch</code></span></a>
+ <span class="menu-text">Simple text search</span></a>
   </div>
 </li>
         <li class="sidebar-item">
@@ -217,7 +217,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../docs/images/index.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><code>images</code></span></a>
+ <span class="menu-text">Browse images</span></a>
   </div>
 </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -233,20 +233,36 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text"><code>dse-check</code></span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../docs/commentary-check/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>commentary-check</code></span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#summary" id="toc-summary" class="nav-link active" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#user-options-and-display" id="toc-user-options-and-display" class="nav-link" data-scroll-target="#user-options-and-display">User options and display</a></li>
+  <li><a href="#optional-url-parameters" id="toc-optional-url-parameters" class="nav-link" data-scroll-target="#optional-url-parameters">Optional URL parameters</a></li>
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data sources</a></li>
+  <li><a href="#output-options" id="toc-output-options" class="nav-link" data-scroll-target="#output-options">Output options</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title"><code>images</code></h1>
+<h1 class="title">Browse images</h1>
 </div>
 
 
@@ -257,7 +273,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 23, 2026</p>
+      <p class="date">November 24, 2026</p>
     </div>
   </div>
   
@@ -269,9 +285,54 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><em>App-specific docs not yet available</em></p>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<p><a href="https://neelsmith.github.io/hmt-apps/images.html"><code>images.html</code></a>: a light box of HMT image collections, with pannable, zoomable views of individual images.</p>
+</section>
+<section id="user-options-and-display" class="level2">
+<h2 class="anchored" data-anchor-id="user-options-and-display">User options and display</h2>
+<p>In light-table view:</p>
+<ul>
+<li><strong>Collection</strong> menu: choose an image collection.</li>
+<li><strong>Find</strong>: search caption of images.</li>
+<li><strong>Size</strong> slider: adjust width of the thumbnails.</li>
+<li><strong>Select an image</strong> to open it in single-image view.</li>
+</ul>
+<p>In single-image view:</p>
+<ul>
+<li><strong>‹ ›</strong> (or <code>[</code> and <code>]</code>): move to previous or next image of the collection.</li>
+<li><strong>Rights</strong>: shows/hide rights statement.</li>
+<li><strong>← Images</strong> (or Esc): return to light box view.</li>
+<li><strong>Navigation</strong>: drag to pan; scroll or pinch to zoom; <strong>+</strong>, <strong>−</strong> and <strong>Fit</strong> (or the <code>+</code>, <code>-</code> and <code>0</code> keys).</li>
+</ul>
+<p>If the image server cannot be reached, the thumbnails show “no image”.</p>
+</section>
+<section id="optional-url-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="optional-url-parameters">Optional URL parameters</h2>
+<ul>
+<li><code>image</code> — an image URN. Collection-level URN opens in lightbox view, e.g.&nbsp;<code>?image=urn:cite2:hmt:vaimg.2017a:</code>. Object-level URN opens in single image view, e.g.&nbsp;<code>urn:cite2:hmt:vaimg.2017a:VA091RN_0092</code></li>
+<li><code>page</code> — a page URN, e.g.&nbsp;<code>urn:cite2:hmt:msA.v1:12r</code>: opens the reference image for that page.</li>
+<li><code>text</code> — a CTS URN. Opens the image the passage is indexed to.</li>
+</ul>
+<p>If multiple parameters are given, <code>image</code> takes priority, then <code>page</code>, then <code>text</code></p>
+</section>
+<section id="data-sources" class="level2">
+<h2 class="anchored" data-anchor-id="data-sources">Data sources</h2>
+<p>From the HMT release:</p>
+<ul>
+<li><code>#!datamodels</code> (image model <code>urn:cite2:cite:datamodels.v1:imagemodel</code>), <code>#!citecollections</code> and <code>#!citedata</code>: the image collections and their items (URN, caption, rights).</li>
+<li>Only for the <code>page</code> and <code>text</code> parameters: the codex pages (<code>#!datamodels</code> codex model, <code>#!citedata</code>) and the DSE (<code>#!citerelationset</code>, <code>urn:cite2:hmt:hmtdse.v1:all</code>).</li>
+<li><code>#!citelibrary</code>: the release name in the status line.</li>
+<li>The pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture’s pixel size is read from its IIIF <code>info.json</code> when it is opened.</li>
+<li>The release (<code>hmt-current.cex</code>) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.</li>
+</ul>
+</section>
+<section id="output-options" class="level2">
+<h2 class="anchored" data-anchor-id="output-options">Output options</h2>
+<p>None.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -681,7 +742,7 @@ ul.task-list li input[type="checkbox"] {
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p><code>hmt-apps</code> release <strong>0.11.0</strong>, website last updated November 23, 2026</p>
+<p><code>hmt-apps</code> release <strong>0.11.2</strong>, website last updated November 24, 2026</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

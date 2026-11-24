@@ -2,7 +2,10 @@
 
 ## Repository version tag
 
-Current version:  **0.11.1**
+Current version:  **0.11.2**
+
+**0.11.2**, *Nov. 24, 2026*: updated functionality and lightbox interface in `images.html`. Expanded documentation on several individual apps.
+
 
 **0.11.1**, *Nov. 24, 2026*: fixes a bug in sequencing of pages in `va-facsimile.html`.
 
@@ -133,6 +136,10 @@ Current version:  **0.11.1**
 ## Apps starting from physical artifacts and images
 
 ### `images.html`
+
+
+**0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
+
 
 **0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
