@@ -4,9 +4,10 @@
 
 Current version:  **0.11.0**
 
-**0.11.0**, *Nov. 23, 2026*:
+**0.11.0**, *Nov. 24, 2026*:
 
 - adds scholia summary to `coverage.html` app
+- adds new `commentary-check.html` app
 
 
 **0.10.0**, *Nov. 23, 2026*:  adds new `coverage.html` app.
