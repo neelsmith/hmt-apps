@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-11-23">
+<meta name="dcterms.date" content="2026-11-24">
 
 <title>Documentation for individual apps – hmt-apps</title>
 <style>
@@ -160,7 +160,7 @@ ul.task-list li input[type="checkbox"] {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../docs/va-facsimile/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>va-facsimile</code></span></a>
+ <span class="menu-text">Venetus A facsimile</span></a>
   </div>
 </li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
@@ -176,6 +176,13 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text"><code>all-scholia</code></span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../docs/editorial/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>editorial</code></span></a>
+  </div>
+</li>
+        <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../docs/stringsearch/index.html" class="sidebar-item-text sidebar-link">
@@ -200,12 +207,6 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text"><code>propernames</code></span></a>
   </div>
 </li>
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../docs/editorial/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>editorial</code></span></a>
-  </div>
-</li>
         <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
@@ -222,8 +223,14 @@ ul.task-list li input[type="checkbox"] {
         <li class="px-0"><hr class="sidebar-divider hi "></li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../docs/coverage/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>coverage</code></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../docs/dse-check/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><code>va-facsimile</code></span></a>
+ <span class="menu-text"><code>dse-check</code></span></a>
   </div>
 </li>
     </ul>
@@ -231,8 +238,16 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#links-and-info" id="toc-links-and-info" class="nav-link active" data-scroll-target="#links-and-info">Links and info</a></li>
+  <li><a href="#citable-connections-across-hmt-data" id="toc-citable-connections-across-hmt-data" class="nav-link" data-scroll-target="#citable-connections-across-hmt-data">Citable connections across HMT data</a></li>
+  <li><a href="#text-formatting-and-navigation" id="toc-text-formatting-and-navigation" class="nav-link" data-scroll-target="#text-formatting-and-navigation">Text formatting and navigation</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -250,7 +265,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 23, 2026</p>
+      <p class="date">November 24, 2026</p>
     </div>
   </div>
   
@@ -262,8 +277,42 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="links-and-info" class="level2">
+<h2 class="anchored" data-anchor-id="links-and-info">Links and info</h2>
+<p>All apps have a uniform header or menu line with a link to the <code>hmt-apps</code> home page on the left, and on the right, a version identifier for the specific app plus a link to documentation for the specific app. Immediately below this header line is the title of the app.</p>
+<p>Here is an example showing the header line for the <em>Venetus A facsimile</em> app, in version <code>0.3.0</code>.</p>
+<blockquote class="blockquote">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="./menu.png" class="img-fluid figure-img"></p>
+<figcaption>Example of a uniform header line (from the Venetus A facsimile app, version 0.3.0)</figcaption>
+</figure>
+</div>
+</blockquote>
+</section>
+<section id="citable-connections-across-hmt-data" class="level2">
+<h2 class="anchored" data-anchor-id="citable-connections-across-hmt-data">Citable connections across HMT data</h2>
+<p>Throughout the HMT archive, texts are related to physical artifacts documented by citable images. All apps for browsing texts, manuscript pages or images can be bookmarked by a URN for manuscript page (<code>page</code>), textual passage (<code>text</code>) or image (<code>image</code>).</p>
+</section>
+<section id="text-formatting-and-navigation" class="level2">
+<h2 class="anchored" data-anchor-id="text-formatting-and-navigation">Text formatting and navigation</h2>
+<p>All textual displays organize the display of passages by physical page, and support previous/next navigation.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="More info">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>More info
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For more details, see the documentation for individual apps linked in the adjacent side bar.</p>
+</div>
+</div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -673,7 +722,7 @@ ul.task-list li input[type="checkbox"] {
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p><code>hmt-apps</code> release <strong>0.10.0</strong>, website last updated November 23, 2026</p>
+<p><code>hmt-apps</code> release <strong>0.11.0</strong>, website last updated November 24, 2026</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;
