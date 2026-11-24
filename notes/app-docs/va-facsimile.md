@@ -1,21 +1,29 @@
 # va-facsimile.html — Venetus A facsimile
 
-## Data from the release
+A light table of the pages of the Venetus A manuscript and a zoomable viewer showing the regions the DSE indexes.
 
-- Not the whole release: the IIIF manifest `https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/iiif/vaimg.2017a.json` provides the page images and their image URNs. Saved copies of the manifest and/or the release can be dropped on the page.
-- From the release: `#!ctscatalog` and `#!ctsdata` (text of the regions) and `#!citerelationset` for the DSE (`urn:cite2:hmt:hmtdse.v1:all`). The page shows the images even if the release fails to load; the indexed regions then are missing.
+## Data blocks used
 
-## Parameters
+- Not only the release: the IIIF manifest `vaimg.2017a.json` (from the hmt-archive repository on GitHub) supplies the pages and their images. Saved copies of the manifest and/or the release can be dropped on the page or chosen with the file picker (several files at once).
+- From the release: `#!ctscatalog` and `#!ctsdata` (the text of each region) and `#!citerelationset` (the DSE, `urn:cite2:hmt:hmtdse.v1:all`, `passage|imageroi|surface`).
+- The page still shows the images if the release fails to load; the indexed regions are then missing.
 
-- `?page=<page URN>` opens a page, e.g. `?page=urn:cite2:hmt:msA.v1:12r` (a page of `urn:cite2:hmt:msA.v1:`; the object id is the canvas id of the manifest). The app writes this itself as you move, so the address is a bookmark.
-- `?text=<CTS passage URN>` or `?image=<image URN>` (optionally with `@x,y,w,h`) opens the page that has that passage or image, and the address then becomes `?page=…`. A passage must be a single passage (not a range) with a DSE record on a Venetus A page. If more than one of the three is given, `page` wins, then `image`, then `text`.
-- A URN that cannot be used puts a notice in the status line and shows the light table. No `#`; the earlier `#page=<canvas id>`, `#text=` and `#image=` are no longer read.
+## Optional parameters
 
-## Output
+Query-string parameters (`?name=value`), never `#` tags. The app writes `?page=…` itself as you move, so the address is a bookmark and Back and Forward work.
+
+- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
+- `image` — an image URN, optionally with `@x,y,w,h`: opens the page that has that image.
+- `text` — a single passage URN with a DSE record on a Venetus A page: opens that page.
+- If several are given, `page` wins, then `image`, then `text`; the address is rewritten as `?page=…`. A URN that cannot be used puts a notice in the status line and shows the light table.
+
+## Output options
 
 None.
 
-## Using it
+## User options and display
 
-- Light table of all pages: Find (e.g. `12r`, `cover`), Only pages with indexed text, and a Size slider; click a page to open it.
-- Viewer: ‹ › or `[` `]` for the previous/next page, ← Pages or Esc to return; Iliad, Scholia and Other checkboxes show or hide the regions; diplomatic or normalized text; hover (or tap) a region to read its text; drag to pan, scroll or pinch to zoom, + / − / Fit.
+- Light table: **Find** (e.g. `12r`, `cover`, `flyleaf`), **Only pages with indexed text**, a **Size** slider for the thumbnails; click a page to open it.
+- Viewer: **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
+- **Iliad**, **Scholia** and **Other** checkboxes show or hide those regions; **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
+- Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).

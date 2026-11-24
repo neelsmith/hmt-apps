@@ -1,27 +1,34 @@
 # stringcounter.html — String counter
 
-## Data from the release
+How often each word form containing a Greek string occurs, as a bar chart, with the passages behind each bar.
 
-- `#!ctscatalog` and `#!ctsdata` (the texts searched).
-- For the page view of a matching passage: the DSE and the commentary index (`#!citerelationset`), `#!datamodels`, `#!citecollections` and `#!citedata` (codex page labels), and `#!citelibrary`.
-- The release is fetched from `hmt-current.cex`; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+## Data blocks used
 
-## Parameters
+- `#!ctscatalog` and `#!ctsdata`: the texts searched.
+- For the page view of a chosen passage: `#!citerelationset` (the DSE `urn:cite2:hmt:hmtdse.v1:all` and the commentary index `urn:cite2:hmt:commentary.v1:all`, found through `#!datamodels`), `#!datamodels`, `#!citecollections` and `#!citedata` (codex pages and their labels); `#!citelibrary` (release name in the status line).
+- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
-- `#q=<string>&s=all&t=<diplomatic|normalized>` plus optional `&v=<versions>`, `&b=<token>`, `&o=count`, `&m=<N>`, `&p=<passage>`:
-  - `v` — comma-separated version identifiers (the URN without `urn:cts:` and the final colon, e.g. `greekLit:tlg0012.tlg001.msA`); absent means all texts.
-  - `b` — the word form (bar) selected; `o=count` — sort by count (default alphabetical); `m` — least number of occurrences to show (default 1); `p` — the passage chosen.
-- No query-string parameters.
+## Optional parameters
 
-## Output
+Unlike the browsing apps, this app still keeps its state in a `#` hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.
 
-- **Download CSV** of the table of word forms and counts, named `string-counts-<query, transliterated>.csv`. The table can also be viewed in the page (Show as table).
+- `#q=<string>&s=all&t=<diplomatic|normalized>` plus any of:
+  - `v` — comma-separated version identifiers (the URN without `urn:cts:` and the final colon, e.g. `greekLit:tlg0012.tlg001.msA`); absent means all texts;
+  - `b` — the word form (bar) selected;
+  - `o=count` — sort by count (default: alphabetical);
+  - `m` — the least number of occurrences to show (default 1);
+  - `p` — the passage chosen.
 
-## Using it
+## Output options
 
-- Type a Greek string (at least two letters; diacritics, capitals and punctuation do not matter) and press Search.
-- Texts checklist: choose specific versions of the *Iliad* and of the scholia, or "All Iliad", "All scholia" and "All other texts"; the summary shows the choice.
-- Choose the diplomatic or normalized text.
-- A bar chart shows how often each word form containing the string occurs. Sort alphabetically or by count; set the least number of occurrences (default 1).
+- **Download CSV** of the table of word forms and counts, named `string-counts-<query, transliterated>.csv` (UTF-8 with a byte-order mark, so spreadsheets read it correctly).
+- The same table can be viewed on the page with **Show as table**.
+
+## User options and display
+
+- Type a Greek string (at least two letters; diacritics, capitals and punctuation do not matter) and press **Search**.
+- **Texts** checklist: choose particular versions of the *Iliad* and of the scholia, or take **All Iliad**, **All scholia** or **All other texts**; the summary line states the choice.
+- Choose the text searched and shown: **diplomatic** or **normalized**.
+- The bar chart shows how often each word form containing the string occurs. **Sort** alphabetically or by count; set **Only words occurring at least N times** (default 1).
 - Clicking a bar lists the passages with that word form (60 at a time); choosing a passage shows its manuscript page with the word marked.
-- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex), keeping the marked matches.
+- Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.

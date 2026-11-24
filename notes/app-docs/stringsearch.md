@@ -1,22 +1,26 @@
 # stringsearch.html — String search
 
-## Data from the release
+Find the passages containing a Greek string, and see each on its manuscript page.
 
-- `#!ctscatalog` and `#!ctsdata` (the texts searched).
-- For the page view of a matching passage: the DSE and the commentary index (`#!citerelationset`), `#!datamodels`, `#!citecollections` and `#!citedata` (codex page labels), and `#!citelibrary`.
-- The release is fetched from `hmt-current.cex`; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+## Data blocks used
 
-## Parameters
+- `#!ctscatalog` and `#!ctsdata`: the texts searched.
+- For the page view of a chosen passage: `#!citerelationset` (the DSE `urn:cite2:hmt:hmtdse.v1:all` and the commentary index `urn:cite2:hmt:commentary.v1:all`, found through `#!datamodels`), `#!datamodels`, `#!citecollections` and `#!citedata` (codex pages and their labels); `#!citelibrary` (release name in the status line).
+- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
-- `#q=<string>&s=<all|iliad|scholia>&t=<diplomatic|normalized>[&p=<passage>]`, e.g. `#q=αχιλλευς&s=iliad&t=normalized`. `q` is required; `s` defaults to `all` and `t` to `diplomatic`; `p` is the passage chosen from the results. No query-string parameters.
+## Optional parameters
 
-## Output
+Unlike the browsing apps, this app still keeps its state in a `#` hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.
+
+- `#q=<string>&s=<all|iliad|scholia>&t=<diplomatic|normalized>[&p=<passage>]` — the string; where to search (`s`, default `all`); the text searched and shown (`t`, default `diplomatic`); and the passage chosen (`p`).
+
+## Output options
 
 None.
 
-## Using it
+## User options and display
 
-- Type a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter) and press Search; typing also searches after a short pause.
-- Limit the search to all texts, the *Iliad* or the scholia, and choose to search and show the diplomatic or normalized text.
-- Matching passages are listed by version (60 at a time); choosing one shows its manuscript page with the *Iliad* lines and scholia, every match marked, and the panels with a hit unfolded.
-- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons, which show the page before or after in the same codex (even a page with no indexed text), keeping the marked hits.
+- Type a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter). Press **Search**; typing also searches after a short pause.
+- Choose where to search: **all texts**, **Iliad** or **scholia**; and the text searched and shown: **diplomatic** or **normalized**.
+- Matching passages are listed under the word forms that contain the string, by version (60 at a time, with a "show more" button). Choosing one shows its manuscript page: the *Iliad* lines and scholia on it, every match marked, the scholia panels with a match unfolded.
+- Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.

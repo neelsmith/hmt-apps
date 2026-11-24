@@ -1,22 +1,25 @@
 # coverage.html — Editorial coverage
 
-## Data from the release
+Bar charts of how much of the *Iliad*, the scholia and the manuscript pages the HMT has edited.
 
-- `#!ctscatalog` and `#!ctsdata`: lines of the *Iliad* by book and scholia by book, for each manuscript with text.
+## Data blocks used
+
+- `#!ctscatalog` and `#!ctsdata`: edited lines of the *Iliad* and scholia by book, for each manuscript with text.
 - `#!citerelationset`: the DSE (`urn:cite2:hmt:hmtdse.v1:all`), for the pages with records.
 - `#!datamodels`, `#!citecollections` and `#!citedata`: the codices and their page totals.
-- `#!citelibrary`. The release is fetched from `hmt-current.cex`; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+- `#!citelibrary`: the release name in the status line.
+- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
-## Parameters
+## Optional parameters
 
-- None.
+None.
 
-## Output
+## Output options
 
-None. Each chart's numbers are in a fold-out data table.
+None. Each chart's numbers are available in a fold-out data table.
 
-## Using it
+## User options and display
 
-- Four charts, no controls: edited *Iliad* lines per book (series per manuscript with lines); edited scholia per book (all groups of a manuscript added together); pages with DSE records per manuscript (count); and as a percentage of the codex's pages. Manuscripts with nothing to show are left out.
-- Hover a bar for its value; charts redraw on resize and scroll sideways on narrow screens.
-- Warnings above the charts: skipped DSE records, DSE pages not in a codex's page list, and passages not counted.
+- No controls. Four charts: edited *Iliad* lines per book (a series for each manuscript with lines); edited scholia per book (all groups of scholia of a manuscript added together); pages with DSE records per manuscript (count); and the same as a percentage of the codex's pages. Manuscripts with nothing to show are left out.
+- Hover a bar for its value; charts redraw when the window is resized and scroll sideways on narrow screens.
+- Warnings above the charts: skipped DSE records, DSE pages not in a codex's page list, and passages not counted. Findings are warnings only.

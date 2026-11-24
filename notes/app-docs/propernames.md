@@ -1,24 +1,29 @@
 # propernames.html — Proper names
 
-## Data from the release
+Passages where a personal, geographic or ethnic name occurs, each on its manuscript page with names marked.
 
-- `#!citerelationset`: the name indexes `urn:cite2:hmt:persnameindex.v1:all`, `placenameindex.v1:all` and `ethnicgroupindex.v1:all`; the DSE; the commentary index.
-- `#!citedata` (with `#!citecollections`): the `pers` and `place` collections (label, description, redirect), and the codex pages (labels).
-- `#!ctscatalog`, `#!ctsdata`, `#!datamodels`, `#!citelibrary` as in `iliad-scholia.html`.
-- The release is fetched from `hmt-current.cex`; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+## Data blocks used
 
-## Parameters
+- `#!citerelationset`: the name indexes `urn:cite2:hmt:persnameindex.v1:all`, `placenameindex.v1:all` and `ethnicgroupindex.v1:all`; also the DSE and the commentary index for the page view.
+- `#!citedata` (with `#!citecollections`): the `pers` and `place` collections (label, description, redirect), and the codex pages (labels, order).
+- `#!ctscatalog`, `#!ctsdata` and `#!datamodels`: the texts, and the model that finds the commentary index.
+- `#!citelibrary`: the release name in the status line.
+- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
-- `#k=<pers|place|ethnic>&i=<name id>[&p=<passage>]`, e.g. `#k=pers&i=pers1`. `i` is the object part of the name's URN; `p` is a passage (version URN plus reference) of that name to show. The page rewrites the hash as you choose, so links and the Back button work. No query-string parameters.
+## Optional parameters
 
-## Output
+Unlike the browsing apps, this app still keeps its state in a `#` hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.
+
+- `#k=<pers|place|ethnic>&i=<name id>[&p=<passage>]` — the kind of name, the name's object id (e.g. `pers1`) and the passage chosen.
+
+## Output options
 
 None.
 
-## Using it
+## User options and display
 
-- Choose the kind of name (personal, geographic, ethnic), then a name from the menu; the Find box narrows the menu.
-- Choose the text, diplomatic or normalized.
-- The passages in which the name occurs are listed by version (60 at a time, with a "show more" button), each with its manuscript page; choosing one shows that page's *Iliad* lines and scholia (as in `iliad-scholia.html`) with every name marked in a colour for its kind. Passages and scholia containing the chosen name are unfolded.
+- Choose the **kind of name** (personal, geographic or ethnic), then a name from the menu; the **Find** box narrows the menu.
+- Choose the text shown: **diplomatic** or **normalized**.
+- The passages where the name occurs are listed by version (60 at a time, with a "show more" button), each with its manuscript page. Choosing one shows that page's *Iliad* lines and scholia, with every name marked in a colour for its kind (person, place, ethnic group); passages and scholia containing the chosen name are unfolded.
 - Names are attributed to words by learning from the release; a word that cannot be attributed is shown as a name of unknown identity.
-- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex), keeping the marked names.
+- Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.
