@@ -123,3 +123,17 @@ test('real release: seven codices; Venetus A and Escorial have regions', { skip:
   assert.equal(v91.elsewhere, 0);
   assert.ok(idx.skipped >= 1);
 });
+
+test('pageNeighbours: the page before and after, within each codex', async () => {
+  const { pageNeighbours } = await import('../src/codices.js');
+  const m = pageNeighbours([
+    { urn: 'c1:', label: 'One', pages: [{ urn: 'c1:a' }, { urn: 'c1:b' }, { urn: 'c1:c' }] },
+    { urn: 'c2:', label: 'Two', pages: [{ urn: 'c2:a' }] },
+    { urn: 'c3:', label: 'Three', pages: [] },
+  ]);
+  assert.deepEqual(m.get('c1:a'), { prev: null, next: 'c1:b' });
+  assert.deepEqual(m.get('c1:b'), { prev: 'c1:a', next: 'c1:c' });
+  assert.deepEqual(m.get('c1:c'), { prev: 'c1:b', next: null });
+  assert.deepEqual(m.get('c2:a'), { prev: null, next: null }, 'a codex does not run into the next');
+  assert.equal(m.get('nope'), undefined);
+});

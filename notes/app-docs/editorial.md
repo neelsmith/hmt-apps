@@ -17,3 +17,4 @@ None.
 
 - Same form as `iliad-scholia.html`, without the choice of text (`<body data-text="interwoven">`): the diplomatic text is shown, and where the normalized text differs it follows in coloured parentheses; `(∅)` marks a diplomatic word the normalized text omits, and a parenthesized word alone is one only the normalized text has. A legend on the page explains this.
 - Version, passage, Show, per-line scholia counts and the page view work as in `iliad-scholia.html`.
+- **‹ Previous page** / **Next page ›** on each page shown: as in `iliad-scholia.html`.

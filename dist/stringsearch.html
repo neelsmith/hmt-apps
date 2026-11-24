@@ -83,6 +83,9 @@
    Rules are keyed to `#page` (or to classes only page-view.js creates) so they can sit beside an app's own styles.
    Needs `.btn`, and the variables --bg --fg --muted --line --panel --accent --cur from the app. */
   #page h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #page .pagenav { display: flex; gap: .5rem; margin: 0 0 .75rem; }
+  #page .pagenav .btn { font-size: .8125rem; padding: .1rem .6rem; }
+  #page .pagenav .btn:disabled { opacity: .45; cursor: default; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
   #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
@@ -1127,6 +1130,20 @@ function parsePageQuery(search) {
   return page && /^urn:cite2:/.test(page) ? page : null;
 }
 
+/**
+ * The page before and after each page, within its codex (in codex order).
+ * @param {Codex[]} list
+ * @returns {Map<string, {prev: string | null, next: string | null}>}
+ */
+function pageNeighbours(list) {
+  /** @type {Map<string, {prev: string | null, next: string | null}>} */
+  const out = new Map();
+  for (const c of list) {
+    c.pages.forEach((p, i) => out.set(p.urn, { prev: i > 0 ? c.pages[i - 1].urn : null, next: i + 1 < c.pages.length ? c.pages[i + 1].urn : null }));
+  }
+  return out;
+}
+
 </script>
 <script>
 // @ts-check
@@ -1916,6 +1933,7 @@ function parseNameHash(hash) {
 
 
 
+
 /** Version URN of a passage key (version URN + reference). @param {string} pk */
 const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
 
@@ -1988,6 +2006,8 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {string} hitLabel                         Said in the badges: "with “Achilles”".
  * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
  * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
+ * @property {boolean} [skipEmpty]                     Previous/Next go to the nearest page with indexed passages (default: the page next door).
+ * @property {(surface: string) => void} [onNavigate]  Called with the page Previous/Next chose; the app shows it.  Default: the view shows it in place.
  */
 
 /**
@@ -2001,6 +2021,18 @@ function createPageView(data) {
   /** @type {any} */ let iVers = null;
   /** @type {Map<string, string[]> | null} */ let targets = null;
   /** @type {Map<string, string> | null} */ let titles = null;
+
+  /** @type {Map<string, {prev: string | null, next: string | null}> | null} */ let neighbours = null;
+  /**
+   * The page one step from `surface` (`-1` before, `1` after), or with `skipEmpty` the nearest one that has passages.
+   * @param {string} surface @param {number} dir @param {boolean} skipEmpty @returns {string | null}
+   */
+  function stepFrom(surface, dir, skipEmpty) {
+    if (!neighbours) neighbours = pageNeighbours(codices(release));
+    let s = neighbours.get(surface)?.[dir < 0 ? 'prev' : 'next'] ?? null;
+    while (s && skipEmpty && !(passagesOn.get(s)?.length)) s = neighbours.get(s)?.[dir < 0 ? 'prev' : 'next'] ?? null;
+    return s;
+  }
 
   const titlesOf = () => titles ?? (titles = catalogTitles(release));
   const commentary = () => pairs ?? (pairs = commentaryPairs(release));
@@ -2085,6 +2117,26 @@ function createPageView(data) {
     }
     box.appendChild(sub);
 
+    // Previous and next page of the codex
+    const nav = pvEl('p', 'pagenav');
+    for (const [dir, text] of /** @type {[number, string][]} */ ([[-1, '‹ Previous page'], [1, 'Next page ›']])) {
+      const target = stepFrom(surface, dir, !!o.skipEmpty);
+      const b = pvEl('button', 'btn', text);
+      b.type = 'button';
+      b.disabled = !target;
+      if (target) {
+        b.title = pageLabels.get(target) ?? target;
+        b.addEventListener('click', () => {
+          if (o.onNavigate) { o.onNavigate(target); return; }
+          box.textContent = '';
+          renderPage(box, target, current, [target], o);
+          if (!box.querySelector('.cur') || o.scroll === false) box.scrollIntoView({ block: 'start' });
+        });
+      }
+      nav.appendChild(b);
+    }
+    sub.after(nav);
+
     const keys = (passagesOn.get(surface) ?? []).slice();
     /** @type {Record<string, string[]>} */
     const secs = { iliad: [], scholia: [], other: [] };
@@ -2152,7 +2204,7 @@ function createPageView(data) {
       });
       const top = pvEl('p', 'sub', `${pvPlural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with ${o.hitLabel}. ` : '. '));
       top.appendChild(fold);
-      sub.after(top);
+      sub.after(top);   // before the page buttons
     }
 
     if (secs.other.length) {

@@ -83,6 +83,18 @@
       if ('error' in found) { $('error').textContent = `${q.page || q.image}: ${found.error}`; return; }
       param = found.text;
     }
+    openText(param);
+  }
+
+  /** Show the Previous or Next page the page view chose: the Iliad lines on it (or what its scholia comment on). */
+  function openPage(surface) {
+    const found = iliadRangeOf(locator.passagesOnPage(surface), versions, textIndex, pairs);
+    if ('error' in found) { $('error').textContent = `${surface}: ${found.error}`; return; }
+    openText(found.text);
+  }
+
+  /** Open at a version, text and passage given as one CTS URN (see `parseUrnParam`). @param {string} param */
+  function openText(param) {
     const r = parseUrnParam(versions, param);
     if ('error' in r) { $('error').textContent = r.error; return; }
     $('version').value = r.version.urn;
@@ -221,6 +233,7 @@
     }
     const o = {
       textKind: () => cur.kind, isHit: () => false, hitLabel: '', hitNoun: '', scroll: false,
+      skipEmpty: true, onNavigate: openPage,
       fillText(el, pk) {
         el.lang = 'grc';
         const base = passageText(textIndex, pk, cur.kind).parts;

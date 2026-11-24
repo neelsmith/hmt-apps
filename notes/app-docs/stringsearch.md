@@ -19,3 +19,4 @@ None.
 - Type a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter) and press Search; typing also searches after a short pause.
 - Limit the search to all texts, the *Iliad* or the scholia, and choose to search and show the diplomatic or normalized text.
 - Matching passages are listed by version (60 at a time); choosing one shows its manuscript page with the *Iliad* lines and scholia, every match marked, and the panels with a hit unfolded.
+- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons, which show the page before or after in the same codex (even a page with no indexed text), keeping the marked hits.

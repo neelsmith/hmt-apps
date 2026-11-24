@@ -369,3 +369,9 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - text → page/image: the DSE record of the passage (the first passage of a range; version label ignored, scholion `.lemma`/`.comment` suffix dropped). page → image: DSE image of the page, else the catalog image. image → page: pages whose DSE rows or catalog use the image.
 - page/image → text: the Iliad lines on it become one range (first to last in the text's order, in the version with most lines there); a page with only scholia gives the range of the lines they are indexed to. Ranges can include title lines (e.g. `1.title-1.25`).
 - Search apps (propernames, stringsearch, stringcounter, lemmatizedsearch) unchanged, still `#`.
+
+## Previous / next page (iliad-scholia, all-scholia, editorial, stringsearch, propernames, stringcounter, lemmatizedsearch)
+
+- The shared page view (`src/page-view.js`) now puts **‹ Previous page** / **Next page ›** under the heading of every manuscript page it shows. Order comes from the codex sequence (`pageNeighbours` in `src/codices.js`, tested in `test/codices.test.js`); the buttons are disabled at the ends of a codex.
+- Search apps: the view re-renders in place on the neighbouring page (empty pages included), keeping the hits marked. No change to their `#` addresses.
+- Text apps: `onNavigate` hands the page to the app, which opens the Iliad range of that page via `locator.passagesOnPage` and `iliadRangeOf` (so the address is a normal `?text=` bookmark); `skipEmpty` skips pages with no indexed passages. In a multi-page range each page's buttons move from that page.

@@ -24,3 +24,4 @@
 - Choose the diplomatic or normalized text.
 - A bar chart shows how often each word form containing the string occurs. Sort alphabetically or by count; set the least number of occurrences (default 1).
 - Clicking a bar lists the passages with that word form (60 at a time); choosing a passage shows its manuscript page with the word marked.
+- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex), keeping the marked matches.

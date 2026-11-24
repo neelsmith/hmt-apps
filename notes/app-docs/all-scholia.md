@@ -17,3 +17,4 @@ None.
 
 - Same form and display as `iliad-scholia.html` (same code, `<body data-scholia="all">`).
 - Difference: the count for a line includes the scholia indexed to the same passage in *any* version of the *Iliad*, not only the version being read; the breakdown and the opened scholia are grouped by the version their index entry names.
+- **‹ Previous page** / **Next page ›** on each page shown: as in `iliad-scholia.html`.

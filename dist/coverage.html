@@ -1091,6 +1091,20 @@ function parsePageQuery(search) {
   return page && /^urn:cite2:/.test(page) ? page : null;
 }
 
+/**
+ * The page before and after each page, within its codex (in codex order).
+ * @param {Codex[]} list
+ * @returns {Map<string, {prev: string | null, next: string | null}>}
+ */
+function pageNeighbours(list) {
+  /** @type {Map<string, {prev: string | null, next: string | null}>} */
+  const out = new Map();
+  for (const c of list) {
+    c.pages.forEach((p, i) => out.set(p.urn, { prev: i > 0 ? c.pages[i - 1].urn : null, next: i + 1 < c.pages.length ? c.pages[i + 1].urn : null }));
+  }
+  return out;
+}
+
 </script>
 <script>
 // @ts-check

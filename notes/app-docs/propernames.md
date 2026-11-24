@@ -21,3 +21,4 @@ None.
 - Choose the text, diplomatic or normalized.
 - The passages in which the name occurs are listed by version (60 at a time, with a "show more" button), each with its manuscript page; choosing one shows that page's *Iliad* lines and scholia (as in `iliad-scholia.html`) with every name marked in a colour for its kind. Passages and scholia containing the chosen name are unfolded.
 - Names are attributed to words by learning from the release; a word that cannot be attributed is shown as a name of unknown identity.
+- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex), keeping the marked names.

@@ -19,3 +19,4 @@ None.
 - Type a lemma or part of one (at least two letters; accents, breathings and capitals do not matter) and press Search.
 - Matching lemmata are listed on the left as a folding (accordion) list, 200 at a time, each with the number of its tokens; Expand all (the first 30 if there are more) and Collapse all buttons.
 - Tokens under a lemma are listed 60 at a time; choosing one shows the page of its passage with the token highlighted.
+- Each page shown in the context panel has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex), keeping the marked token.
