@@ -5,7 +5,7 @@
   const n = x => x.toLocaleString('en');
   const plural = (x, one, many) => `${n(x)} ${x === 1 ? one : many}`;
 
-  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>} | null} */
+  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>} | null} */
   let data = null;
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -23,7 +23,7 @@
   /** Draw all three charts from `data`. */
   function draw() {
     if (!data) return;
-    const { lines, pages } = data;
+    const { lines, pages, scholia } = data;
 
     const shown = lines.filter(l => l.total > 0);
     const books = Array.from({ length: BOOKS }, (_, i) => String(i + 1));
@@ -38,6 +38,20 @@
       })),
       yTitle: 'Edited lines',
       description: `Bar chart of edited lines of the Iliad in books 1 to 24 for ${shown.map(l => l.short).join(', ')}.`,
+    }, 'Book');
+
+    const sch = scholia.manuscripts.filter(m => m.total > 0);
+    $('d-sch').textContent = sch.length
+      ? `Manuscripts with edited scholia, all groups together: ${sch.map(m => `${m.short} (${n(m.total)})`).join(', ')}.`
+      : 'No manuscript has edited scholia in this release.';
+    chart('p-sch', 't-sch', 'l-sch', {
+      categories: books,
+      series: sch.map(m => ({
+        name: m.short, values: m.byBook,
+        tips: m.byBook.map((v, i) => `${m.short}, book ${i + 1}: ${plural(v, 'scholion', 'scholia')}`),
+      })),
+      yTitle: 'Edited scholia',
+      description: `Bar chart of edited scholia in books 1 to 24 for ${sch.map(m => m.short).join(', ')}.`,
     }, 'Book');
 
     const cs = pages.codices.filter(c => c.pages > 0);
@@ -69,6 +83,7 @@
     }
     if (d.pages.elsewhere.length) w.push(`${plural(d.pages.elsewhere.length, 'surface', 'surfaces')} named in DSE records belong to no codex of the release.`);
     for (const l of d.lines) if (l.other) w.push(`${l.short}: ${plural(l.other, 'passage', 'passages')} not counted (not a numbered line of books 1–24 or a title).`);
+    if (d.scholia.unassigned.length) w.push(`${plural(d.scholia.unassigned.length, 'group of scholia', 'groups of scholia')} not counted because no Iliad version of the release matches ${d.scholia.unassigned.length === 1 ? 'it' : 'them'}: ${d.scholia.unassigned.join('; ')}.`);
     const box = $('warnings');
     box.textContent = '';
     box.hidden = !w.length;
@@ -82,7 +97,8 @@
   }
 
   function start(rel) {
-    data = { lines: iliadLinesByBook(rel, buildTextIndex(rel)), pages: dsePagesByCodex(rel) };
+    const ti = buildTextIndex(rel);
+    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti) };
     $('drop').hidden = true;
     $('report').hidden = false;
     warnings(data);

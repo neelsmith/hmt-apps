@@ -60,4 +60,5 @@ website:
           - docs/codices/index.qmd
           - docs/images/index.qmd
           - "---"
+          - docs/coverage/index.qmd          
           - docs/dse-check/index.qmd

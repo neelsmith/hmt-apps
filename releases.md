@@ -2,7 +2,12 @@
 
 ## Repository version tag
 
-Current version:  **0.10.0**
+Current version:  **0.11.0**
+
+**0.11.0**, *Nov. 23, 2026*:
+
+- adds scholia summary to `coverage.html` app
+
 
 **0.10.0**, *Nov. 23, 2026*:  adds new `coverage.html` app.
 

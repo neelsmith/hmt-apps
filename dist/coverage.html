@@ -79,6 +79,14 @@
     <details><summary>Data table</summary><div class="tablewrap" id="t-lines"></div></details>
   </section>
 
+  <section class="chart" id="c-sch">
+    <h2>Edited scholia, by book</h2>
+    <p class="desc" id="d-sch"></p>
+    <div class="legend" id="l-sch"></div>
+    <div class="plot" id="p-sch"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-sch"></div></details>
+  </section>
+
   <section class="chart" id="c-pages">
     <h2>Pages with DSE records, by manuscript</h2>
     <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
@@ -95,7 +103,7 @@
 
   <footer>
     A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
-    normalized exemplar; book titles are not counted. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
+    normalized exemplar; book titles are not counted. A scholion is a numbered scholion (<code>book.scholion</code>) with a lemma or comment in either exemplar; all groups of scholia of a manuscript (for the Venetus A: main, interior, exterior, interlinear, intermarginal and others) are added together. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
     record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
   </footer>
 </main>
@@ -1706,6 +1714,72 @@ function dsePagesByCodex(release) {
   };
 }
 
+/** Work identifier of the Iliadic scholia (`tlg5026`). */
+const SCHOLIA_WORK = 'tlg5026';
+
+/**
+ * @typedef {Object} ScholiaCoverage
+ * @property {string} urn      URN of the manuscript's Iliad version.
+ * @property {string} label
+ * @property {string} short
+ * @property {number[]} byBook Scholia in books 1 to 24 (index 0 is book 1), all groups of scholia together.
+ * @property {number} total
+ * @property {{urn: string, label: string, count: number}[]} groups  Each group of scholia (main, interior, …) with its count.
+ */
+
+/**
+ * For every manuscript, the number of scholia by book, adding up all of its groups of scholia (for
+ * example the main, interior, exterior, interlinear and intermarginal scholia of the Venetus A).  A
+ * scholion is a `book.scholion` reference with text (lemma or comment) in either exemplar.  A group of
+ * scholia belongs to the manuscript whose Iliad version identifier begins its own (`msAint` to `msA`,
+ * the longest such identifier).
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @returns {{manuscripts: ScholiaCoverage[], unassigned: string[]}}
+ *   `unassigned` lists labels of groups of scholia that match no Iliad version.
+ */
+function scholiaByBook(release, textIndex) {
+  const iliad = iliadVersions(release, textIndex).map(v => ({ ...v, id: /\.([^.:]+):$/.exec(v.urn)?.[1] ?? '' }));
+  const catalog = new Map(release.ctsCatalog().map(c => [c.urn, c.versionLabel]));
+  /** @type {Map<string, Set<string>>} group version URN -> scholia ("book.scholion") with text */
+  const groups = new Map();
+  for (const [key, ex] of textIndex) {
+    const v = ctsVersionOf(key);
+    if (!v || !v.includes(`.${SCHOLIA_WORK}.`) && !v.includes(`:${SCHOLIA_WORK}.`)) continue;
+    const set = groups.get(v) ?? new Set();
+    ex.refs.forEach((ref, i) => {
+      if (!(ex.texts[i] ?? '').trim()) return;
+      const m = /^(\d+)\.([^.]+)(?:\.|$)/.exec(ref);
+      if (m) set.add(`${m[1]}.${m[2]}`);
+    });
+    groups.set(v, set);
+  }
+  /** @type {Map<string, ScholiaCoverage>} */
+  const byMs = new Map();
+  /** @type {string[]} */
+  const unassigned = [];
+  for (const [v, set] of groups) {
+    const id = /^urn:cts:[^:]+:tlg5026\.([^.:]+)/.exec(v)?.[1] ?? '';
+    const ms = iliad.filter(i => i.id && id.startsWith(i.id)).sort((a, b) => b.id.length - a.id.length)[0];
+    const label = catalog.get(v) ?? v;
+    if (!ms) { unassigned.push(label); continue; }
+    let rec = byMs.get(ms.urn);
+    if (!rec) {
+      rec = { urn: ms.urn, label: ms.label, short: shortVersionLabel(ms.label), byBook: new Array(BOOKS).fill(0), total: 0, groups: [] };
+      byMs.set(ms.urn, rec);
+    }
+    let count = 0;
+    for (const sch of set) {
+      const book = Number(sch.split('.')[0]);
+      if (book >= 1 && book <= BOOKS) { rec.byBook[book - 1]++; count++; }
+    }
+    rec.total += count;
+    rec.groups.push({ urn: v, label, count });
+  }
+  const order = iliad.map(i => i.urn);
+  return { manuscripts: [...byMs.values()].sort((a, b) => order.indexOf(a.urn) - order.indexOf(b.urn)), unassigned };
+}
+
 </script>
 <script>
 // Browser UI for the coverage summary: three bar charts of how much the HMT has edited.
@@ -1715,7 +1789,7 @@ function dsePagesByCodex(release) {
   const n = x => x.toLocaleString('en');
   const plural = (x, one, many) => `${n(x)} ${x === 1 ? one : many}`;
 
-  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>} | null} */
+  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>} | null} */
   let data = null;
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -1733,7 +1807,7 @@ function dsePagesByCodex(release) {
   /** Draw all three charts from `data`. */
   function draw() {
     if (!data) return;
-    const { lines, pages } = data;
+    const { lines, pages, scholia } = data;
 
     const shown = lines.filter(l => l.total > 0);
     const books = Array.from({ length: BOOKS }, (_, i) => String(i + 1));
@@ -1748,6 +1822,20 @@ function dsePagesByCodex(release) {
       })),
       yTitle: 'Edited lines',
       description: `Bar chart of edited lines of the Iliad in books 1 to 24 for ${shown.map(l => l.short).join(', ')}.`,
+    }, 'Book');
+
+    const sch = scholia.manuscripts.filter(m => m.total > 0);
+    $('d-sch').textContent = sch.length
+      ? `Manuscripts with edited scholia, all groups together: ${sch.map(m => `${m.short} (${n(m.total)})`).join(', ')}.`
+      : 'No manuscript has edited scholia in this release.';
+    chart('p-sch', 't-sch', 'l-sch', {
+      categories: books,
+      series: sch.map(m => ({
+        name: m.short, values: m.byBook,
+        tips: m.byBook.map((v, i) => `${m.short}, book ${i + 1}: ${plural(v, 'scholion', 'scholia')}`),
+      })),
+      yTitle: 'Edited scholia',
+      description: `Bar chart of edited scholia in books 1 to 24 for ${sch.map(m => m.short).join(', ')}.`,
     }, 'Book');
 
     const cs = pages.codices.filter(c => c.pages > 0);
@@ -1779,6 +1867,7 @@ function dsePagesByCodex(release) {
     }
     if (d.pages.elsewhere.length) w.push(`${plural(d.pages.elsewhere.length, 'surface', 'surfaces')} named in DSE records belong to no codex of the release.`);
     for (const l of d.lines) if (l.other) w.push(`${l.short}: ${plural(l.other, 'passage', 'passages')} not counted (not a numbered line of books 1–24 or a title).`);
+    if (d.scholia.unassigned.length) w.push(`${plural(d.scholia.unassigned.length, 'group of scholia', 'groups of scholia')} not counted because no Iliad version of the release matches ${d.scholia.unassigned.length === 1 ? 'it' : 'them'}: ${d.scholia.unassigned.join('; ')}.`);
     const box = $('warnings');
     box.textContent = '';
     box.hidden = !w.length;
@@ -1792,7 +1881,8 @@ function dsePagesByCodex(release) {
   }
 
   function start(rel) {
-    data = { lines: iliadLinesByBook(rel, buildTextIndex(rel)), pages: dsePagesByCodex(rel) };
+    const ti = buildTextIndex(rel);
+    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti) };
     $('drop').hidden = true;
     $('report').hidden = false;
     warnings(data);

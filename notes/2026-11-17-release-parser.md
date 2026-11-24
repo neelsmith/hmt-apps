@@ -338,3 +338,9 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - New `src/bar-chart.js` (generic SVG grouped bars, ticks, legend, table), `src/coverage.js` (`iliadLinesByBook`, `dsePagesByCodex`), tests in `test/coverage.test.js`.
 - A line = passage `book.line[suffix]` with text in either exemplar; titles excluded. Real release 2024c: msA 15,639, msB 709, e3 1,692.
 - DSE pages: msA 631 of 662 (95.3%), e3 71 of 660 (10.8%), others 0. Warnings: 1 DSE record skipped; msA surface `211v1` is not in the codex page list (still counted in the numerator).
+
+### Scholia chart (added to coverage.html 0.1.0)
+
+- New chart "Edited scholia, by book" between the lines chart and the DSE page charts: `scholiaByBook` in `src/coverage.js`.
+- A scholion = `book.scholion` with lemma or comment text in either exemplar. A group of scholia belongs to the manuscript whose Iliad version id begins its own (`msAint` → `msA`), so the six Venetus A groups are added together.
+- Release 2024c: Venetus A 10,253 (groups 1,107 / 4,732 / 349 / 3 / 2,339 / 1,723), Venetus B 324 (book 9 only), Escorial Y 1.1 627 (books 8-10).
