@@ -4,7 +4,7 @@
 
 Current version:  **0.11.2**
 
-**0.11.2**, *?*: updated functionality and lightbox interface in `images.html`.
+**0.11.2**, *Nov. 24, 2026*: updated functionality and lightbox interface in `images.html`. Expanded documentation on several individual apps.
 
 
 **0.11.1**, *Nov. 24, 2026*: fixes a bug in sequencing of pages in `va-facsimile.html`.
