@@ -8,7 +8,7 @@
 
 ## Parameters
 
-- `?image=<image URN>` opens an image; `?image=<collection URN>[&n=N]` shows page N (default 1) of the thumbnails of a collection (replaces the earlier `#urn=` and `&page=`; `page` now means a codex page everywhere, so thumbnail paging is `n`). The address follows what is shown, so bookmarks, links and the Back and Forward buttons work. No `#`.
+- `?image=<image URN>` opens an image; `?image=<collection URN>[&n=N]` shows page N (default 1) of the thumbnails of a collection (`page` means a codex page everywhere, so thumbnail paging is `n`). `?page=<page URN>` or `?text=<CTS URN>` open the image of that page, or the image the DSE records put the passage (or start of a range) on; `image` wins, then `page`, then `text`, and the address is rewritten to `?image=…`. A value with no image gives a message above the thumbnails. The address follows what is shown, so bookmarks, links and the Back and Forward buttons work. No `#`.
 
 ## Output
 

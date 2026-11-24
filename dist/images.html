@@ -694,6 +694,159 @@ function matchProtocol(url, pageProtocol) {
 <script>
 // @ts-check
 /**
+ * Digital scholarly edition (DSE) index: the relation set that links text
+ * passages to regions of interest (ROI) on manuscript images.
+ * No DOM access.
+ */
+
+/** Relation set linking passages, image regions, and manuscript surfaces. */
+const DSE_URN = 'urn:cite2:hmt:hmtdse.v1:all';
+
+/**
+ * @typedef {Object} Roi
+ * @property {number} x  Left edge, as a fraction (0–1) of the image width.
+ * @property {number} y  Top edge, as a fraction of the image height.
+ * @property {number} w  Width, as a fraction of the image width.
+ * @property {number} h  Height, as a fraction of the image height.
+ */
+
+/**
+ * Parse `x,y,w,h` (fractions of the image size).  Whitespace around values
+ * is tolerated.  Returns null if there are not four numbers, or the region is
+ * empty or lies outside the image.  A region that sticks out past the right or
+ * bottom edge by up to 0.02 of the image size (rounding in the source data,
+ * e.g. x+w = 1.004) is clipped to the image.
+ * @param {string} text
+ * @returns {Roi | null}
+ */
+function parseRoi(text) {
+  const parts = text.split(',').map(s => s.trim());
+  if (parts.length !== 4 || parts.some(p => !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(p))) return null;
+  const [x, y, w, h] = parts.map(Number);
+  const eps = 0.02;
+  if (x < 0 || y < 0 || !(w > 0) || !(h > 0) || x + w > 1 + eps || y + h > 1 + eps) return null;
+  return { x, y, w: Math.min(w, 1 - x), h: Math.min(h, 1 - y) };
+}
+
+/**
+ * Split an `imageroi` value such as
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013@0.0611,0.2252,0.4675,0.0901`.
+ * @param {string} value
+ * @returns {{image: string, roi: Roi} | null}  Null if there is no usable region.
+ */
+function parseImageRoi(value) {
+  const at = value.indexOf('@');
+  if (at < 0) return null;
+  const roi = parseRoi(value.slice(at + 1));
+  const image = value.slice(0, at).trim();
+  return roi && image ? { image, roi } : null;
+}
+
+/**
+ * Regions of the DSE relation set, grouped by image.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{byImage: Map<string, {passage: string, roi: Roi}[]>, byPassage: Map<string, string[]>, rows: number, skipped: number, found: boolean}}
+ *   `byPassage` maps a passage key (see `dseKey`) to the images it is indexed
+ *   to, in index order, without repeats.  `skipped` counts rows without a
+ *   usable region; `found` is false if the release has no such relation set.
+ */
+function indexDse(release) {
+  /** @type {Map<string, {passage: string, roi: Roi}[]>} */
+  const byImage = new Map();
+  /** @type {Map<string, string[]>} */
+  const byPassage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { byImage, byPassage, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    if (!parsed || !row.passage) { skipped++; continue; }
+    const list = byImage.get(parsed.image) ?? [];
+    list.push({ passage: row.passage, roi: parsed.roi });
+    byImage.set(parsed.image, list);
+    const key = dseKey(row.passage);
+    if (key) {
+      const images = byPassage.get(key) ?? [];
+      if (!images.includes(parsed.image)) images.push(parsed.image);
+      byPassage.set(key, images);
+    }
+  }
+  return { byImage, byPassage, rows: set.rows.length, skipped, found: true };
+}
+
+/** @typedef {'iliad' | 'scholia' | 'other'} PassageKind */
+
+/**
+ * Kind of text a passage belongs to: the Iliad (tlg0012.tlg001), scholia
+ * (tlg5026), or anything else.
+ * @param {string} urn
+ * @returns {PassageKind}
+ */
+function passageKind(urn) {
+  const m = /^urn:cts:[^:]+:([^:.]+)\.([^:.]+)/.exec(urn);
+  if (!m) return 'other';
+  if (m[1] === 'tlg0012' && m[2] === 'tlg001') return 'iliad';
+  if (m[1] === 'tlg5026') return 'scholia';
+  return 'other';
+}
+
+const SCHOLIA_ZONES = {
+  msA: 'main', msAint: 'interior', msAext: 'exterior', msAextra: 'extra',
+  msAil: 'interlinear', msAim: 'intermarginal', msAimLater: 'later intermarginal', msAmeta: 'meta',
+};
+
+/**
+ * Short label for a passage: `Iliad 5.506`, `Scholion 1.28 (interior)`,
+ * otherwise the work title from the CTS catalog when known.
+ * @param {string} urn
+ * @param {Map<string, string>} [titles]  Version URN -> work title, from the CTS catalog.
+ */
+function passageLabel(urn, titles) {
+  const m = /^urn:cts:[^:]+:([^:]+):(.*)$/.exec(urn);
+  if (!m) return urn;
+  const kind = passageKind(urn);
+  if (kind === 'iliad') return `Iliad ${m[2]}`;
+  if (kind === 'scholia') {
+    const zone = /** @type {Record<string, string>} */ (SCHOLIA_ZONES)[m[1].split('.')[1]];
+    return `Scholion ${m[2]}${zone ? ` (${zone})` : ''}`;
+  }
+  const version = `urn:cts:${urn.split(':')[2]}:${m[1].split('.').slice(0, 3).join('.')}:`;
+  return `${titles?.get(version) ?? m[1]} ${m[2]}`;
+}
+
+/**
+ * Work titles by version URN, from the CTS catalog.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, string>}
+ */
+function catalogTitles(release) {
+  return new Map(release.ctsCatalog().map(c => [c.urn, c.workTitle]));
+}
+
+/**
+ * Key for comparing a passage URN with the passages of the DSE: the
+ * version-level URN with the reference appended, so an exemplar part
+ * (`.diplomatic`, `.normalized`) and a subreference (`@word`) are ignored, as
+ * are the `.lemma` / `.comment` parts of a scholion.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1` gives
+ * `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} urn
+ * @returns {string | null}  Null if this is not a CTS passage URN.
+ */
+function dseKey(urn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec(urn.trim());
+  if (!m) return null;
+  const version = ctsVersionOf(m[1]);
+  if (!version) return null;
+  let ref = m[2].replace(/@.*$/, '');
+  if (/^urn:cts:[^:]+:tlg5026\./.test(version)) ref = ref.replace(/\.(lemma|comment)$/, '');
+  return ref ? version + ref : null;
+}
+
+</script>
+<script>
+// @ts-check
+/**
  * Logic for the images app: the image collections of a release, their items,
  * where the pictures are served, paging, and the address of a page or image.
  * Pure functions; no DOM access.
@@ -908,6 +1061,264 @@ function setQuery(params, replace = false) {
   } catch (e) {
     return false;
   }
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the codices app: the codices (manuscripts) of a release, their
+ * pages, and for each page the image and indexed text regions given by the
+ * DSE records.  Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+
+/** Data model of codices (collections of pages). */
+const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
+
+/**
+ * @typedef {Object} CodexPage
+ * @property {string} urn       Page (surface) URN, e.g. `urn:cite2:hmt:msA.v1:12r`.
+ * @property {string} id        Object part of the URN, e.g. `12r`.
+ * @property {string} label     Label from the release.
+ * @property {string} short     Short label for a menu, e.g. `folio 12, recto`.
+ * @property {number} sequence  Position in the codex (the release's `sequence`), else order of appearance.
+ * @property {string} image     Image URN the catalog gives for the page, or "".
+ */
+
+/**
+ * @typedef {Object} Codex
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:msA.v1:`.
+ * @property {string} label
+ * @property {CodexPage[]} pages  In codex order.
+ */
+
+/**
+ * Every collection documented as following the codex model, with its pages,
+ * ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Codex[]}
+ */
+function codices(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === CODEX_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, Codex>} */
+  const out = new Map();
+  for (const urn of wanted) out.set(urn, { urn, label: info.get(urn)?.description || urn, pages: [] });
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const codex = out.get(collectionOfObject(urn) ?? '');
+      if (!codex) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const label = row.label ?? '';
+      const seq = parseFloat(row.sequence ?? '');
+      codex.pages.push({
+        urn, id, label, short: cellLabel(label, id),
+        sequence: Number.isFinite(seq) ? seq : codex.pages.length,
+        image: (row.image ?? '').trim(),
+      });
+    }
+  }
+  for (const c of out.values()) c.pages.sort((a, b) => a.sequence - b.sequence);   // stable: ties keep release order
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * @typedef {Object} PageRegion
+ * @property {string} passage  Passage URN as in the DSE record.
+ * @property {string} image    Image URN of the record.
+ * @property {import('./dse.js').Roi} roi
+ */
+
+/**
+ * Indexed regions of the DSE records, by surface (page) URN.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{bySurface: Map<string, PageRegion[]>, rows: number, skipped: number, found: boolean}}
+ *   `skipped` counts records without a usable surface, passage or region.
+ */
+function indexRegionsBySurface(release) {
+  /** @type {Map<string, PageRegion[]>} */
+  const bySurface = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { bySurface, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    const surface = (row.surface ?? '').trim();
+    const passage = (row.passage ?? '').trim();
+    if (!parsed || !surface || !passage) { skipped++; continue; }
+    const list = bySurface.get(surface) ?? [];
+    list.push({ passage, image: parsed.image, roi: parsed.roi });
+    bySurface.set(surface, list);
+  }
+  return { bySurface, rows: set.rows.length, skipped, found: true };
+}
+
+/**
+ * What to show for a page: the image of its DSE records and the regions on it.
+ * The DSE records decide the image: the one they name most often among the
+ * images of the catalog (a record may carry a different image from the
+ * catalog's page image, e.g. another scan).  Without usable records the
+ * catalog's image for the page is shown, without regions.
+ * @param {CodexPage} page
+ * @param {PageRegion[]} regions        DSE regions of the page
+ * @param {Set<string>} catalogImages   Image URNs of the image catalog
+ * @returns {{image: string, regions: PageRegion[], elsewhere: number, source: 'dse' | 'catalog' | 'none'}}
+ *   `elsewhere` counts regions on other images, which are not shown.
+ */
+function pageView(page, regions, catalogImages) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const r of regions) if (catalogImages.has(r.image)) counts.set(r.image, (counts.get(r.image) ?? 0) + 1);
+  let best = '';
+  for (const [image, n] of counts) if (n > (counts.get(best) ?? 0)) best = image;
+  if (best) {
+    const shown = regions.filter(r => r.image === best);
+    return { image: best, regions: shown, elsewhere: regions.length - shown.length, source: 'dse' };
+  }
+  return { image: page.image, regions: [], elsewhere: regions.length, source: page.image ? 'catalog' : 'none' };
+}
+
+/**
+ * Query string that opens a page (`?page=urn:cite2:hmt:msA.v1:12r`), and its reading.
+ * @param {string} pageUrn
+ */
+const formatPageQuery = pageUrn => formatQuery({ page: pageUrn });
+
+/** @param {string} search  e.g. `location.search` @returns {string | null} */
+function parsePageQuery(search) {
+  const { page } = readParams(search, ['page']);
+  return page && /^urn:cite2:/.test(page) ? page : null;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Finding one kind of location from another through the DSE records and the catalogs of a release:
+ * the page of an image or of a passage, the image of a page or of a passage, and the passages on a page
+ * or image.  Used by the apps that open at a text (`text`), a page (`page`) or an image (`image`).
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/**
+ * The DSE key (version URN + reference) of the passage a CTS URN names, or of the first of a range.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1-1.10` gives `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} textUrn
+ * @returns {string | null}  Null if the URN has no passage.
+ */
+function firstPassageKey(textUrn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec((textUrn || '').trim());
+  if (!m) return null;
+  const first = m[2].split(/[-‐-―]/)[0].trim();
+  return first ? dseKey(m[1] + first) : null;
+}
+
+/**
+ * @typedef {Object} Locator
+ * @property {(page: string) => boolean} isPage            Is it a page of a codex of the release?
+ * @property {(page: string) => string} imageOfPage        The image shown for a page ("" if none).
+ * @property {(image: string) => string[]} pagesOfImage    Pages (surfaces) with that image.
+ * @property {(text: string) => string[]} pagesOfPassage   Pages the DSE puts a passage (or the start of a range) on.
+ * @property {(text: string) => string[]} imagesOfPassage  Images the DSE puts it on.
+ * @property {(page: string) => string[]} passagesOnPage   Passages (DSE keys) on a page, in index order.
+ * @property {(image: string) => string[]} passagesOnImage Passages (DSE keys) on an image, in index order.
+ */
+
+/**
+ * Index a release for moving between texts, pages and images.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Locator}
+ */
+function createLocator(release) {
+  /** @param {Map<string, string[]>} m @param {string} k @param {string} v */
+  const add = (m, k, v) => { const l = m.get(k); if (!l) m.set(k, [v]); else if (!l.includes(v)) l.push(v); };
+  /** @type {Map<string, string[]>} */ const pagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const imagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnPage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnImage = new Map();
+  /** @type {Map<string, string[]>} */ const pagesOfImage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  for (const row of set?.rows ?? []) {
+    const key = dseKey(row.passage ?? '');
+    const surface = (row.surface ?? '').trim();
+    const image = parseImageRoi(row.imageroi ?? '')?.image ?? '';
+    if (!key) continue;
+    if (surface) { add(pagesOfPassage, key, surface); add(passagesOnPage, surface, key); }
+    if (image) { add(imagesOfPassage, key, image); add(passagesOnImage, image, key); }
+    if (surface && image) add(pagesOfImage, image, surface);
+  }
+
+  const cs = codices(release);
+  const { bySurface } = indexRegionsBySurface(release);
+  const catalogImages = new Set(imageCollections(release).flatMap(c => c.items.map(i => i.urn)));
+  /** @type {Map<string, string>} */ const imageOf = new Map();
+  for (const c of cs) {
+    for (const p of c.pages) {
+      const image = pageView(p, bySurface.get(p.urn) ?? [], catalogImages).image || p.image;
+      if (image) imageOf.set(p.urn, image);
+      for (const im of new Set([image, p.image])) if (im) add(pagesOfImage, im, p.urn);
+    }
+  }
+  const pages = new Set(cs.flatMap(c => c.pages.map(p => p.urn)));
+
+  return {
+    isPage: page => pages.has(page),
+    imageOfPage: page => imageOf.get(page) ?? '',
+    pagesOfImage: image => pagesOfImage.get(image) ?? [],
+    pagesOfPassage: text => { const k = firstPassageKey(text); return (k && pagesOfPassage.get(k)) || []; },
+    imagesOfPassage: text => { const k = firstPassageKey(text); return (k && imagesOfPassage.get(k)) || []; },
+    passagesOnPage: page => passagesOnPage.get(page) ?? [],
+    passagesOnImage: image => passagesOnImage.get(image) ?? [],
+  };
+}
+
+/** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
+
+/**
+ * The page to open for the parameters of an address: `page` first, then `image`, then `text`
+ * (the first of these that gives a page of the release wins).
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page };
+  const fromImage = p.image ? loc.pagesOfImage(p.image)[0] : '';
+  if (fromImage) return { page: fromImage };
+  const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
+  if (fromText) return { page: fromText };
+  const given = p.page || p.image || p.text;
+  if (!given) return null;
+  return { error: `No page of a codex in this release goes with ${given}.` };
+}
+
+/**
+ * The image to open for the parameters of an address: `image` first (as it is; the caller checks it), then `page`,
+ * then `text`.
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{image: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolveImage(loc, p) {
+  if (p.image) return { image: p.image };
+  const fromPage = p.page ? loc.imageOfPage(p.page) : '';
+  if (fromPage) return { image: fromPage };
+  const fromText = p.text ? loc.imagesOfPassage(p.text)[0] : '';
+  if (fromText) return { image: fromText };
+  const given = p.page || p.text;
+  return given ? { error: `No image in this release goes with ${given}.` } : null;
 }
 
 </script>
@@ -1355,7 +1766,8 @@ class IiifViewer {
 // file (see index.html).
 //
 // Address (no `#`): `?image=<collection URN>[&n=N]` is page N of the thumbnails of a collection,
-// `?image=<image URN>` an image; so links, bookmarks and the Back button work.
+// `?image=<image URN>` an image; `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
+// DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -1363,6 +1775,7 @@ class IiifViewer {
 
   /** @type {ImageCollection[]} */ let collections = [];
   /** @type {ImageCollection | null} */ let coll = null;
+  /** @type {any} */ let locator = null;
   let pageSize = 24;
   let page = 1;
   let current = -1;           // index of the open image in `coll.items`, or -1
@@ -1381,6 +1794,7 @@ class IiifViewer {
 
   function start(rel) {
     collections = imageCollections(rel);
+    locator = createLocator(rel);
     coll = null; current = -1;
     const sel = $('collection');
     sel.textContent = '';
@@ -1424,7 +1838,10 @@ class IiifViewer {
   }
 
   function route() {
-    const h = parseImageQuery(location.search);
+    const r = resolveImage(locator, readParams(location.search));
+    if (r && 'error' in r) { selectCollection(null, 1); showTable(r.error); return; }
+    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}`) setQuery({ image: r.image }, true);   // the canonical address
+    const h = r ? { urn: r.image, page: parseImageQuery(location.search)?.page ?? 1 } : null;
     if (!h) { selectCollection(null, 1); showTable(); return; }
     const cu = collectionOfObject(h.urn);
     const c = collections.find(x => x.urn === cu);

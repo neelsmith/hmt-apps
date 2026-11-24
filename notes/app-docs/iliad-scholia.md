@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- `?text=<CTS URN>`, e.g. `?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10` (replaces the earlier `?urn=`). The URN names the version, optionally an exemplar (`…msA.normalized`) and optionally a passage or range, which is then shown at once. A bad URN puts a message in the form. Showing a passage writes its URN into the address (`?text=…`, exemplar included), so the address is a bookmark of what is on the screen. No `#`.
+- `?text=<CTS URN>`, e.g. `?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`. The URN names the version, optionally an exemplar (`…msA.normalized`) and optionally a passage or range, which is then shown at once. Without `text`, `?page=<page URN>` or `?image=<image URN>` show the Iliad lines the DSE records put on that page or image, as one range in the version of the page (a page holding only scholia shows the lines they comment on); `text` wins, then `page`, then `image`. A bad or unusable value puts a message in the form. Showing a passage writes its URN into the address (`?text=…`, exemplar included), so the address is a bookmark of what is on the screen. No `#`.
 
 ## Output
 

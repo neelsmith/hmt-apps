@@ -4,7 +4,8 @@
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Address: `?page=<page URN>` (no `#`), so links, bookmarks and the Back button work.
+// Address: `?page=<page URN>`, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
+// the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -17,6 +18,7 @@
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
   /** @type {any} */ let release = null;
+  /** @type {any} */ let locator = null;
   /** @type {Map<string, any>} */ let textIndex = new Map();
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, PageRegion[]>} */ let bySurface = new Map();
@@ -41,6 +43,7 @@
     bySurface = indexRegionsBySurface(rel).bySurface;
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
+    locator = createLocator(rel);
     book = null; current = -1;
     const sel = $('codex');
     sel.textContent = '';
@@ -101,8 +104,11 @@
   }
 
   function route() {
-    const urn = parsePageQuery(location.search);
-    if (urn) showPage(urn); else clear();
+    const r = resolvePage(locator, readParams(location.search));
+    if (!r) { clear(); return; }
+    if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
+    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    showPage(r.page);
   }
 
   function clear() {

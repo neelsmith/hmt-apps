@@ -4,7 +4,8 @@
 // file (see index.html).
 //
 // Address (no `#`): `?image=<collection URN>[&n=N]` is page N of the thumbnails of a collection,
-// `?image=<image URN>` an image; so links, bookmarks and the Back button work.
+// `?image=<image URN>` an image; `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
+// DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -12,6 +13,7 @@
 
   /** @type {ImageCollection[]} */ let collections = [];
   /** @type {ImageCollection | null} */ let coll = null;
+  /** @type {any} */ let locator = null;
   let pageSize = 24;
   let page = 1;
   let current = -1;           // index of the open image in `coll.items`, or -1
@@ -30,6 +32,7 @@
 
   function start(rel) {
     collections = imageCollections(rel);
+    locator = createLocator(rel);
     coll = null; current = -1;
     const sel = $('collection');
     sel.textContent = '';
@@ -73,7 +76,10 @@
   }
 
   function route() {
-    const h = parseImageQuery(location.search);
+    const r = resolveImage(locator, readParams(location.search));
+    if (r && 'error' in r) { selectCollection(null, 1); showTable(r.error); return; }
+    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}`) setQuery({ image: r.image }, true);   // the canonical address
+    const h = r ? { urn: r.image, page: parseImageQuery(location.search)?.page ?? 1 } : null;
     if (!h) { selectCollection(null, 1); showTable(); return; }
     const cu = collectionOfObject(h.urn);
     const c = collections.find(x => x.urn === cu);

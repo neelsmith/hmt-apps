@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- `?text=<CTS URN>`, as for `iliad-scholia.html`; the address follows the passage shown (version URN plus passage). Any exemplar in a URN you give is ignored (the page always shows the diplomatic text). No `#`.
+- `?text=<CTS URN>`, `?page=<page URN>` or `?image=<image URN>`, as for `iliad-scholia.html`; the address follows the passage shown (version URN plus passage). Any exemplar in a URN you give is ignored (the page always shows the diplomatic text). No `#`.
 
 ## Output
 

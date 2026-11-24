@@ -9,7 +9,7 @@
 
 ## Parameters
 
-- `?page=<page URN>`, e.g. `?page=urn:cite2:hmt:msA.v1:12r` (replaces the earlier `#urn=`). The address follows the page shown, so bookmarks, links and the Back and Forward buttons work. No `#`. Where a browser will not let a page opened from a file change its own address, the address stays as it was and only the on-screen buttons navigate.
+- `?page=<page URN>`, e.g. `?page=urn:cite2:hmt:msA.v1:12r`, or `?image=<image URN>` or `?text=<CTS URN>` (a passage, or the start of a range), which open the page the DSE records (or the catalog's image for the page) put it on. If more than one is given, `page` wins, then `image`, then `text`; the first that gives a page of the release is used. The address is rewritten to `?page=…` and then follows the page shown, so bookmarks, links and the Back and Forward buttons work. A value that matches no page gives a message in the status line. No `#`. Where a browser will not let a page opened from a file change its own address, it stays as it was and only the on-screen buttons navigate.
 
 ## Output
 

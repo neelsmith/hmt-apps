@@ -361,3 +361,11 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - In-app navigation uses `history.pushState`/`replaceState` and `popstate` (Back/Forward work); where a browser refuses to change the address of a page opened from a file, `setQuery` returns false and navigation still works without the address.
 - Removed `parseFacsimileParams` (dse.js), `formatPageHash`/`parsePageHash` (codices.js), `formatHash`/`parseHash` (images.js); added `formatPageQuery`/`parsePageQuery`, `formatImageQuery`/`imageParams`/`parseImageQuery`.
 - Not changed: propernames, stringsearch, stringcounter, lemmatizedsearch still keep their state in `#` hashes.
+
+## All three parameters in codices, images and the text apps
+
+- codices, images, iliad-scholia, all-scholia and editorial now accept `text`, `page` and `image` (va-facsimile already did). New `src/locate.js` (`firstPassageKey`, `createLocator`, `resolvePage`, `resolveImage`), tests in `test/locate.test.js`; `iliadRangeOf` added to `src/iliad-scholia.js`.
+- Precedence: codices `page` > `image` > `text` (the first that gives a page of the release; an unusable earlier one falls through); images `image` > `page` > `text`; text apps `text` > `page` > `image`. The address is then rewritten to the app's own parameter (`?page=`, `?image=`, `?text=`).
+- text → page/image: the DSE record of the passage (the first passage of a range; version label ignored, scholion `.lemma`/`.comment` suffix dropped). page → image: DSE image of the page, else the catalog image. image → page: pages whose DSE rows or catalog use the image.
+- page/image → text: the Iliad lines on it become one range (first to last in the text's order, in the version with most lines there); a page with only scholia gives the range of the lines they are indexed to. Ranges can include title lines (e.g. `1.title-1.25`).
+- Search apps (propernames, stringsearch, stringcounter, lemmatizedsearch) unchanged, still `#`.

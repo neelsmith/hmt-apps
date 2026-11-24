@@ -23,6 +23,7 @@
   const spanCache = new Map();
   /** The manuscript pages of the passages (from the DSE records), and the view that shows one. */
   /** @type {any} */ let pageView = null;
+  /** @type {any} */ let locator = null;
   /** @type {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}} */ let pageIndex = { surfacesOf: new Map(), passagesOn: new Map() };
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -34,6 +35,7 @@
     versions = iliadVersions(rel, textIndex);
     spanCache.clear();
     pageIndex = indexPages(rel);
+    locator = createLocator(rel);
     const pageLabels = new Map();
     for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
     pageView = createPageView({
@@ -64,14 +66,23 @@
   }
 
   /**
-   * Open at the version and passage given in the address of the page (`text`, no `#`), as in
+   * Open at the version and passage given in the address of the page (`text`, no `#`), or at the passages on the
+   * page (`page`) or image (`image`) of a manuscript, as in
    * `iliad-scholia.html?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
    * The URN names the version, optionally a text of it (`…msA.normalized`),
    * and optionally the passage or range, which is then shown at once.
    */
   function applyUrnParam() {
-    const param = readParams(location.search, ['text']).text;
-    if (param === null) return;
+    const q = readParams(location.search);
+    let param = q.text;
+    if (param === null) {
+      // No `text`: `page`, then `image`, give the Iliad lines indexed on it (or what its scholia comment on).
+      const keys = q.page ? locator.passagesOnPage(q.page) : q.image ? locator.passagesOnImage(q.image) : null;
+      if (keys === null) return;
+      const found = iliadRangeOf(keys, versions, textIndex, pairs);
+      if ('error' in found) { $('error').textContent = `${q.page || q.image}: ${found.error}`; return; }
+      param = found.text;
+    }
     const r = parseUrnParam(versions, param);
     if ('error' in r) { $('error').textContent = r.error; return; }
     $('version').value = r.version.urn;

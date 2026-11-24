@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- `?text=<CTS URN>`, exactly as for `iliad-scholia.html` (the address follows the passage shown). No `#`.
+- `?text=<CTS URN>`, `?page=<page URN>` or `?image=<image URN>`, exactly as for `iliad-scholia.html` (the address follows the passage shown). No `#`.
 
 ## Output
 
