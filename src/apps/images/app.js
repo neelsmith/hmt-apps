@@ -1,9 +1,9 @@
 // Browser UI for the images app: choose an image collection of the release,
-// browse it as pages of thumbnails (a light box), and open any image in a
+// browse all its thumbnails at once (a light box with a Find box and a size slider), and open any image in a
 // pannable, zoomable viewer.  Uses the shared sources inlined ahead of this
 // file (see index.html).
 //
-// Address (no `#`): `?image=<collection URN>[&n=N]` is page N of the thumbnails of a collection,
+// Address (no `#`): `?image=<collection URN>` is the light box of a collection,
 // `?image=<image URN>` an image; `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
@@ -14,14 +14,13 @@
   /** @type {ImageCollection[]} */ let collections = [];
   /** @type {ImageCollection | null} */ let coll = null;
   /** @type {any} */ let locator = null;
-  let pageSize = 24;
-  let page = 1;
+  /** @type {ImageCollection | null} */ let gridOf = null;   // the collection whose thumbnails are in the grid
   let current = -1;           // index of the open image in `coll.items`, or -1
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   let openToken = 0;
-  let renderToken = 0;       // identifies the latest light-box page, so late thumbnail events can be ignored
+  let renderToken = 0;       // identifies the latest grid, so late thumbnail events can be ignored
 
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
   const urlFor = (service, region, size) => matchProtocol(iiifImageUrl(service, region, size), proto);
@@ -77,25 +76,22 @@
 
   function route() {
     const r = resolveImage(locator, readParams(location.search));
-    if (r && 'error' in r) { selectCollection(null, 1); showTable(r.error); return; }
+    if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
     if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}`) setQuery({ image: r.image }, true);   // the canonical address
-    const h = r ? { urn: r.image, page: parseImageQuery(location.search)?.page ?? 1 } : null;
-    if (!h) { selectCollection(null, 1); showTable(); return; }
+    const h = r ? { urn: r.image } : null;
+    if (!h) { selectCollection(null); showTable(); return; }
     const cu = collectionOfObject(h.urn);
     const c = collections.find(x => x.urn === cu);
-    if (!c) { selectCollection(null, 1); showTable(`${h.urn} is not an image collection or image in this release.`); return; }
-    if (isCollectionUrn(h.urn)) { selectCollection(c, h.page); showTable(); return; }
+    if (!c) { selectCollection(null); showTable(`${h.urn} is not an image collection or image in this release.`); return; }
+    if (isCollectionUrn(h.urn)) { selectCollection(c); showTable(); return; }
     const idx = c.items.findIndex(i => i.urn === h.urn);
-    if (idx < 0) { selectCollection(c, 1); showTable(`${h.urn} is not in this release.`); return; }
-    const imagePage = Math.floor(idx / pageSize) + 1;
-    if (imagePage !== page) tableScroll = 0;      // the light box will show another page
-    selectCollection(c, imagePage);
+    if (idx < 0) { selectCollection(c); showTable(`${h.urn} is not in this release.`); return; }
+    selectCollection(c);
     showViewer(idx);
   }
 
-  function selectCollection(c, p) {
-    if (c !== coll) { coll = c; $('grid').textContent = ''; }
-    page = p;
+  function selectCollection(c) {
+    if (c !== coll) { coll = c; gridOf = null; $('grid').textContent = ''; $('find').value = ''; }
     $('collection').value = c ? c.urn : '';
   }
 
@@ -108,86 +104,79 @@
     current = -1;
     $('viewer-view').hidden = true;
     $('table-view').hidden = false;
-    renderPage(message);
+    renderGrid(message);
     $('table-view').scrollTop = tableScroll;
     document.title = coll ? `${coll.label} – Images` : 'Images';
   }
 
-  function renderPage(message) {
+  /** Every thumbnail of the collection (the browser loads them as they scroll into view). */
+  function renderGrid(message) {
     const grid = $('grid');
-    $('note').hidden = !message || !!coll === false;
+    $('note').hidden = !message || !coll;
     $('note').textContent = message || '';
-    grid.textContent = '';
     if (!coll) {
+      grid.textContent = '';
+      gridOf = null;
       $('intro').hidden = false;
       $('intro').textContent = message || (collections.length ? 'Choose a collection of images.' : '');
-      for (const id of ['pager-top', 'pager-bottom']) $(id).hidden = true;
       $('shown').textContent = '';
+      for (const id of ['find', 'cell-size']) $(id).disabled = true;
       return;
     }
     $('intro').hidden = true;
-    const pg = paginate(coll.items.length, pageSize, page);
-    page = pg.page;
-    const items = coll.items.slice(pg.start, pg.end);
-    const frag = document.createDocumentFragment();
-    let loaded = 0, failed = 0;
-    const mine = ++renderToken;
-    const checkAll = () => {
-      if (mine !== renderToken) return;            // the user has moved on to another page
-      if (loaded + failed === items.length && loaded === 0 && failed > 0) {
-        $('note').textContent = 'None of the thumbnails on this page loaded. The image server may be unreachable, or this collection may not be served where this app expects it.';
+    for (const id of ['find', 'cell-size']) $(id).disabled = false;
+    if (gridOf !== coll) {
+      gridOf = coll;
+      grid.textContent = '';
+      const frag = document.createDocumentFragment();
+      let loaded = 0, failed = 0;
+      const mine = ++renderToken;
+      const check = () => {
+        if (mine !== renderToken || loaded > 0 || failed < 6) return;   // the first thumbnails all failed
+        $('note').textContent = 'None of the thumbnails loaded. The image server may be unreachable, or this collection may not be served where this app expects it.';
         $('note').hidden = false;
-      }
-    };
-    items.forEach((item, k) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'cell'; b.dataset.index = String(pg.start + k);
-      b.title = item.caption || item.id;
-      const thumb = document.createElement('span');
-      thumb.className = 'thumb';
-      const img = document.createElement('img');
-      img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
-      const service = imageService(item.urn);
-      img.onload = () => { loaded++; checkAll(); };
-      img.onerror = () => { failed++; thumb.classList.add('missing'); checkAll(); };
-      if (service) img.src = urlFor(service, 'full', `${THUMB_W},`); else { thumb.classList.add('missing'); failed++; }
-      thumb.appendChild(img);
-      const lbl = document.createElement('span');
-      lbl.className = 'lbl'; lbl.textContent = item.label;
-      b.append(thumb, lbl);
-      frag.appendChild(b);
-    });
-    grid.appendChild(frag);
-    $('shown').textContent = `${pg.start + 1}–${pg.end} of ${plural(coll.items.length, 'image', 'images')}`;
-    renderPager($('pager-top'), pg);
-    renderPager($('pager-bottom'), pg);
+      };
+      coll.items.forEach((item, k) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'cell'; b.dataset.index = String(k);
+        b.title = item.caption || item.id;
+        const thumb = document.createElement('span');
+        thumb.className = 'thumb';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+        const service = imageService(item.urn);
+        img.onload = () => {
+          loaded++;
+          if (img.naturalWidth && img.naturalHeight) thumb.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        };
+        img.onerror = () => { failed++; thumb.classList.add('missing'); check(); };
+        if (service) img.src = urlFor(service, 'full', `${THUMB_W},`); else { thumb.classList.add('missing'); failed++; check(); }
+        thumb.appendChild(img);
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl'; lbl.textContent = item.label;
+        b.append(thumb, lbl);
+        frag.appendChild(b);
+      });
+      grid.appendChild(frag);
+    }
+    applyFilter();
   }
 
-  function renderPager(el, pg) {
-    el.hidden = pg.pages <= 1;
-    el.textContent = '';
-    const mk = (act, label, title, disabled) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'btn'; b.dataset.act = act;
-      b.textContent = label; b.title = title; b.setAttribute('aria-label', title); b.disabled = disabled;
-      return b;
-    };
-    const num = document.createElement('input');
-    num.type = 'number'; num.min = '1'; num.max = String(pg.pages); num.value = String(pg.page);
-    num.setAttribute('aria-label', 'Page number'); num.dataset.act = 'goto';
-    const of = document.createElement('span');
-    of.textContent = `of ${pg.pages}`;
-    el.append(
-      mk('first', '«', 'First page', pg.page === 1), mk('prev', '‹', 'Previous page', pg.page === 1),
-      num, of,
-      mk('next', '›', 'Next page', pg.page === pg.pages), mk('last', '»', 'Last page', pg.page === pg.pages));
-  }
-
-  function changePage(p) {
+  /** Show the thumbnails whose captions match the Find box. */
+  function applyFilter() {
     if (!coll) return;
-    tableScroll = 0;
-    go({ urn: coll.urn, page: paginate(coll.items.length, pageSize, p).page }, true);
-    $('table-view').scrollTop = 0;
+    const q = $('find').value;
+    const cells = $('grid').children;
+    let shown = 0;
+    coll.items.forEach((item, k) => {
+      const ok = imageMatches(item, q);
+      cells[k].hidden = !ok;
+      if (ok) shown++;
+    });
+    $('shown').textContent = shown === coll.items.length
+      ? plural(coll.items.length, 'image', 'images')
+      : `${shown.toLocaleString('en')} of ${plural(coll.items.length, 'image', 'images')} shown`;
+    $('empty').hidden = shown > 0;
   }
 
   // --- viewer --------------------------------------------------------------------
@@ -249,7 +238,7 @@
   }
 
   function backToGrid() {
-    go({ urn: coll.urn, page: Math.floor(current / pageSize) + 1 }, false);
+    go({ urn: coll.urn }, false);
   }
 
   // --- wiring ---------------------------------------------------------------------
@@ -257,28 +246,14 @@
   $('collection').addEventListener('change', e => {
     tableScroll = 0;
     const urn = e.target.value;
-    if (urn) go({ urn, page: 1 }, false); else { setQuery({}, false); route(); }
+    if (urn) go({ urn }, false); else { setQuery({}, false); route(); }
   });
-  $('page-size').addEventListener('change', e => {
-    const first = coll ? (page - 1) * pageSize : 0;       // keep the first image on the page in view
-    pageSize = parseInt(e.target.value, 10);
-    if (coll) changePage(Math.floor(first / pageSize) + 1);
-  });
+  $('find').addEventListener('input', applyFilter);
+  $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
   $('grid').addEventListener('click', e => {
     const cell = e.target.closest('.cell');
     if (cell) go({ urn: coll.items[Number(cell.dataset.index)].urn }, false);
   });
-  for (const id of ['pager-top', 'pager-bottom']) {
-    $(id).addEventListener('click', e => {
-      const act = e.target.closest('button') && e.target.closest('button').dataset.act;
-      if (!act || !coll) return;
-      const pages = paginate(coll.items.length, pageSize, 1).pages;
-      changePage({ first: 1, prev: page - 1, next: page + 1, last: pages }[act]);
-    });
-    $(id).addEventListener('change', e => {
-      if (e.target.dataset.act === 'goto') changePage(parseInt(e.target.value, 10));
-    });
-  }
 
   $('back').addEventListener('click', backToGrid);
   $('prev').addEventListener('click', () => step(-1));

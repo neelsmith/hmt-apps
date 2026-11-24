@@ -104,23 +104,8 @@ export function parseInfo(info) {
 }
 
 /**
- * One page of a list.  Out-of-range pages are clamped.
- * @param {number} total
- * @param {number} pageSize
- * @param {number} page  1-based
- * @returns {{page: number, pages: number, start: number, end: number}}  `start`..`end` is a half-open index range.
- */
-export function paginate(total, pageSize, page) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages);
-  const start = (p - 1) * pageSize;
-  return { page: p, pages, start, end: Math.min(total, start + pageSize) };
-}
-
-/**
- * Query string for a page of a collection or for one image: `?image=<collection URN>&n=3` (the third
- * page of thumbnails) or `?image=<image URN>`.
- * @param {{urn: string, page?: number}} where
+ * Query string for a collection (its light box) or for one image: `?image=<collection URN>` or `?image=<image URN>`.
+ * @param {{urn: string}} where
  */
 export function formatImageQuery(where) {
   return formatQuery(imageParams(where));
@@ -128,20 +113,32 @@ export function formatImageQuery(where) {
 
 /**
  * The parameters of that query string, for `setQuery`.
- * @param {{urn: string, page?: number}} where
+ * @param {{urn: string}} where
  */
 export function imageParams(where) {
-  return { image: where.urn, n: where.page && where.page > 1 && isCollectionUrn(where.urn) ? where.page : null };
+  return { image: where.urn };
 }
 
 /**
  * Read a query string written by `formatImageQuery`.
  * @param {string} search
- * @returns {{urn: string, page: number} | null}  Null if there is no `image` parameter with a CITE2 URN.
+ * @returns {{urn: string} | null}  Null if there is no `image` parameter with a CITE2 URN.
  */
 export function parseImageQuery(search) {
-  const { image, n } = readParams(search, ['image', 'n']);
-  if (!image || !/^urn:cite2:/.test(image)) return null;
-  const page = parseInt(n ?? '', 10);
-  return { urn: image, page: page >= 1 ? page : 1 };
+  const { image } = readParams(search, ['image']);
+  return image && /^urn:cite2:/.test(image) ? { urn: image } : null;
+}
+
+/**
+ * Whether an image matches what was typed in the Find box: the text, as typed, is somewhere in its caption (or its
+ * label, which comes from the caption; for an image without a caption, its id).  Capitals and runs of spaces do not
+ * matter.
+ * @param {{caption: string, label: string, id: string}} item
+ * @param {string} query
+ */
+export function imageMatches(item, query) {
+  const norm = (/** @type {string} */ x) => x.toLowerCase().replace(/\s+/g, ' ').trim();
+  const q = norm(query);
+  if (!q) return true;
+  return [item.caption || item.id, item.label].some(h => norm(h).includes(q));
 }

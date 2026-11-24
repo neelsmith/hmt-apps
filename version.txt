@@ -13,7 +13,7 @@ stringcounter.html   0.2.0
 lemmatizedsearch.html   0.2.0
 
 // images and pages
-images.html  0.2.0
+images.html  0.3.0
 codices.html    0.2.0
 
 // editorial status

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import {
-  imageCollections, imageService, parseInfo, paginate, cellLabel, formatImageQuery, parseImageQuery,
+  imageCollections, imageService, parseInfo, cellLabel, formatImageQuery, parseImageQuery, imageMatches,
   IMAGE_SERVICE_BASE,
 } from '../src/images.js';
 
@@ -72,31 +72,31 @@ test('parseInfo: width and height of an image information document', () => {
   assert.equal(parseInfo(null), null);
 });
 
-test('paginate: pages, ranges and clamping', () => {
-  assert.deepEqual(paginate(966, 24, 1), { page: 1, pages: 41, start: 0, end: 24 });
-  assert.deepEqual(paginate(966, 24, 41), { page: 41, pages: 41, start: 960, end: 966 });
-  assert.equal(paginate(966, 24, 99).page, 41);
-  assert.equal(paginate(966, 24, 0).page, 1);
-  assert.equal(paginate(966, 24, NaN).page, 1);
-  assert.deepEqual(paginate(0, 24, 1), { page: 1, pages: 1, start: 0, end: 0 });
-  assert.deepEqual(paginate(24, 24, 2), { page: 1, pages: 1, start: 0, end: 24 });
-});
-
 test('address of a collection page or an image', () => {
   const coll = 'urn:cite2:hmt:vaimg.2017a:';
   const img = 'urn:cite2:hmt:vaimg.2017a:VA012RN_0013';
   assert.equal(formatImageQuery({ urn: img }), '?image=' + img);
-  assert.equal(formatImageQuery({ urn: coll, page: 3 }), '?image=' + coll + '&n=3');
-  assert.deepEqual(parseImageQuery(formatImageQuery({ urn: coll, page: 3 })), { urn: coll, page: 3 });
-  assert.equal(formatImageQuery({ urn: coll, page: 1 }), formatImageQuery({ urn: coll }));
-  assert.deepEqual(parseImageQuery(formatImageQuery({ urn: img, page: 5 })), { urn: img, page: 1 }); // page only for collections
-  assert.deepEqual(parseImageQuery('?image=' + img), { urn: img, page: 1 });
-  assert.deepEqual(parseImageQuery('?image=' + coll + '&n=0'), { urn: coll, page: 1 });
+  assert.equal(formatImageQuery({ urn: coll }), '?image=' + coll);
+  assert.deepEqual(parseImageQuery(formatImageQuery({ urn: coll })), { urn: coll });
+  assert.deepEqual(parseImageQuery('?image=' + img), { urn: img });
+  assert.deepEqual(parseImageQuery('?image=' + coll + '&n=3'), { urn: coll }, 'the old paging parameter is ignored');
   assert.equal(parseImageQuery(''), null);
-  assert.equal(parseImageQuery('?n=2'), null);
   assert.equal(parseImageQuery('?urn=' + img), null, 'the old name is not read');
   assert.equal(parseImageQuery('#image=' + img), null, 'nor a # fragment');
   assert.equal(parseImageQuery('?image=urn:cts:greekLit:tlg0012.tlg001.msA:1.1'), null);
+});
+
+test('imageMatches: the text is in the caption, ignoring case and runs of spaces', () => {
+  const item = { caption: 'Venetus A (Marciana 454 = 822), folio 12, recto', label: 'folio 12, recto', id: 'VA012RN_0013' };
+  assert.equal(imageMatches(item, ''), true);
+  assert.equal(imageMatches(item, '   '), true);
+  assert.equal(imageMatches(item, 'folio 12'), true);
+  assert.equal(imageMatches(item, 'FOLIO   12,'), true, 'case and spacing');
+  assert.equal(imageMatches(item, 'marciana'), true, 'a part of the caption beyond the label');
+  assert.equal(imageMatches(item, 'recto folio'), false, 'the text as typed, not word by word');
+  assert.equal(imageMatches(item, 'folio 13'), false);
+  assert.equal(imageMatches(item, 'va012rn'), false, 'the id is not searched when there is a caption');
+  assert.equal(imageMatches({ caption: '', label: 'VA012RN_0013', id: 'VA012RN_0013' }, 'va012rn'), true, 'but it is when there is none');
 });
 
 const REAL = new URL('../scratch/hmt-current.cex', import.meta.url);
