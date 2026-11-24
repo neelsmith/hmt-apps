@@ -4,7 +4,6 @@
 
 Current version:  **0.11.2**
 
-
 **0.11.2**, *?*: updated functionality and lightbox interface in `images.html`.
 
 

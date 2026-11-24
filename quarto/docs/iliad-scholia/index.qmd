@@ -20,19 +20,23 @@ title: "*Iliad* + *scholia* reader"
 ## Optional parameters
 
 
-- `text` — a CTS URN, e.g. `?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`. 
-- `page` or `image` — a page URN or an image URN: shows the *Iliad* lines the DSE puts on it, as one range in the version of that manuscript (for a page of scholia only, the lines they comment on).
-- If several are given, `text` wins, then `page`, then `image`. A value that gives no passage puts a message in the form.
-- Showing a passage writes `?text=…` (version, text and passage) into the address, so the address is a bookmark of what is on the screen.
+- `text` — a CTS URN, shows all text indexed to that page, highlighting the requested passage. Example: `?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`. 
+- `page`  — a page URN. Shows text indexed to that page.
+- `image` —  an image URN. Shows the text indexed to that image.
+
+
+If multiple parameters are given, `text` takes priority, then `page`, then `image`.
 
 
 ## Data sources
 
+From the HMT release
+
 - `#!ctscatalog` and `#!ctsdata`: the texts.
-- `#!citerelationset`: the DSE (`urn:cite2:hmt:hmtdse.v1:all`) placing passages on pages, and the commentary index (`urn:cite2:hmt:commentary.v1:all`, found through `#!datamodels`) linking scholia to *Iliad* passages.
-- `#!datamodels`, `#!citecollections` and `#!citedata`: the codices and their pages (page labels and order).
-- `#!citelibrary`: the release name in the status line.
-- The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
+- `#!citerelationset`: DSE records
+- `#!datamodels`, `#!citecollections` and `#!citedata`: the codices and their pages
+
+A saved copy of a release can be dropped on the page or chosen with the file picker.
 
 ## Output options
 
