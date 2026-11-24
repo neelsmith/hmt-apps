@@ -87,12 +87,67 @@
   {
     "objectID": "docs/iliad-scholia/index.html",
     "href": "docs/iliad-scholia/index.html",
-    "title": "iliad-scholia",
+    "title": "Iliad + scholia reader",
     "section": "",
-    "text": "App-specific docs not yet available",
+    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
     "crumbs": [
       "Docs",
-      "`iliad-scholia`"
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#overview",
+    "href": "docs/iliad-scholia/index.html#overview",
+    "title": "Iliad + scholia reader",
+    "section": "",
+    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#user-options-and-display",
+    "href": "docs/iliad-scholia/index.html#user-options-and-display",
+    "title": "Iliad + scholia reader",
+    "section": "User options and display",
+    "text": "User options and display\n\nVersion of the Iliad: choose a manuscript.\nText: display diplomatic or normalized Iliad edition.\nPassage: a line (1.5), a range (1.1-1.10) or a whole book (1)\nShow: displays requested passage highlighted, along with all other text on the same manuscript page.\nScholia count: appears next to a line commented on by scholia. Click the button to show scholia refernces; selecting a scholion displays its text.\nUnfold/fold all scholia unfolds or folds up all scholia on a page.\n‹ Previous page and Next page ›: display a single preceding or following page.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#optional-parameters",
+    "href": "docs/iliad-scholia/index.html#optional-parameters",
+    "title": "Iliad + scholia reader",
+    "section": "Optional parameters",
+    "text": "Optional parameters\n\ntext — a CTS URN, shows all text indexed to that page, highlighting the requested passage. Example: ?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10.\npage — a page URN. Shows text indexed to that page.\nimage — an image URN. Shows the text indexed to that image.\n\nIf multiple parameters are given, text takes priority, then page, then image.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#data-sources",
+    "href": "docs/iliad-scholia/index.html#data-sources",
+    "title": "Iliad + scholia reader",
+    "section": "Data sources",
+    "text": "Data sources\nFrom the HMT release\n\n#!ctscatalog and #!ctsdata: the texts.\n#!citerelationset: DSE records\n#!datamodels, #!citecollections and #!citedata: the codices and their pages\n\nA saved copy of a release can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#output-options",
+    "href": "docs/iliad-scholia/index.html#output-options",
+    "title": "Iliad + scholia reader",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
     ]
   },
   {
@@ -109,23 +164,133 @@
   {
     "objectID": "docs/stringsearch/index.html",
     "href": "docs/stringsearch/index.html",
-    "title": "stringsearch",
+    "title": "Simple text search",
     "section": "",
-    "text": "App-specific docs not yet available",
+    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
     "crumbs": [
       "Docs",
-      "`stringsearch`"
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#summary",
+    "href": "docs/stringsearch/index.html#summary",
+    "title": "Simple text search",
+    "section": "",
+    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#user-options-and-display",
+    "href": "docs/stringsearch/index.html#user-options-and-display",
+    "title": "Simple text search",
+    "section": "User options and display",
+    "text": "User options and display\n\nType a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter). Press Search; typing also searches after a short pause.\nChoose where to search: all texts, Iliad or scholia; and the text searched and shown: diplomatic or normalized.\nMatching passages are listed under the word forms that contain the string, by version (60 at a time, with a “show more” button). Choosing one shows its manuscript page: the Iliad lines and scholia on it, every match marked, the scholia panels with a match unfolded.\nEvery manuscript page in the page view has ‹ Previous page and Next page › buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#optional-url-parameters",
+    "href": "docs/stringsearch/index.html#optional-url-parameters",
+    "title": "Simple text search",
+    "section": "Optional URL parameters",
+    "text": "Optional URL parameters\nUnlike the browsing apps, this app still keeps its state in a # hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.\n\n#q=&lt;string&gt;&s=&lt;all|iliad|scholia&gt;&t=&lt;diplomatic|normalized&gt;[&p=&lt;passage&gt;] — the string; where to search (s, default all); the text searched and shown (t, default diplomatic); and the passage chosen (p).",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#data-sources",
+    "href": "docs/stringsearch/index.html#data-sources",
+    "title": "Simple text search",
+    "section": "Data sources",
+    "text": "Data sources\n\n#!ctscatalog and #!ctsdata: the texts searched.\nFor the page view of a chosen passage: #!citerelationset (the DSE urn:cite2:hmt:hmtdse.v1:all and the commentary index urn:cite2:hmt:commentary.v1:all, found through #!datamodels), #!datamodels, #!citecollections and #!citedata (codex pages and their labels); #!citelibrary (release name in the status line).\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#output-options",
+    "href": "docs/stringsearch/index.html#output-options",
+    "title": "Simple text search",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
     ]
   },
   {
     "objectID": "docs/images/index.html",
     "href": "docs/images/index.html",
-    "title": "images",
+    "title": "Browse images",
     "section": "",
-    "text": "App-specific docs not yet available",
+    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
     "crumbs": [
       "Docs",
-      "`images`"
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#summary",
+    "href": "docs/images/index.html#summary",
+    "title": "Browse images",
+    "section": "",
+    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#user-options-and-display",
+    "href": "docs/images/index.html#user-options-and-display",
+    "title": "Browse images",
+    "section": "User options and display",
+    "text": "User options and display\nIn light-table view:\n\nCollection menu: choose an image collection.\nFind: search caption of images.\nSize slider: adjust width of the thumbnails.\nSelect an image to open it in single-image view.\n\nIn single-image view:\n\n‹ › (or [ and ]): move to previous or next image of the collection.\nRights: shows/hide rights statement.\n← Images (or Esc): return to light box view.\nNavigation: drag to pan; scroll or pinch to zoom; +, − and Fit (or the +, - and 0 keys).\n\nIf the image server cannot be reached, the thumbnails show “no image”.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#optional-url-parameters",
+    "href": "docs/images/index.html#optional-url-parameters",
+    "title": "Browse images",
+    "section": "Optional URL parameters",
+    "text": "Optional URL parameters\n\nimage — an image URN. Collection-level URN opens in lightbox view, e.g. ?image=urn:cite2:hmt:vaimg.2017a:. Object-level URN opens in single image view, e.g. urn:cite2:hmt:vaimg.2017a:VA091RN_0092\npage — a page URN, e.g. urn:cite2:hmt:msA.v1:12r: opens the reference image for that page.\ntext — a CTS URN. Opens the image the passage is indexed to.\n\nIf multiple parameters are given, image takes priority, then page, then text",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#data-sources",
+    "href": "docs/images/index.html#data-sources",
+    "title": "Browse images",
+    "section": "Data sources",
+    "text": "Data sources\nFrom the HMT release:\n\n#!datamodels (image model urn:cite2:cite:datamodels.v1:imagemodel), #!citecollections and #!citedata: the image collections and their items (URN, caption, rights).\nOnly for the page and text parameters: the codex pages (#!datamodels codex model, #!citedata) and the DSE (#!citerelationset, urn:cite2:hmt:hmtdse.v1:all).\n#!citelibrary: the release name in the status line.\nThe pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture’s pixel size is read from its IIIF info.json when it is opened.\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#output-options",
+    "href": "docs/images/index.html#output-options",
+    "title": "Browse images",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
     ]
   },
   {
@@ -151,14 +316,18 @@
     "href": "docs/commentary-check/index.html",
     "title": "commentary-check",
     "section": "",
-    "text": "App-specific docs not yet available"
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`commentary-check`"
+    ]
   },
   {
     "objectID": "docs/va-facsimile/index.html",
     "href": "docs/va-facsimile/index.html",
     "title": "Venetus A facsimile",
     "section": "",
-    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript and a zoomable viewer showing indexed text.",
+    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript, and a zoomable page viewer showing edited text.",
     "crumbs": [
       "Docs",
       "Venetus A facsimile"
@@ -169,7 +338,7 @@
     "href": "docs/va-facsimile/index.html#summary",
     "title": "Venetus A facsimile",
     "section": "",
-    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript and a zoomable viewer showing indexed text.",
+    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript, and a zoomable page viewer showing edited text.",
     "crumbs": [
       "Docs",
       "Venetus A facsimile"
@@ -180,7 +349,7 @@
     "href": "docs/va-facsimile/index.html#user-options-and-display",
     "title": "Venetus A facsimile",
     "section": "User options and display",
-    "text": "User options and display\n\nLight table: Find (e.g. 12r, cover, flyleaf), Only pages with indexed text, a Size slider for the thumbnails; click a page to open it.\nImage viewer: ‹ › (or [ ]) for the previous or next page; ← Pages or Esc for the light table.\nIliad, Scholia and Other checkboxes show or hide those regions; diplomatic or normalized chooses the text shown when you hover (or tap) a region.\nDrag to pan; scroll or pinch to zoom; +, −, Fit (or +, -, 0).",
+    "text": "User options and display\nIn light table view:\n\nFind (e.g. 12r, cover, flyleaf): search captions of images\nOnly pages with indexed text: limit pages in light table\nSize slider: adjust size of the thumbnails\nSelect a page to open it in single-image view.\n\nIn single-image view:\n\n‹ › (or [ ]): move to previous or next page.\n← Pages or Esc: return to light table.\nIliad, Scholia and Other checkboxes show or hide those texts.\ndiplomatic or normalized: text versopm shown when you hover (or tap) a region.\nNavigation: drag to pan; scroll or pinch to zoom; +, −, Fit (or +, -, 0).",
     "crumbs": [
       "Docs",
       "Venetus A facsimile"
