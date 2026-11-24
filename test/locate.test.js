@@ -4,7 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex } from '../src/text-index.js';
 import { iliadVersions, commentaryPairs, iliadRangeOf } from '../src/iliad-scholia.js';
-import { firstPassageKey, createLocator, resolvePage, resolveImage } from '../src/locate.js';
+import { firstPassageKey } from '../src/dse.js';
+import { createLocator, resolvePage, resolveImage } from '../src/locate.js';
 
 const IMG = 'urn:cite2:hmt:vaimg.2017a:';
 const MSA = 'urn:cts:greekLit:tlg0012.tlg001.msA:';

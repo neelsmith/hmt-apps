@@ -375,3 +375,8 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - The shared page view (`src/page-view.js`) now puts **‹ Previous page** / **Next page ›** under the heading of every manuscript page it shows. Order comes from the codex sequence (`pageNeighbours` in `src/codices.js`, tested in `test/codices.test.js`); the buttons are disabled at the ends of a codex.
 - Search apps: the view re-renders in place on the neighbouring page (empty pages included), keeping the hits marked. No change to their `#` addresses.
 - Text apps: `onNavigate` hands the page to the app, which opens the Iliad range of that page via `locator.passagesOnPage` and `iliadRangeOf` (so the address is a normal `?text=` bookmark); `skipEmpty` skips pages with no indexed passages. In a multi-page range each page's buttons move from that page.
+
+## A range in `text` for the one-page-at-a-time apps (va-facsimile, codices, images)
+
+- These apps show one page or image at a time, so a `text` range uses only its first passage and opens that page or image; the user moves on with the normal page navigation. va-facsimile previously refused ranges; it now uses `firstPassageKey`, which moved from `src/locate.js` to `src/dse.js` so va-facsimile can use it without inlining the locator.
+- Text-oriented apps (iliad-scholia, all-scholia, editorial, and the search apps' page views) still show whole ranges, over as many pages as they span.

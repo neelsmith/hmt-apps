@@ -7,22 +7,9 @@
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
-import { DSE_URN, dseKey, parseImageRoi } from './dse.js';
+import { DSE_URN, dseKey, firstPassageKey, parseImageRoi } from './dse.js';
 import { codices, indexRegionsBySurface, pageView } from './codices.js';
 import { imageCollections } from './images.js';
-
-/**
- * The DSE key (version URN + reference) of the passage a CTS URN names, or of the first of a range.
- * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1-1.10` gives `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
- * @param {string} textUrn
- * @returns {string | null}  Null if the URN has no passage.
- */
-export function firstPassageKey(textUrn) {
-  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec((textUrn || '').trim());
-  if (!m) return null;
-  const first = m[2].split(/[-‐-―]/)[0].trim();
-  return first ? dseKey(m[1] + first) : null;
-}
 
 /**
  * @typedef {Object} Locator

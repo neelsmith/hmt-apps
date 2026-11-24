@@ -15,7 +15,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 - `image` — an image URN opens that image; a collection URN shows the thumbnails of that collection. With a collection, `n` is the page number of thumbnails (e.g. `?image=urn:cite2:hmt:vaimg.2017a:&n=3`).
 - `page` — a page URN: opens the image of that page.
-- `text` — a passage URN (or the start of a range): opens the image the DSE puts it on.
+- `text` — a passage URN: opens the image the DSE puts it on. For a range only the first passage is used (one image is shown at a time; move on with ‹ ›).
 - If several are given, `image` wins, then `page`, then `text`; the address is rewritten as `?image=…`. A value with no image gives a message above the thumbnails. The address follows what is shown, so bookmarks, links and Back and Forward work.
 
 ## Output options

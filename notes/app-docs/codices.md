@@ -16,7 +16,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 - `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
 - `image` — an image URN: opens the page the DSE (or the catalog) gives that image.
-- `text` — a passage URN (or the start of a range): opens the page the DSE puts it on.
+- `text` — a passage URN: opens the page the DSE puts it on. For a range only the first passage is used (one page is shown at a time; move on with the page buttons).
 - If several are given, `page` wins, then `image`, then `text`; the first that gives a page is used. The address is rewritten as `?page=…` and then follows the page shown, so bookmarks, links and Back and Forward work. A value that matches no page gives a message in the status line.
 
 ## Output options

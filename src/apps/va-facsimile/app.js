@@ -171,7 +171,7 @@
   // --- navigation (address of the page) -----------------------------------
   //
   // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
-  // `?text=<CTS passage URN>` open the page that has that image or passage (the app then shows it as
+  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage (the app then shows it as
   // `?page=…`).  There is no `#`.
 
   const pageUrn = c => VA_PAGES + c.id;
@@ -204,7 +204,7 @@
         if (idx < 0) problem = `${urn} is not an image of the Venetus A manifest.`;
       }
     } else {
-      const key = dseKey(value);
+      const key = firstPassageKey(value);           // for a range, its first passage
       if (!key) problem = `“${value}” is not a CTS passage URN (urn:cts:…).`;
       else if (!dse) {
         if (!releaseFailed) return;                       // wait for the release
@@ -213,7 +213,7 @@
       else {
         const images = dse.byPassage.get(key) ?? [];
         idx = canvases.findIndex(c => images.includes(c.imageUrn));
-        if (!images.length) problem = `${value} is not indexed in the DSE records${/-/.test(key.split(':').pop()) ? ' (give a single passage, not a range)' : ''}.`;
+        if (!images.length) problem = `${value} is not indexed in the DSE records.`;
         else if (idx < 0) problem = `${value} is indexed only to images that are not pages of the Venetus A.`;
       }
     }

@@ -1,5 +1,42 @@
 ---
-title: "`va-facsimile`"
+title: "Venetus A facsimile"
 ---
 
-*App-specific docs not yet available*
+
+## Summary
+
+`va-facsimile`: a light table of the pages of the Venetus A manuscript and a zoomable viewer showing indexed text.
+
+
+## Optional URL parameters
+
+- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
+- `image` — an image URN, optionally with `@x,y,w,h`: opens the page that has that image.
+- `text` — a single passage URN with a DSE record on a Venetus A page: opens that page.
+- If several are given, `page` takes priority, then `image`, then `text`. 
+
+
+## Data sources
+
+
+- From the HMT release: `#!ctscatalog` and `#!ctsdata` (the text of each region), and `#!citerelationset` (DSE records)
+- the IIIF manifest `vaimg.2017a.json` from the `hmt-archive` repository on GitHub). 
+
+
+
+
+Saved copies of the manifest and/or the release can be dropped on the page or chosen with the file picker (several files at once).
+
+
+- The page still shows the images if the release fails to load; the indexed regions are then missing.
+
+## Output options
+
+None.
+
+## User options and display
+
+- Light table: **Find** (e.g. `12r`, `cover`, `flyleaf`), **Only pages with indexed text**, a **Size** slider for the thumbnails; click a page to open it.
+- Viewer: **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
+- **Iliad**, **Scholia** and **Other** checkboxes show or hide those regions; **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
+- Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).

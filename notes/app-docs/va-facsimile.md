@@ -14,7 +14,7 @@ Query-string parameters (`?name=value`), never `#` tags. The app writes `?page=�
 
 - `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
 - `image` — an image URN, optionally with `@x,y,w,h`: opens the page that has that image.
-- `text` — a single passage URN with a DSE record on a Venetus A page: opens that page.
+- `text` — a passage URN with a DSE record on a Venetus A page: opens that page. For a range (`…msA:1.1-3.10`) only the first passage is used; the viewer shows one page at a time, so move on with the page buttons.
 - If several are given, `page` wins, then `image`, then `text`; the address is rewritten as `?page=…`. A URN that cannot be used puts a notice in the status line and shows the light table.
 
 ## Output options
