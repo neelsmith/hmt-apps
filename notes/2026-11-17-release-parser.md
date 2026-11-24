@@ -392,3 +392,33 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 
 - The light box of `images.html` now follows `va-facsimile.html`: **Find** (matches the typed text in the caption, or the id when there is no caption; `imageMatches` in `src/images.js`), a **Size** slider, and the whole collection on one scrolling page (thumbnails load lazily). Paging is removed: no Per page menu, no pagers, no `n` parameter; `paginate` is deleted (and its test), `formatImageQuery`/`imageParams`/`parseImageQuery` now deal only with `image`. Thumbnails take the aspect ratio of the loaded picture.
 - The grid is built once per collection and kept when you open an image and come back; it is rebuilt when the collection changes. The "none of the thumbnails loaded" note now appears when the first six thumbnails all fail.
+
+## dse-check.html (0.1.x): codex pages without DSE records
+
+- New fourth check: for each codex of the release (collections of the codex model, via `codices()`), compare its pages, in codex order, with the surfaces named by DSE records, and report the runs of consecutive pages no record names. `codexCoverage(release, surfaces)` and `describeRun` in `src/dse-check.js`; `checkDse` returns `codices` (pages, covered, uncovered, runs). Tests in `test/dse-check.test.js` (synthetic release with two codices, order independent of the data, and the real release). The CSV gets lines in the group `codex page without DSE record`; the app gets a **By codex** table and a fourth group. The app now inlines `src/location.js` and `src/codices.js`.
+- A page is covered if any record names it as `surface`, whatever the record's passage or image. Surfaces that are not pages of the codex are ignored here (the Venetus A has `211v1`; `coverage.html` still counts it, so its 631 is 630 here).
+- Release 2024c: Venetus A 662 pages, 630 covered, 3 runs (inside front cover to folio 11 verso, 25 pages; folio 211 verso; folio 327 verso to inside back cover, 6 pages). Escorial Y 1.1: 660 pages, 71 covered, 4 runs. Burney 86, Escorial Ω 1.12, Laurentian 32.3, Venetus B and Marciana 841 have no DSE records: one run each.
+
+## coverage.html: edited pages by book
+
+- New table: a row per book of the Iliad, a column per manuscript with edited lines, each cell the range of codex pages holding edited lines of that book. `iliadPagesByBook(release, textIndex)` in `src/coverage.js`: an edited line (same definition as `iliadLinesByBook`) is placed on the surfaces of DSE records whose `dseKey(passage)` is the version URN plus the line reference; pages are ordered by codex order (`codices()`), and the manuscript's codex is the one holding most of its placed lines. Each book gives `first`/`last` page ids, `pages`, `span`, `lines`, `unplaced`.
+- Release 2024c: Venetus A runs from 12r (book 1) to 326v (book 24), every book on a contiguous run of pages (book 16 has 30 lines with no DSE page); Escorial Y 1.1 covers books 8-10 (98r-134r); Venetus B has 709 edited lines in book 9 but no DSE records, so the cell reads "no page".
+- Tests: `test/coverage.test.js` (synthetic and real release; 163 unit tests in all).
+
+## dse-check.html: pages with DSE problems, by book
+
+- New table: for each Iliad version with DSE records whose passage is not in the text (problem 2), the pages those records name, by book. `iliadProblemPages(release, versions)` in `src/dse-check.js`, returned by `checkDse` as `iliadPages` (`byBook[24]` of `{records, pages, text}`, plus `records` and `other`). Pages come in codex order with consecutive pages joined; pages not in the codex follow by id. Only this problem type is included (the request was cut off after it; "text passage missing from DSE" has no page of its own, and "image not in catalog" was not asked for).
+- Release 2024c: Venetus A only: book 4 (58v), 7 (98v), 14 (188v), 16 (213v, 214v, 218r, 219v), 24 (324v); 5 more records are not lines of books 1-24.
+- Tests: `test/dse-check.test.js` (synthetic, ordering and real release; 165 unit tests in all).
+
+- dse-check.html: each page in the by-book table links to `https://neelsmith.github.io/hmt-apps/codices.html?page=PAGEURN` (built with `formatPageQuery`). `byBook[n].parts` gives `{from, to}` as `{id, urn}` for each page or range alongside `text`.
+
+- dse-check.html: the title tooltip on missing passages is now a styled popover (immediate, wraps, keyboard-focusable) showing all exemplars. `VersionCheck.missing[]` gained `texts: {exemplar, text}[]` next to `text` (the first exemplar). Test added in `test/dse-check.test.js` (166 unit tests).
+
+- dse-check.html: clicking (or Enter/Space on) a missing-passage reference copies its diplomatic text (`navigator.clipboard`, with a `execCommand('copy')` fallback for non-secure contexts); chips have `role=button`.
+
+## images.html: image references with a region of interest (bug fix)
+
+- `?image=<image URN>@x,y,w,h` used to fail as "not in this release" because the whole string was taken as the image URN. `resolveImage` (`src/locate.js`) now splits at `@`: `{image, roi, roiText}` (`roi` is null, and ignored, if `parseRoi` rejects it). The images app opens the single image, draws a `rect.roi-hl` in the viewer overlay, zooms to the region (at most full resolution, at least fit) and keeps `@roi` in the canonical address; stepping to another image drops it. Tests in `test/locate.test.js`; UI test in the scratchpad (`ui-test-images.js`).
+
+- dse-check.html: in group 2 (and its "not a CTS passage URN" records) the `imageroi` of each record links to `images.html?image=<imageroi>` on GitHub Pages. Group 3 is deliberately not linked.

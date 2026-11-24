@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.3.0">
 <title>Editorial coverage</title>
 <style>
   :root {
@@ -47,6 +47,8 @@
   details { margin-top: .5rem; }
   summary { cursor: pointer; color: var(--muted); font-size: .875rem; }
   .tablewrap { overflow-x: auto; }
+  #t-ranges td { cursor: help; }
+  .sr { position: absolute; left: -9999px; }
   table { border-collapse: collapse; font-size: .875rem; margin-top: .5rem; }
   th, td { padding: .2rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
@@ -60,7 +62,7 @@
 <header>
   <h1>Editorial coverage</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/coverage/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/coverage/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -87,6 +89,12 @@
     <details><summary>Data table</summary><div class="tablewrap" id="t-sch"></div></details>
   </section>
 
+  <section class="chart" id="c-ranges">
+    <h2>Edited pages of each manuscript, by book of the <i>Iliad</i></h2>
+    <p class="desc" id="d-ranges"></p>
+    <div class="tablewrap" id="t-ranges"></div>
+  </section>
+
   <section class="chart" id="c-pages">
     <h2>Pages with DSE records, by manuscript</h2>
     <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
@@ -104,7 +112,7 @@
   <footer>
     A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
     normalized exemplar; book titles are not counted. A scholion is a numbered scholion (<code>book.scholion</code>) with a lemma or comment in either exemplar; all groups of scholia of a manuscript (for the Venetus A: main, interior, exterior, interlinear, intermarginal and others) are added together. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
-    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
+    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). In the table of page ranges, a manuscript’s pages for a book are those named as surface by DSE records whose passage is an edited line of that book; the range runs from the first to the last of them in the codex’s order (hover a cell for the number of pages and any gaps). Findings are warnings only.
   </footer>
 </main>
 
@@ -1681,6 +1689,7 @@ function chartTable(spec, firstHeader) {
 
 
 
+
 /** Books of the Iliad. */
 const BOOKS = 24;
 
@@ -1724,6 +1733,101 @@ function iliadLinesByBook(release, textIndex) {
       if (book >= 1 && book <= BOOKS && /^\d+/.test(m[2])) byBook[book - 1]++; else other++;
     }
     out.push({ urn: v.urn, label: v.label, short: shortVersionLabel(v.label), byBook, total: byBook.reduce((a, b) => a + b, 0), titles, other });
+  }
+  return out;
+}
+
+/**
+ * @typedef {Object} BookPages
+ * @property {string} first   Id of the first page (in codex order) holding edited lines of the book, e.g. `12r`; "" if none.
+ * @property {string} last    Id of the last such page; equals `first` for a single page.
+ * @property {string} firstUrn
+ * @property {string} lastUrn
+ * @property {number} pages   Distinct pages holding edited lines of the book.
+ * @property {number} span    Pages of the codex from first to last, inclusive (`pages` less than `span` means gaps).
+ * @property {number} lines   Edited lines of the book.
+ * @property {number} unplaced Edited lines with no DSE record on a page of the codex.
+ */
+
+/**
+ * @typedef {Object} IliadPages
+ * @property {string} urn      Version URN of the manuscript's Iliad text.
+ * @property {string} label
+ * @property {string} short
+ * @property {string} codex    URN of the codex the pages belong to, or "" when no line is placed on a page.
+ * @property {BookPages[]} byBook  Books 1 to 24 (index 0 is book 1).
+ */
+
+/**
+ * For every manuscript with edited lines of the Iliad (see `iliadLinesByBook`), and every book, the range of its
+ * codex pages that hold edited lines of that book.  A line is placed on the pages of the DSE records whose
+ * passage is that line (exemplar parts are ignored); the range runs from the first to the last such page in codex
+ * order.  The codex of a manuscript is the one holding most of its placed lines.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Map<string, import('./text-index.js').TextIndex>} textIndex
+ * @returns {IliadPages[]}
+ */
+function iliadPagesByBook(release, textIndex) {
+  const { bySurface } = indexRegionsBySurface(release);
+  /** @type {Map<string, Set<string>>} passage key -> surfaces */
+  const surfacesOf = new Map();
+  for (const [surface, regions] of bySurface) {
+    for (const r of regions) {
+      const k = dseKey(r.passage);
+      if (!k) continue;
+      const set = surfacesOf.get(k) ?? new Set();
+      set.add(surface);
+      surfacesOf.set(k, set);
+    }
+  }
+  /** @type {Map<string, {id: string, seq: number, order: number}>} */
+  const pageInfo = new Map();
+  /** @type {Map<string, number>} */
+  const codexSize = new Map();
+  for (const c of codices(release)) {
+    codexSize.set(c.urn, c.pages.length);
+    c.pages.forEach((p, i) => pageInfo.set(p.urn, { id: p.id, seq: p.sequence, order: i }));
+  }
+  /** @type {IliadPages[]} */
+  const out = [];
+  for (const v of iliadVersions(release, textIndex)) {
+    if (!v.texts.length) continue;
+    const refs = new Set();
+    for (const t of v.texts) {
+      const ex = textIndex.get(t.urn);
+      if (!ex) continue;
+      ex.refs.forEach((ref, i) => { if ((ex.texts[i] ?? '').trim()) refs.add(ref); });
+    }
+    /** @type {Set<string>[]} */
+    const pagesOfBook = Array.from({ length: BOOKS }, () => new Set());
+    const lines = new Array(BOOKS).fill(0);
+    const unplaced = new Array(BOOKS).fill(0);
+    /** @type {Map<string, number>} */
+    const codexVotes = new Map();
+    for (const ref of refs) {
+      const m = /^(\d+)\.(\d.*)$/.exec(ref);
+      const book = m ? Number(m[1]) : 0;
+      if (book < 1 || book > BOOKS) continue;
+      lines[book - 1]++;
+      const found = [...(surfacesOf.get(v.urn + ref) ?? [])].filter(s => pageInfo.has(s));
+      if (!found.length) { unplaced[book - 1]++; continue; }
+      for (const s of found) {
+        pagesOfBook[book - 1].add(s);
+        const c = collectionOfObject(s) ?? '';
+        codexVotes.set(c, (codexVotes.get(c) ?? 0) + 1);
+      }
+    }
+    if (!lines.some(n => n > 0)) continue;
+    const codex = [...codexVotes].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    const byBook = pagesOfBook.map((set, i) => {
+      const own = [...set].filter(s => (collectionOfObject(s) ?? '') === codex)
+        .sort((a, b) => /** @type {any} */ (pageInfo.get(a)).order - /** @type {any} */ (pageInfo.get(b)).order);
+      const empty = { first: '', last: '', firstUrn: '', lastUrn: '', pages: 0, span: 0, lines: lines[i], unplaced: unplaced[i] };
+      if (!own.length) return empty;
+      const f = /** @type {any} */ (pageInfo.get(own[0])), l = /** @type {any} */ (pageInfo.get(own[own.length - 1]));
+      return { ...empty, first: f.id, last: l.id, firstUrn: own[0], lastUrn: own[own.length - 1], pages: own.length, span: l.order - f.order + 1 };
+    });
+    out.push({ urn: v.urn, label: v.label, short: shortVersionLabel(v.label), codex, byBook });
   }
   return out;
 }
@@ -1866,7 +1970,7 @@ function scholiaByBook(release, textIndex) {
   const n = x => x.toLocaleString('en');
   const plural = (x, one, many) => `${n(x)} ${x === 1 ? one : many}`;
 
-  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>} | null} */
+  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>, ranges: IliadPages[]} | null} */
   let data = null;
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -1881,10 +1985,52 @@ function scholiaByBook(release, textIndex) {
     t.appendChild(chartTable(spec, firstHeader));
   }
 
+  /** Text of a cell of the page-range table, and its tooltip. */
+  function rangeCell(b) {
+    if (!b.lines) return { text: '—', tip: 'No edited lines' };
+    if (!b.pages) return { text: 'no page', tip: `${plural(b.lines, 'edited line', 'edited lines')}, none with a DSE record on a page of the codex` };
+    const text = b.first === b.last ? b.first : `${b.first}–${b.last}`;
+    let tip = `${plural(b.lines, 'edited line', 'edited lines')} on ${plural(b.pages, 'page', 'pages')}`;
+    if (b.span > b.pages) tip += `; ${plural(b.span - b.pages, 'page', 'pages')} in between without edited lines of this book`;
+    if (b.unplaced) tip += `; ${plural(b.unplaced, 'line has', 'lines have')} no DSE page`;
+    return { text, tip };
+  }
+
+  /** Table of page ranges: a row per book, a column per edited manuscript. */
+  function drawRanges() {
+    const host = $('t-ranges');
+    host.textContent = '';
+    const ms = data.ranges;
+    $('d-ranges').textContent = ms.length
+      ? `Manuscripts with edited lines: ${ms.map(m => m.short).join(', ')}. Each cell runs from the first to the last page that holds an edited line of the book.`
+      : 'No manuscript has edited lines in this release.';
+    if (!ms.length) return;
+    const table = document.createElement('table');
+    const cap = document.createElement('caption');
+    cap.className = 'sr';
+    cap.textContent = 'Range of edited pages of each manuscript, by book of the Iliad';
+    const head = table.createTHead().insertRow();
+    for (const h of ['Book', ...ms.map(m => m.short)]) {
+      const th = document.createElement('th'); th.scope = 'col'; th.textContent = h; head.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (let i = 0; i < BOOKS; i++) {
+      const tr = body.insertRow();
+      const th = document.createElement('th'); th.scope = 'row'; th.textContent = String(i + 1); tr.appendChild(th);
+      for (const m of ms) {
+        const { text, tip } = rangeCell(m.byBook[i]);
+        const td = tr.insertCell(); td.textContent = text; td.title = tip;
+      }
+    }
+    table.prepend(cap);
+    host.appendChild(table);
+  }
+
   /** Draw all three charts from `data`. */
   function draw() {
     if (!data) return;
     const { lines, pages, scholia } = data;
+    drawRanges();
 
     const shown = lines.filter(l => l.total > 0);
     const books = Array.from({ length: BOOKS }, (_, i) => String(i + 1));
@@ -1959,7 +2105,7 @@ function scholiaByBook(release, textIndex) {
 
   function start(rel) {
     const ti = buildTextIndex(rel);
-    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti) };
+    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti), ranges: iliadPagesByBook(rel, ti) };
     $('drop').hidden = true;
     $('report').hidden = false;
     warnings(data);

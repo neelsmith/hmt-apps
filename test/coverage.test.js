@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex } from '../src/text-index.js';
 import { axisTicks, wrapLabel } from '../src/bar-chart.js';
-import { BOOKS, iliadLinesByBook, dsePagesByCodex, scholiaByBook } from '../src/coverage.js';
+import { BOOKS, iliadLinesByBook, dsePagesByCodex, scholiaByBook, iliadPagesByBook } from '../src/coverage.js';
 
 const CEX = `#!ctscatalog
 urn|citationScheme|groupName|workTitle|versionLabel|exemplarLabel|online|language
@@ -105,6 +105,24 @@ test('scholiaByBook: all groups of a manuscript added together, by book', () => 
   assert.deepEqual(unassigned, ['Orphan scholia']);
 });
 
+test('iliadPagesByBook: first to last page per book, unplaced lines, manuscripts without pages', () => {
+  const rel = parseRelease(CEX);
+  const out = iliadPagesByBook(rel, buildTextIndex(rel));
+  assert.deepEqual(out.map(o => o.short), ['Venetus A', 'Venetus B']);
+  const a = out[0];
+  assert.equal(a.codex, 'urn:cite2:hmt:msA.v1:');
+  const b1 = a.byBook[0];
+  assert.deepEqual([b1.first, b1.last, b1.pages, b1.span, b1.lines, b1.unplaced], ['1r', '1r', 1, 1, 3, 1], '1.1 and 1.2 on 1r; 1.3 has no DSE record');
+  const b6 = a.byBook[5];
+  assert.deepEqual([b6.first, b6.pages, b6.unplaced], ['', 0, 1], '6.386del has no record (6.1 has a record without region)');
+  const b24 = a.byBook[23];
+  assert.deepEqual([b24.pages, b24.unplaced], [0, 1], 'its page 99r is not in the codex');
+  assert.equal(a.byBook[1].lines, 0);
+  assert.equal(out[1].codex, '');
+  assert.equal(out[1].byBook[8].pages, 0);
+  assert.equal(out[1].byBook[8].unplaced, 1);
+});
+
 test('axisTicks and wrapLabel', () => {
   assert.deepEqual(axisTicks(0), [0, 1]);
   assert.deepEqual(axisTicks(1), [0, 1]);
@@ -136,6 +154,12 @@ test('on the real release', { skip: !existsSync(REAL) }, () => {
   assert.deepEqual(sc.map(m => m.short), ['Venetus A', 'Venetus B', 'Escorial, Upsilon 1.1']);
   assert.equal(sc[0].groups.length, 6, 'six groups of Venetus A scholia');
   assert.equal(sc[0].total, sc[0].groups.reduce((n, g) => n + g.count, 0));
+  const rg = iliadPagesByBook(rel, ti);
+  const rva = rg.find(r => r.short === 'Venetus A');
+  assert.equal(rva.byBook.length, BOOKS);
+  assert.ok(rva.byBook.every(b => b.pages > 0 && b.span >= b.pages && b.first));
+  assert.equal(rva.byBook[0].first, '12r');
+  assert.equal(rg.find(r => r.short === 'Venetus B').codex, '', 'no DSE records for Venetus B');
   const p = dsePagesByCodex(rel);
   const va = p.codices.find(c => c.urn === 'urn:cite2:hmt:msA.v1:');
   assert.ok(va.pages > 600 && va.pages <= va.total + va.unlisted.length);

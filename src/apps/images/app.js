@@ -4,7 +4,7 @@
 // file (see index.html).
 //
 // Address (no `#`): `?image=<collection URN>` is the light box of a collection,
-// `?image=<image URN>` an image; `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
+// `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` highlights a region of it); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
@@ -16,6 +16,7 @@
   /** @type {any} */ let locator = null;
   /** @type {ImageCollection | null} */ let gridOf = null;   // the collection whose thumbnails are in the grid
   let current = -1;           // index of the open image in `coll.items`, or -1
+  let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
@@ -77,7 +78,8 @@
   function route() {
     const r = resolveImage(locator, readParams(location.search));
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
-    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}`) setQuery({ image: r.image }, true);   // the canonical address
+    const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
+    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}${roiText ? '@' + roiText : ''}`) setQuery({ image: r.image + (roiText ? '@' + roiText : '') }, true);   // the canonical address
     const h = r ? { urn: r.image } : null;
     if (!h) { selectCollection(null); showTable(); return; }
     const cu = collectionOfObject(h.urn);
@@ -87,7 +89,7 @@
     const idx = c.items.findIndex(i => i.urn === h.urn);
     if (idx < 0) { selectCollection(c); showTable(`${h.urn} is not in this release.`); return; }
     selectCollection(c);
-    showViewer(idx);
+    showViewer(idx, r && 'roi' in r ? r.roi : null, roiText);
   }
 
   function selectCollection(c) {
@@ -194,8 +196,15 @@
     return p;
   }
 
-  async function showViewer(idx) {
-    if (idx === current && !$('viewer-view').hidden) return;
+  /**
+   * Open an image, highlighting a region of it if one is given.
+   * @param {number} idx  Index in `coll.items`.
+   * @param {{x: number, y: number, w: number, h: number} | null} [roi]  Fractions of the image size.
+   * @param {string} [roiText]  The region as written in the address.
+   */
+  async function showViewer(idx, roi = null, roiText = '') {
+    if (idx === current && roiText === currentRoi && !$('viewer-view').hidden) return;
+    currentRoi = roiText;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     const item = coll.items[idx];
@@ -206,7 +215,7 @@
     viewer.close();
     $('viewer-title').textContent = item.label;
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
-    $('viewer-note').textContent = item.caption || item.id;
+    $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
     $('rights').textContent = item.rights || 'No rights statement in the release.';
     $('viewer-error').hidden = true;
     $('prev').disabled = idx === 0;
@@ -223,12 +232,27 @@
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
+      if (roi) highlight(roi, width, height);
       viewer.root.focus({ preventScroll: true });
     } catch (e) {
       if (token !== openToken) return;
       $('viewer-error').textContent = `Could not load this image (${e.message || e}).`;
       $('viewer-error').hidden = false;
     }
+  }
+
+  /** Mark a region of the open image and bring it into view (zoomed to it, but never past full resolution). */
+  function highlight(roi, width, height) {
+    const r = roiToRect(roi, width, height);
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    for (const [k, v] of [['x', r.x], ['y', r.y], ['width', r.w], ['height', r.h]]) rect.setAttribute(k, String(v));
+    rect.setAttribute('class', 'roi-hl');
+    viewer.overlay.textContent = '';
+    viewer.overlay.appendChild(rect);
+    const { w: vw, h: vh } = viewer.size;
+    if (!vw || !vh) return;
+    const sc = Math.max(viewer.minScale, Math.min(0.5 * vw / r.w, 0.5 * vh / r.h, 1));
+    viewer.set({ sc, tx: vw / 2 - (r.x + r.w / 2) * sc, ty: vh / 2 - (r.y + r.h / 2) * sc });
   }
 
   function step(delta) {

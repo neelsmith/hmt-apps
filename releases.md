@@ -2,7 +2,14 @@
 
 ## Repository version tag
 
-Current version:  **0.11.2**
+Current version:  **0.11.3**
+
+**0.11.3**, *Nov. 24, 2026*: 
+
+- additional reporting on pages covered by DSE records in `dse-check.html`.
+- additional reporting on pages edited per MS in `coverage.html`.
+- fixes a bug in `images.html` when `image` parameter has an RoI subreference.
+
 
 **0.11.2**, *Nov. 24, 2026*: updated functionality and lightbox interface in `images.html`. Expanded documentation on several individual apps.
 
@@ -137,6 +144,7 @@ Current version:  **0.11.2**
 
 ### `images.html`
 
+**0.3.1**, *Nov. 24, 2026*:  fixes a bug handling image URNs with RoI.
 
 **0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
 
@@ -165,6 +173,8 @@ Current version:  **0.11.2**
 
 ### `coverage.html`
 
+**0.3.0**, *Nov. 24, 2026*: adds report of edited MS pages per book of the *Iliad*.
+
 **0.2.0**, *Nov. 24, 2026*: summarize coverage of editing of *scholia* in different MSS of the HMT project.
 
 **0.1.0**, *Nov. 23, 2026*: summarize coverage of editing of *Iliad* in different MSS of the HMT project.
@@ -178,6 +188,8 @@ Current version:  **0.11.2**
 
 
 ### `dse-check.html`
+
+**0.2.0**,  *Nov. 24, 2026*: Adds reporting on runs on pages in a MS absent from DSE records.
 
 **0.1.1**,  *Nov. 24, 2026*: Adds standard menu to top of page.
 

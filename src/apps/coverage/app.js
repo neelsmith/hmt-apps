@@ -5,7 +5,7 @@
   const n = x => x.toLocaleString('en');
   const plural = (x, one, many) => `${n(x)} ${x === 1 ? one : many}`;
 
-  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>} | null} */
+  /** @type {{lines: IliadCoverage[], pages: ReturnType<typeof dsePagesByCodex>, scholia: ReturnType<typeof scholiaByBook>, ranges: IliadPages[]} | null} */
   let data = null;
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -20,10 +20,52 @@
     t.appendChild(chartTable(spec, firstHeader));
   }
 
+  /** Text of a cell of the page-range table, and its tooltip. */
+  function rangeCell(b) {
+    if (!b.lines) return { text: '—', tip: 'No edited lines' };
+    if (!b.pages) return { text: 'no page', tip: `${plural(b.lines, 'edited line', 'edited lines')}, none with a DSE record on a page of the codex` };
+    const text = b.first === b.last ? b.first : `${b.first}–${b.last}`;
+    let tip = `${plural(b.lines, 'edited line', 'edited lines')} on ${plural(b.pages, 'page', 'pages')}`;
+    if (b.span > b.pages) tip += `; ${plural(b.span - b.pages, 'page', 'pages')} in between without edited lines of this book`;
+    if (b.unplaced) tip += `; ${plural(b.unplaced, 'line has', 'lines have')} no DSE page`;
+    return { text, tip };
+  }
+
+  /** Table of page ranges: a row per book, a column per edited manuscript. */
+  function drawRanges() {
+    const host = $('t-ranges');
+    host.textContent = '';
+    const ms = data.ranges;
+    $('d-ranges').textContent = ms.length
+      ? `Manuscripts with edited lines: ${ms.map(m => m.short).join(', ')}. Each cell runs from the first to the last page that holds an edited line of the book.`
+      : 'No manuscript has edited lines in this release.';
+    if (!ms.length) return;
+    const table = document.createElement('table');
+    const cap = document.createElement('caption');
+    cap.className = 'sr';
+    cap.textContent = 'Range of edited pages of each manuscript, by book of the Iliad';
+    const head = table.createTHead().insertRow();
+    for (const h of ['Book', ...ms.map(m => m.short)]) {
+      const th = document.createElement('th'); th.scope = 'col'; th.textContent = h; head.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (let i = 0; i < BOOKS; i++) {
+      const tr = body.insertRow();
+      const th = document.createElement('th'); th.scope = 'row'; th.textContent = String(i + 1); tr.appendChild(th);
+      for (const m of ms) {
+        const { text, tip } = rangeCell(m.byBook[i]);
+        const td = tr.insertCell(); td.textContent = text; td.title = tip;
+      }
+    }
+    table.prepend(cap);
+    host.appendChild(table);
+  }
+
   /** Draw all three charts from `data`. */
   function draw() {
     if (!data) return;
     const { lines, pages, scholia } = data;
+    drawRanges();
 
     const shown = lines.filter(l => l.total > 0);
     const books = Array.from({ length: BOOKS }, (_, i) => String(i + 1));
@@ -98,7 +140,7 @@
 
   function start(rel) {
     const ti = buildTextIndex(rel);
-    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti) };
+    data = { lines: iliadLinesByBook(rel, ti), pages: dsePagesByCodex(rel), scholia: scholiaByBook(rel, ti), ranges: iliadPagesByBook(rel, ti) };
     $('drop').hidden = true;
     $('report').hidden = false;
     warnings(data);
