@@ -8,7 +8,7 @@
 
 ## Parameters
 
-- `#urn=<collection URN>[&page=N]` for a page of thumbnails, or `#urn=<image URN>` for one image. The hash follows what is shown, so links and the Back button work. No query-string parameters.
+- `?image=<image URN>` opens an image; `?image=<collection URN>[&n=N]` shows page N (default 1) of the thumbnails of a collection (replaces the earlier `#urn=` and `&page=`; `page` now means a codex page everywhere, so thumbnail paging is `n`). The address follows what is shown, so bookmarks, links and the Back and Forward buttons work. No `#`.
 
 ## Output
 

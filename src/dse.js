@@ -149,24 +149,3 @@ export function dseKey(urn) {
   if (/^urn:cts:[^:]+:tlg5026\./.test(version)) ref = ref.replace(/\.(lemma|comment)$/, '');
   return ref ? version + ref : null;
 }
-
-/**
- * Optional parameters of the facsimile page, read from the hash
- * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
- * percent-decoded; the first string that has a parameter wins.
- * @param {...string} sources  e.g. `location.hash`, `location.search`
- * @returns {{page: string | null, text: string | null, image: string | null}}
- */
-export function parseFacsimileParams(...sources) {
-  /** @type {{page: string | null, text: string | null, image: string | null}} */
-  const out = { page: null, text: null, image: null };
-  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
-    for (const src of sources) {
-      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
-      if (!m) continue;
-      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
-      break;
-    }
-  }
-  return out;
-}

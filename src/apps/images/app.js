@@ -3,8 +3,8 @@
 // pannable, zoomable viewer.  Uses the shared sources inlined ahead of this
 // file (see index.html).
 //
-// Location hash: `#urn=<collection URN>[&page=N]` is a page of a collection,
-// `#urn=<image URN>` an image; so links and the Back button work.
+// Address (no `#`): `?image=<collection URN>[&n=N]` is page N of the thumbnails of a collection,
+// `?image=<image URN>` an image; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -64,23 +64,16 @@
     catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
   }
 
-  // --- navigation (location hash) --------------------------------------------
+  // --- navigation (address of the page) --------------------------------------------
 
-  /** The hash this app has just set itself (and already shown), so its hashchange event can be skipped. */
-  let ownHash = null;
-
-  /** Go to a collection page or an image: update the hash and show it at once. */
+  /** Go to a collection page or an image: update the address and show it at once. */
   function go(where, replace) {
-    const target = formatHash(where);
-    if (target !== location.hash) {
-      ownHash = target;
-      if (replace) location.replace(target); else location.hash = target;
-    }
+    setQuery(imageParams(where), replace);
     route();
   }
 
   function route() {
-    const h = parseHash(location.hash);
+    const h = parseImageQuery(location.search);
     if (!h) { selectCollection(null, 1); showTable(); return; }
     const cu = collectionOfObject(h.urn);
     const c = collections.find(x => x.urn === cu);
@@ -258,7 +251,7 @@
   $('collection').addEventListener('change', e => {
     tableScroll = 0;
     const urn = e.target.value;
-    if (urn) go({ urn, page: 1 }, false); else { location.hash = ''; }
+    if (urn) go({ urn, page: 1 }, false); else { setQuery({}, false); route(); }
   });
   $('page-size').addEventListener('change', e => {
     const first = coll ? (page - 1) * pageSize : 0;       // keep the first image on the page in view
@@ -293,11 +286,7 @@
     $('rights-toggle').setAttribute('aria-expanded', String(open));
   });
 
-  window.addEventListener('hashchange', () => {
-    if (ownHash === location.hash) { ownHash = null; return; }   // from go(): already shown
-    ownHash = null;
-    if (collections.length) route();                              // Back/Forward, a pasted link
-  });
+  window.addEventListener('popstate', () => { if (collections.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if ($('viewer-view').hidden || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Escape') backToGrid();

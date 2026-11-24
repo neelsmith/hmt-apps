@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- Query string (not `#`): `?urn=<CTS URN>`, e.g. `?urn=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`. The URN names the version, optionally an exemplar (`…msA.normalized`) and optionally a passage or range, which is then shown at once. A bad URN puts a message in the form; no `#` parameters.
+- `?text=<CTS URN>`, e.g. `?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10` (replaces the earlier `?urn=`). The URN names the version, optionally an exemplar (`…msA.normalized`) and optionally a passage or range, which is then shown at once. A bad URN puts a message in the form. Showing a passage writes its URN into the address (`?text=…`, exemplar included), so the address is a bookmark of what is on the screen. No `#`.
 
 ## Output
 

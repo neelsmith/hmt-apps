@@ -7,10 +7,10 @@ editorial.html  0.2.0
 all-scholia.html    0.3.0
 
 // text searching
-propernames.html    0.1.1
-stringsearch.html   0.1.1
-stringcounter.html   0.1.1
-lemmatizedsearch.html   0.1.1
+propernames.html    0.2.0
+stringsearch.html   0.2.0
+stringcounter.html   0.2.0
+lemmatizedsearch.html   0.2.0
 
 // images and pages
 images.html  0.2.0

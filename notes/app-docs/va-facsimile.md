@@ -7,8 +7,9 @@
 
 ## Parameters
 
-- `#page=<canvas id>` opens a page of the manifest (the app writes this itself as you move).
-- `#text=<CTS passage URN>` or `#image=<image URN>` (optionally with `@x,y,w,h`) opens the page with that passage or image; the same two as a query string (`?text=…`, `?image=…`) are read once when the page opens. A passage must be a single passage (not a range) with a DSE record on a Venetus A page; otherwise a notice says why.
+- `?page=<page URN>` opens a page, e.g. `?page=urn:cite2:hmt:msA.v1:12r` (a page of `urn:cite2:hmt:msA.v1:`; the object id is the canvas id of the manifest). The app writes this itself as you move, so the address is a bookmark.
+- `?text=<CTS passage URN>` or `?image=<image URN>` (optionally with `@x,y,w,h`) opens the page that has that passage or image, and the address then becomes `?page=…`. A passage must be a single passage (not a range) with a DSE record on a Venetus A page. If more than one of the three is given, `page` wins, then `image`, then `text`.
+- A URN that cannot be used puts a notice in the status line and shows the light table. No `#`; the earlier `#page=<canvas id>`, `#text=` and `#image=` are no longer read.
 
 ## Output
 

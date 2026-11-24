@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- Query string (not `#`): `?urn=<CTS URN>`, as for `iliad-scholia.html`. Any exemplar in the URN is ignored (the page always shows the diplomatic text).
+- `?text=<CTS URN>`, as for `iliad-scholia.html`; the address follows the passage shown (version URN plus passage). Any exemplar in a URN you give is ignored (the page always shows the diplomatic text). No `#`.
 
 ## Output
 

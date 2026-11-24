@@ -4,7 +4,7 @@
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Location hash: `#urn=<page URN>`, so links and the Back button work.
+// Address: `?page=<page URN>` (no `#`), so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -26,7 +26,6 @@
   let current = -1;            // index of the page in `book.pages`
   let openToken = 0;
   let lastTipKey = '';
-  let ownHash = null;
 
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
   const urlFor = (service, region, size) => matchProtocol(iiifImageUrl(service, region, size), proto);
@@ -93,18 +92,16 @@
     $('next').disabled = !book || current < 0 || current >= book.pages.length - 1;
   }
 
-  // --- navigation (location hash) ----------------------------------------------
+  // --- navigation (address of the page) ----------------------------------------------
 
-  /** Show a page (by URN), and put it in the location hash unless `fromHash`. */
+  /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
-    const hash = formatPageHash(urn);
-    ownHash = hash;
-    if (replace) location.replace(hash); else location.hash = hash;
+    setQuery({ page: urn }, replace);
     showPage(urn);
   }
 
   function route() {
-    const urn = parsePageHash(location.hash);
+    const urn = parsePageQuery(location.search);
     if (urn) showPage(urn); else clear();
   }
 
@@ -335,9 +332,9 @@
     chooseCodex(urn);
     current = -1;
     if (urn) { openToken++; if (viewer) viewer.close(); syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
-    else { location.hash = ''; }
+    else { setQuery({}, false); clear(); }
     $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
-    if (urn) { ownHash = null; history.replaceState(null, '', location.pathname + location.search); }
+    if (urn) setQuery({}, true);
   });
   $('page').addEventListener('change', e => {
     if (e.target.value !== '' && book) go(book.pages[Number(e.target.value)].urn, false);
@@ -350,11 +347,7 @@
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
 
-  window.addEventListener('hashchange', () => {
-    if (ownHash === location.hash) { ownHash = null; return; }
-    ownHash = null;
-    if (books.length) route();
-  });
+  window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if (current < 0 || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }

@@ -7,7 +7,7 @@
 
 ## Parameters
 
-- Query string (not `#`): `?urn=<CTS URN>`, exactly as for `iliad-scholia.html`.
+- `?text=<CTS URN>`, exactly as for `iliad-scholia.html` (the address follows the passage shown). No `#`.
 
 ## Output
 

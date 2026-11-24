@@ -9,6 +9,7 @@
 import { collectionOfObject } from './hmt-release.js';
 import { DSE_URN, parseImageRoi } from './dse.js';
 import { cellLabel } from './images.js';
+import { formatQuery, readParams } from './location.js';
 
 /** Data model of codices (collections of pages). */
 export const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
@@ -120,13 +121,13 @@ export function pageView(page, regions, catalogImages) {
 }
 
 /**
- * Location hash for a page, and its reading.
+ * Query string that opens a page (`?page=urn:cite2:hmt:msA.v1:12r`), and its reading.
  * @param {string} pageUrn
  */
-export const formatPageHash = pageUrn => `#urn=${encodeURIComponent(pageUrn)}`;
+export const formatPageQuery = pageUrn => formatQuery({ page: pageUrn });
 
-/** @param {string} hash @returns {string | null} */
-export function parsePageHash(hash) {
-  const urn = new URLSearchParams(hash.replace(/^#/, '')).get('urn');
-  return urn && /^urn:cite2:/.test(urn) ? urn : null;
+/** @param {string} search  e.g. `location.search` @returns {string | null} */
+export function parsePageQuery(search) {
+  const { page } = readParams(search, ['page']);
+  return page && /^urn:cite2:/.test(page) ? page : null;
 }

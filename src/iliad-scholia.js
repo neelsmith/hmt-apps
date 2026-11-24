@@ -46,7 +46,7 @@ export function shortVersionLabel(label) {
 }
 
 /**
- * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
+ * Interpret a CTS URN given to the app (`?text=…`) as a version of the Iliad,
  * optionally a text of it (exemplar), and optionally a passage or range.
  *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
  *   urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5           + a specific text

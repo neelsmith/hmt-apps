@@ -1,12 +1,13 @@
 // @ts-check
 /**
  * Logic for the images app: the image collections of a release, their items,
- * where the pictures are served, paging, and the location hash.
+ * where the pictures are served, paging, and the address of a page or image.
  * Pure functions; no DOM access.
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
 import { collectionOfObject, isCollectionUrn } from './hmt-release.js';
+import { formatQuery, readParams } from './location.js';
 
 /** Data model of image collections. */
 export const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
@@ -117,23 +118,30 @@ export function paginate(total, pageSize, page) {
 }
 
 /**
- * Location hash for a collection page or one image.
+ * Query string for a page of a collection or for one image: `?image=<collection URN>&n=3` (the third
+ * page of thumbnails) or `?image=<image URN>`.
  * @param {{urn: string, page?: number}} where
  */
-export function formatHash(where) {
-  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
-  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+export function formatImageQuery(where) {
+  return formatQuery(imageParams(where));
 }
 
 /**
- * Read a location hash written by `formatHash`.
- * @param {string} hash
- * @returns {{urn: string, page: number} | null}
+ * The parameters of that query string, for `setQuery`.
+ * @param {{urn: string, page?: number}} where
  */
-export function parseHash(hash) {
-  const params = new URLSearchParams(hash.replace(/^#/, ''));
-  const urn = params.get('urn');
-  if (!urn || !/^urn:cite2:/.test(urn)) return null;
-  const page = parseInt(params.get('page') ?? '', 10);
-  return { urn, page: page >= 1 ? page : 1 };
+export function imageParams(where) {
+  return { image: where.urn, n: where.page && where.page > 1 && isCollectionUrn(where.urn) ? where.page : null };
+}
+
+/**
+ * Read a query string written by `formatImageQuery`.
+ * @param {string} search
+ * @returns {{urn: string, page: number} | null}  Null if there is no `image` parameter with a CITE2 URN.
+ */
+export function parseImageQuery(search) {
+  const { image, n } = readParams(search, ['image', 'n']);
+  if (!image || !/^urn:cite2:/.test(image)) return null;
+  const page = parseInt(n ?? '', 10);
+  return { urn: image, page: page >= 1 ? page : 1 };
 }

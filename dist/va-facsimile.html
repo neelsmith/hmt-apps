@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.3.0">
+<meta name="app-version" content="0.4.0">
 <title>Venetus A facsimile</title>
 <style>
   :root {
@@ -99,7 +99,7 @@
 <header>
   <h1>Venetus A facsimile</h1>
   <span id="status" role="status">Loading the manifest…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -962,25 +962,75 @@ function dseKey(urn) {
   return ref ? version + ref : null;
 }
 
+</script>
+<script>
+// @ts-check
 /**
- * Optional parameters of the facsimile page, read from the hash
- * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
- * percent-decoded; the first string that has a parameter wins.
- * @param {...string} sources  e.g. `location.hash`, `location.search`
- * @returns {{page: string | null, text: string | null, image: string | null}}
+ * What the address of a page can say, shared by the apps that open at a text, a page or an image:
+ * optional query parameters (`?name=value`, never a `#` fragment), each a URN.
+ *
+ *   text   a CTS URN: a passage or range of a text (`urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`),
+ *          in the text apps also a version or one of its texts (`…msA.normalized:`).
+ *   page   a CITE2 URN of a page of a codex (`urn:cite2:hmt:msA.v1:12r`).
+ *   image  a CITE2 URN of an image (`urn:cite2:hmt:vaimg.2017a:VA012RN_0013`); the images app also
+ *          takes the URN of an image collection.
+ *
+ * The functions that read and format are pure.  `setQuery` changes the address of the page without
+ * reloading it, so a copy of the address is a bookmark; where the browser does not allow that (for
+ * some pages opened from a file) it does nothing and returns false.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
  */
-function parseFacsimileParams(...sources) {
-  /** @type {{page: string | null, text: string | null, image: string | null}} */
-  const out = { page: null, text: null, image: null };
-  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
-    for (const src of sources) {
-      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
-      if (!m) continue;
-      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
-      break;
-    }
+
+/** The names of the parameters that hold a URN. */
+const PARAM_NAMES = /** @type {const} */ (['text', 'page', 'image']);
+
+/**
+ * The values of the named parameters in a query string; null for one that is missing or empty.
+ * @template {string} K
+ * @param {string} search  e.g. `location.search`
+ * @param {readonly K[]} [names]
+ * @returns {Record<K, string | null>}
+ */
+function readParams(search, names = /** @type {readonly K[]} */ (/** @type {unknown} */ (PARAM_NAMES))) {
+  const q = new URLSearchParams((search ?? '').replace(/^\?/, ''));
+  /** @type {Record<string, string | null>} */
+  const out = {};
+  for (const name of names) out[name] = q.get(name)?.trim() || null;
+  return /** @type {Record<K, string | null>} */ (out);
+}
+
+/**
+ * Query string for the given parameters, in the order given, without the empty ones: `?page=urn:cite2:hmt:msA.v1:12r`,
+ * or the empty string when none is left.  URN punctuation (`:` `@` `,`) is left readable.
+ * @param {Record<string, string | number | null | undefined>} params
+ */
+function formatQuery(params) {
+  const parts = [];
+  for (const [name, value] of Object.entries(params)) {
+    if (value === null || value === undefined || value === '') continue;
+    const v = encodeURIComponent(String(value)).replace(/%3A/gi, ':').replace(/%40/g, '@').replace(/%2C/g, ',');
+    parts.push(`${name}=${v}`);
   }
-  return out;
+  return parts.length ? `?${parts.join('&')}` : '';
+}
+
+/**
+ * Put these parameters in the address of the page (and nothing else: no `#`), as a new entry of the
+ * history or, with `replace`, in place of the current one.
+ * @param {Record<string, string | number | null | undefined>} params
+ * @param {boolean} [replace]
+ * @returns {boolean}  False if the browser would not change the address.
+ */
+function setQuery(params, replace = false) {
+  const url = location.pathname + formatQuery(params);
+  if (url === location.pathname + location.search && !location.hash) return true;
+  try {
+    if (replace) history.replaceState(null, '', url); else history.pushState(null, '', url);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 </script>
@@ -1426,6 +1476,7 @@ class IiifViewer {
 // pannable, zoomable viewer with the indexed text regions drawn over the image.
 // Uses the shared sources inlined ahead of this file (see index.html).
 (function () {
+  const VA_PAGES = 'urn:cite2:hmt:msA.v1:';   // the pages of the Venetus A; a page's object id is its canvas id in the manifest
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
   const THUMB_W = 240;
@@ -1480,8 +1531,7 @@ class IiifViewer {
     buildGrid();
     $('table-view').hidden = current >= 0;
     updateStatus();
-    showFromHash();
-    tryPending();
+    showFromLocation();
   }
 
   function onRelease(rel) {
@@ -1592,11 +1642,27 @@ class IiifViewer {
     $('empty').hidden = shown > 0 || !canvases.length;
   }
 
-  // --- navigation (location hash) -----------------------------------------
+  // --- navigation (address of the page) -----------------------------------
+  //
+  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
+  // `?text=<CTS passage URN>` open the page that has that image or passage (the app then shows it as
+  // `?page=…`).  There is no `#`.
 
-  function hashPage() {
-    const m = /(?:^#|&)page=([^&]+)/.exec(location.hash);
-    return m ? decodeURIComponent(m[1]) : null;
+  const pageUrn = c => VA_PAGES + c.id;
+
+  /** Open the page named by a `page` parameter, or say why not and show the light table. */
+  function openPage(value) {
+    const urn = value.split('@')[0].trim();
+    let idx = -1, problem = '';
+    if (!urn.startsWith(VA_PAGES)) problem = `“${value}” is not a page of the Venetus A (${VA_PAGES}…).`;
+    else {
+      idx = canvases.findIndex(c => pageUrn(c) === urn);
+      if (idx < 0) problem = `${urn} is not a page of the Venetus A manifest.`;
+    }
+    notice = problem;
+    if (idx >= 0) showViewer(idx);
+    else { setQuery({}, true); showTable(); }
+    updateStatus();
   }
 
   /** Turn a `text` or `image` parameter into a page, once the data it needs has loaded. */
@@ -1629,23 +1695,25 @@ class IiifViewer {
     notice = problem;
     if (idx >= 0) { goTo(idx, true); }
     else {
-      history.replaceState(null, '', location.pathname + location.search);
+      setQuery({}, true);
       showTable();
     }
     updateStatus();
   }
 
-  function showFromHash() {
-    const p = parseFacsimileParams(location.hash);
-    if (p.page === null && (p.image || p.text)) {            // #image=… or #text=…
-      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: p.text };
-      notice = '';
+  /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
+  function showFromLocation() {
+    const p = readParams(location.search);
+    pending = null;
+    notice = '';
+    if (p.page) { openPage(p.page); return; }
+    if (p.image || p.text) {
+      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: /** @type {string} */ (p.text) };
       tryPending();
       return;
     }
-    const id = hashPage();
-    const idx = id === null ? -1 : canvases.findIndex(c => c.id === id);
-    if (idx < 0) showTable(); else showViewer(idx);
+    showTable();
+    updateStatus();
   }
 
   function showTable() {
@@ -1658,9 +1726,16 @@ class IiifViewer {
     document.title = 'Venetus A facsimile';
   }
 
+  /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
-    const target = '#page=' + encodeURIComponent(canvases[idx].id);
-    if (replace) location.replace(target); else location.hash = target;
+    setQuery({ page: pageUrn(canvases[idx]) }, replace);
+    showViewer(idx);
+  }
+
+  /** Back to the light table. */
+  function toTable() {
+    setQuery({}, false);
+    showTable();
   }
 
   // --- viewer ---------------------------------------------------------------
@@ -1826,7 +1901,7 @@ class IiifViewer {
   $('only-indexed').addEventListener('change', applyFilter);
   $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
 
-  $('back').addEventListener('click', () => { location.hash = ''; });
+  $('back').addEventListener('click', toTable);
   $('prev').addEventListener('click', () => { if (current > 0) goTo(current - 1, true); });
   $('next').addEventListener('click', () => { if (current < canvases.length - 1) goTo(current + 1, true); });
   $('zoom-in').addEventListener('click', () => viewer && viewer.zoomBy(1.5));
@@ -1835,10 +1910,10 @@ class IiifViewer {
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
   for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
-  window.addEventListener('hashchange', showFromHash);
+  window.addEventListener('popstate', showFromLocation);   // Back, Forward
   document.addEventListener('keydown', e => {
     if ($('viewer-view').hidden || e.target.closest('input[type=text], input[type=search]') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Escape') { location.hash = ''; }
+    if (e.key === 'Escape') toTable();
     else if ((e.key === '[' || e.key === 'PageUp') && current > 0) { e.preventDefault(); goTo(current - 1, true); }
     else if ((e.key === ']' || e.key === 'PageDown') && current < canvases.length - 1) { e.preventDefault(); goTo(current + 1, true); }
   });
@@ -1851,12 +1926,6 @@ class IiifViewer {
     if (e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]);
   });
 
-  {                                                  // ?image=… or ?text=…, used once when the page opens
-    const h = parseFacsimileParams(location.hash), q = parseFacsimileParams(location.search);
-    if (h.page === null && !h.image && !h.text && (q.image || q.text)) {
-      pending = q.image ? { kind: 'image', value: q.image } : { kind: 'text', value: q.text };
-    }
-  }
   loadManifest();
   loadRelease();
 })();

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex, textsOfVersion, passageText } from '../src/text-index.js';
 import { imageUrnFromService, parseManifest, iiifImageUrl, matchProtocol } from '../src/iiif.js';
-import { parseRoi, parseImageRoi, indexDse, passageKind, passageLabel, catalogTitles, dseKey, parseFacsimileParams, DSE_URN } from '../src/dse.js';
+import { parseRoi, parseImageRoi, indexDse, passageKind, passageLabel, catalogTitles, dseKey, DSE_URN } from '../src/dse.js';
 import {
   fitTransform, clampTransform, zoomAt, maxLevel, chooseLevel, visibleTiles, roiToRect, imageToScreen, MAX_SCALE,
 } from '../src/pan-zoom.js';
@@ -274,17 +274,4 @@ test('indexDse also indexes passages to images', () => {
   assert.deepEqual(dse.byPassage.get(dseKey('urn:cts:greekLit:tlg5026.msAint.hmt:1.28.comment')), ['urn:cite2:hmt:vaimg.2017a:VA012VN_0013']);
   assert.equal(dse.byPassage.get('urn:cts:greekLit:tlg0012.tlg001.msA:9.9'), undefined);
   assert.equal(indexDse(parseRelease('#!cexversion\n3.0.0\n')).byPassage.size, 0);
-});
-
-test('parseFacsimileParams reads hash and query', () => {
-  const u = 'urn:cts:greekLit:tlg0012.tlg001.msA:1.1';
-  assert.deepEqual(parseFacsimileParams(''), { page: null, text: null, image: null });
-  assert.deepEqual(parseFacsimileParams('#page=12r'), { page: '12r', text: null, image: null });
-  assert.equal(parseFacsimileParams('#text=' + u).text, u);
-  assert.equal(parseFacsimileParams('#text=' + encodeURIComponent(u)).text, u);
-  assert.equal(parseFacsimileParams('?image=urn:cite2:hmt:vaimg.2017a:VA012RN_0013').image, 'urn:cite2:hmt:vaimg.2017a:VA012RN_0013');
-  assert.equal(parseFacsimileParams('#x=1&text=' + u + '&image=i').image, 'i');
-  assert.equal(parseFacsimileParams('', '?text=' + u).text, u);                    // falls back to the query
-  assert.equal(parseFacsimileParams('#text=a', '?text=b').text, 'a');             // hash first
-  assert.equal(parseFacsimileParams('#xtext=a').text, null);
 });

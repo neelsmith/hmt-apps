@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.1.1">
+<meta name="app-version" content="0.2.0">
 <title>Images</title>
 <style>
   :root {
@@ -87,7 +87,7 @@
 <header>
   <h1>Images</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -695,11 +695,12 @@ function matchProtocol(url, pageProtocol) {
 // @ts-check
 /**
  * Logic for the images app: the image collections of a release, their items,
- * where the pictures are served, paging, and the location hash.
+ * where the pictures are served, paging, and the address of a page or image.
  * Pure functions; no DOM access.
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
+
 
 /** Data model of image collections. */
 const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
@@ -810,25 +811,103 @@ function paginate(total, pageSize, page) {
 }
 
 /**
- * Location hash for a collection page or one image.
+ * Query string for a page of a collection or for one image: `?image=<collection URN>&n=3` (the third
+ * page of thumbnails) or `?image=<image URN>`.
  * @param {{urn: string, page?: number}} where
  */
-function formatHash(where) {
-  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
-  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+function formatImageQuery(where) {
+  return formatQuery(imageParams(where));
 }
 
 /**
- * Read a location hash written by `formatHash`.
- * @param {string} hash
- * @returns {{urn: string, page: number} | null}
+ * The parameters of that query string, for `setQuery`.
+ * @param {{urn: string, page?: number}} where
  */
-function parseHash(hash) {
-  const params = new URLSearchParams(hash.replace(/^#/, ''));
-  const urn = params.get('urn');
-  if (!urn || !/^urn:cite2:/.test(urn)) return null;
-  const page = parseInt(params.get('page') ?? '', 10);
-  return { urn, page: page >= 1 ? page : 1 };
+function imageParams(where) {
+  return { image: where.urn, n: where.page && where.page > 1 && isCollectionUrn(where.urn) ? where.page : null };
+}
+
+/**
+ * Read a query string written by `formatImageQuery`.
+ * @param {string} search
+ * @returns {{urn: string, page: number} | null}  Null if there is no `image` parameter with a CITE2 URN.
+ */
+function parseImageQuery(search) {
+  const { image, n } = readParams(search, ['image', 'n']);
+  if (!image || !/^urn:cite2:/.test(image)) return null;
+  const page = parseInt(n ?? '', 10);
+  return { urn: image, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * What the address of a page can say, shared by the apps that open at a text, a page or an image:
+ * optional query parameters (`?name=value`, never a `#` fragment), each a URN.
+ *
+ *   text   a CTS URN: a passage or range of a text (`urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`),
+ *          in the text apps also a version or one of its texts (`…msA.normalized:`).
+ *   page   a CITE2 URN of a page of a codex (`urn:cite2:hmt:msA.v1:12r`).
+ *   image  a CITE2 URN of an image (`urn:cite2:hmt:vaimg.2017a:VA012RN_0013`); the images app also
+ *          takes the URN of an image collection.
+ *
+ * The functions that read and format are pure.  `setQuery` changes the address of the page without
+ * reloading it, so a copy of the address is a bookmark; where the browser does not allow that (for
+ * some pages opened from a file) it does nothing and returns false.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** The names of the parameters that hold a URN. */
+const PARAM_NAMES = /** @type {const} */ (['text', 'page', 'image']);
+
+/**
+ * The values of the named parameters in a query string; null for one that is missing or empty.
+ * @template {string} K
+ * @param {string} search  e.g. `location.search`
+ * @param {readonly K[]} [names]
+ * @returns {Record<K, string | null>}
+ */
+function readParams(search, names = /** @type {readonly K[]} */ (/** @type {unknown} */ (PARAM_NAMES))) {
+  const q = new URLSearchParams((search ?? '').replace(/^\?/, ''));
+  /** @type {Record<string, string | null>} */
+  const out = {};
+  for (const name of names) out[name] = q.get(name)?.trim() || null;
+  return /** @type {Record<K, string | null>} */ (out);
+}
+
+/**
+ * Query string for the given parameters, in the order given, without the empty ones: `?page=urn:cite2:hmt:msA.v1:12r`,
+ * or the empty string when none is left.  URN punctuation (`:` `@` `,`) is left readable.
+ * @param {Record<string, string | number | null | undefined>} params
+ */
+function formatQuery(params) {
+  const parts = [];
+  for (const [name, value] of Object.entries(params)) {
+    if (value === null || value === undefined || value === '') continue;
+    const v = encodeURIComponent(String(value)).replace(/%3A/gi, ':').replace(/%40/g, '@').replace(/%2C/g, ',');
+    parts.push(`${name}=${v}`);
+  }
+  return parts.length ? `?${parts.join('&')}` : '';
+}
+
+/**
+ * Put these parameters in the address of the page (and nothing else: no `#`), as a new entry of the
+ * history or, with `replace`, in place of the current one.
+ * @param {Record<string, string | number | null | undefined>} params
+ * @param {boolean} [replace]
+ * @returns {boolean}  False if the browser would not change the address.
+ */
+function setQuery(params, replace = false) {
+  const url = location.pathname + formatQuery(params);
+  if (url === location.pathname + location.search && !location.hash) return true;
+  try {
+    if (replace) history.replaceState(null, '', url); else history.pushState(null, '', url);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 </script>
@@ -1275,8 +1354,8 @@ class IiifViewer {
 // pannable, zoomable viewer.  Uses the shared sources inlined ahead of this
 // file (see index.html).
 //
-// Location hash: `#urn=<collection URN>[&page=N]` is a page of a collection,
-// `#urn=<image URN>` an image; so links and the Back button work.
+// Address (no `#`): `?image=<collection URN>[&n=N]` is page N of the thumbnails of a collection,
+// `?image=<image URN>` an image; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -1336,23 +1415,16 @@ class IiifViewer {
     catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
   }
 
-  // --- navigation (location hash) --------------------------------------------
+  // --- navigation (address of the page) --------------------------------------------
 
-  /** The hash this app has just set itself (and already shown), so its hashchange event can be skipped. */
-  let ownHash = null;
-
-  /** Go to a collection page or an image: update the hash and show it at once. */
+  /** Go to a collection page or an image: update the address and show it at once. */
   function go(where, replace) {
-    const target = formatHash(where);
-    if (target !== location.hash) {
-      ownHash = target;
-      if (replace) location.replace(target); else location.hash = target;
-    }
+    setQuery(imageParams(where), replace);
     route();
   }
 
   function route() {
-    const h = parseHash(location.hash);
+    const h = parseImageQuery(location.search);
     if (!h) { selectCollection(null, 1); showTable(); return; }
     const cu = collectionOfObject(h.urn);
     const c = collections.find(x => x.urn === cu);
@@ -1530,7 +1602,7 @@ class IiifViewer {
   $('collection').addEventListener('change', e => {
     tableScroll = 0;
     const urn = e.target.value;
-    if (urn) go({ urn, page: 1 }, false); else { location.hash = ''; }
+    if (urn) go({ urn, page: 1 }, false); else { setQuery({}, false); route(); }
   });
   $('page-size').addEventListener('change', e => {
     const first = coll ? (page - 1) * pageSize : 0;       // keep the first image on the page in view
@@ -1565,11 +1637,7 @@ class IiifViewer {
     $('rights-toggle').setAttribute('aria-expanded', String(open));
   });
 
-  window.addEventListener('hashchange', () => {
-    if (ownHash === location.hash) { ownHash = null; return; }   // from go(): already shown
-    ownHash = null;
-    if (collections.length) route();                              // Back/Forward, a pasted link
-  });
+  window.addEventListener('popstate', () => { if (collections.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if ($('viewer-view').hidden || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Escape') backToGrid();

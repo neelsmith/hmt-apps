@@ -64,14 +64,13 @@
   }
 
   /**
-   * Open at the version and passage given in the page address, as in
-   * `iliad-scholia.html?urn=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
+   * Open at the version and passage given in the address of the page (`text`, no `#`), as in
+   * `iliad-scholia.html?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`.
    * The URN names the version, optionally a text of it (`…msA.normalized`),
    * and optionally the passage or range, which is then shown at once.
    */
   function applyUrnParam() {
-    let param = null;
-    try { param = new URLSearchParams(location.search).get('urn'); } catch (e) { /* no usable address */ }
+    const param = readParams(location.search, ['text']).text;
     if (param === null) return;
     const r = parseUrnParam(versions, param);
     if ('error' in r) { $('error').textContent = r.error; return; }
@@ -183,6 +182,7 @@
     const pagesNote = renderPages(box, shown, cur);
     if (pagesNote) { notes.push(pagesNote); $('notes').textContent = notes.join(' '); $('notes').hidden = false; }
     $('results').hidden = false;
+    setQuery({ text: (WOVEN ? cur.version.urn : cur.text.urn) + input.trim() }, true);   // the address is now a bookmark of this passage
     const firstCur = box.querySelector('#page .cur');
     if (firstCur) {
       const r = firstCur.getBoundingClientRect();

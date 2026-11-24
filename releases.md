@@ -91,6 +91,8 @@ Current version:  **0.11.0**
 
 ### `stringsearch.html`
 
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
+
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.
@@ -98,11 +100,15 @@ Current version:  **0.11.0**
 
 ### `stringcounter.html`
 
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
+
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
 
 ### `lemmatizedsearch.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
@@ -110,6 +116,8 @@ Current version:  **0.11.0**
 
 
 ### `propernames.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 

@@ -9,7 +9,7 @@
 
 ## Parameters
 
-- `#urn=<page URN>`, e.g. `#urn=urn:cite2:hmt:msA.v1:12r`. The hash follows the page shown, so links and the Back button work. No query-string parameters.
+- `?page=<page URN>`, e.g. `?page=urn:cite2:hmt:msA.v1:12r` (replaces the earlier `#urn=`). The address follows the page shown, so bookmarks, links and the Back and Forward buttons work. No `#`. Where a browser will not let a page opened from a file change its own address, the address stays as it was and only the on-screen buttons navigate.
 
 ## Output
 
