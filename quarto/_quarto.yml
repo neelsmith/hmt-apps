@@ -2,7 +2,7 @@ project:
   type: website
   output-dir: quarto_build
 
-version: "0.10.0"
+version: "0.11.0"
 metadata:
   date: today
   
@@ -51,13 +51,15 @@ website:
           - "---"
           - docs/iliad-scholia/index.qmd
           - docs/all-scholia/index.qmd
+          - docs/editorial/index.qmd          
+          - "---"
           - docs/stringsearch/index.qmd
           - docs/stringcounter/index.qmd
           - docs/lemmatizedsearch/index.qmd
           - docs/propernames/index.qmd
-          - docs/editorial/index.qmd
           - "---"
           - docs/codices/index.qmd
           - docs/images/index.qmd
           - "---"
+          - docs/coverage/index.qmd          
           - docs/dse-check/index.qmd

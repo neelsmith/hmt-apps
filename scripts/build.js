@@ -35,14 +35,15 @@ export function toClassicScript(source, label = 'source') {
 
 /**
  * Parse version.txt: one app per line, the page name (`editorial.html`)
- * and its version, separated by whitespace.  Blank lines are ignored.
+ * and its version, separated by whitespace.  Blank lines and comment lines
+ * (beginning with `//`) are ignored.
  * @param {string} text
  * @returns {Map<string, string>}
  */
 export function parseVersions(text) {
   const versions = new Map();
   for (const line of text.split(/\r?\n/)) {
-    if (!line.trim()) continue;
+    if (!line.trim() || line.trim().startsWith('//')) continue;
     const [name, version, ...extra] = line.trim().split(/\s+/);
     if (!version || extra.length) throw new Error(`version.txt: expected "<name>.html <version>", got "${line.trim()}"`);
     versions.set(name, version);

@@ -17,6 +17,7 @@ import { textsOfVersion, passageText } from './text-index.js';
 import { passageLabel, catalogTitles } from './dse.js';
 import { iliadVersions, commentaryPairs, commentarySpansAllVersions } from './iliad-scholia.js';
 import { passageKey, sectionOf, attachScholia } from './propernames.js';
+import { codices, pageNeighbours } from './codices.js';
 
 /** Version URN of a passage key (version URN + reference). @param {string} pk */
 export const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
@@ -90,6 +91,8 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {string} hitLabel                         Said in the badges: "with “Achilles”".
  * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
  * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
+ * @property {boolean} [skipEmpty]                     Previous/Next go to the nearest page with indexed passages (default: the page next door).
+ * @property {(surface: string) => void} [onNavigate]  Called with the page Previous/Next chose; the app shows it.  Default: the view shows it in place.
  */
 
 /**
@@ -103,6 +106,18 @@ export function createPageView(data) {
   /** @type {any} */ let iVers = null;
   /** @type {Map<string, string[]> | null} */ let targets = null;
   /** @type {Map<string, string> | null} */ let titles = null;
+
+  /** @type {Map<string, {prev: string | null, next: string | null}> | null} */ let neighbours = null;
+  /**
+   * The page one step from `surface` (`-1` before, `1` after), or with `skipEmpty` the nearest one that has passages.
+   * @param {string} surface @param {number} dir @param {boolean} skipEmpty @returns {string | null}
+   */
+  function stepFrom(surface, dir, skipEmpty) {
+    if (!neighbours) neighbours = pageNeighbours(codices(release));
+    let s = neighbours.get(surface)?.[dir < 0 ? 'prev' : 'next'] ?? null;
+    while (s && skipEmpty && !(passagesOn.get(s)?.length)) s = neighbours.get(s)?.[dir < 0 ? 'prev' : 'next'] ?? null;
+    return s;
+  }
 
   const titlesOf = () => titles ?? (titles = catalogTitles(release));
   const commentary = () => pairs ?? (pairs = commentaryPairs(release));
@@ -187,6 +202,26 @@ export function createPageView(data) {
     }
     box.appendChild(sub);
 
+    // Previous and next page of the codex
+    const nav = pvEl('p', 'pagenav');
+    for (const [dir, text] of /** @type {[number, string][]} */ ([[-1, '‹ Previous page'], [1, 'Next page ›']])) {
+      const target = stepFrom(surface, dir, !!o.skipEmpty);
+      const b = pvEl('button', 'btn', text);
+      b.type = 'button';
+      b.disabled = !target;
+      if (target) {
+        b.title = pageLabels.get(target) ?? target;
+        b.addEventListener('click', () => {
+          if (o.onNavigate) { o.onNavigate(target); return; }
+          box.textContent = '';
+          renderPage(box, target, current, [target], o);
+          if (!box.querySelector('.cur') || o.scroll === false) box.scrollIntoView({ block: 'start' });
+        });
+      }
+      nav.appendChild(b);
+    }
+    sub.after(nav);
+
     const keys = (passagesOn.get(surface) ?? []).slice();
     /** @type {Record<string, string[]>} */
     const secs = { iliad: [], scholia: [], other: [] };
@@ -254,7 +289,7 @@ export function createPageView(data) {
       });
       const top = pvEl('p', 'sub', `${pvPlural(secs.scholia.length, 'scholion', 'scholia')} on this page` + (nHas ? `, ${nHas} with ${o.hitLabel}. ` : '. '));
       top.appendChild(fold);
-      sub.after(top);
+      sub.after(top);   // before the page buttons
     }
 
     if (secs.other.length) {

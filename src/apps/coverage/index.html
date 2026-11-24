@@ -79,6 +79,14 @@
     <details><summary>Data table</summary><div class="tablewrap" id="t-lines"></div></details>
   </section>
 
+  <section class="chart" id="c-sch">
+    <h2>Edited scholia, by book</h2>
+    <p class="desc" id="d-sch"></p>
+    <div class="legend" id="l-sch"></div>
+    <div class="plot" id="p-sch"></div>
+    <details><summary>Data table</summary><div class="tablewrap" id="t-sch"></div></details>
+  </section>
+
   <section class="chart" id="c-pages">
     <h2>Pages with DSE records, by manuscript</h2>
     <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
@@ -95,7 +103,7 @@
 
   <footer>
     A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
-    normalized exemplar; book titles are not counted. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
+    normalized exemplar; book titles are not counted. A scholion is a numbered scholion (<code>book.scholion</code>) with a lemma or comment in either exemplar; all groups of scholia of a manuscript (for the Venetus A: main, interior, exterior, interlinear, intermarginal and others) are added together. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
     record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
   </footer>
 </main>

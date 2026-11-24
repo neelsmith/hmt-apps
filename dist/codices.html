@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.1.1">
+<meta name="app-version" content="0.2.0">
 <title>Codices</title>
 <style>
   :root {
@@ -92,7 +92,7 @@
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.1.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -943,24 +943,16 @@ function dseKey(urn) {
 }
 
 /**
- * Optional parameters of the facsimile page, read from the hash
- * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
- * percent-decoded; the first string that has a parameter wins.
- * @param {...string} sources  e.g. `location.hash`, `location.search`
- * @returns {{page: string | null, text: string | null, image: string | null}}
+ * The DSE key (version URN + reference) of the passage a CTS URN names, or of the first of a range.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1-1.10` gives `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} textUrn
+ * @returns {string | null}  Null if the URN has no passage.
  */
-function parseFacsimileParams(...sources) {
-  /** @type {{page: string | null, text: string | null, image: string | null}} */
-  const out = { page: null, text: null, image: null };
-  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
-    for (const src of sources) {
-      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
-      if (!m) continue;
-      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
-      break;
-    }
-  }
-  return out;
+function firstPassageKey(textUrn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec((textUrn || '').trim());
+  if (!m) return null;
+  const first = m[2].split(/[-‐-―]/)[0].trim();
+  return first ? dseKey(m[1] + first) : null;
 }
 
 </script>
@@ -968,11 +960,12 @@ function parseFacsimileParams(...sources) {
 // @ts-check
 /**
  * Logic for the images app: the image collections of a release, their items,
- * where the pictures are served, paging, and the location hash.
+ * where the pictures are served, paging, and the address of a page or image.
  * Pure functions; no DOM access.
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
+
 
 /** Data model of image collections. */
 const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
@@ -1083,25 +1076,103 @@ function paginate(total, pageSize, page) {
 }
 
 /**
- * Location hash for a collection page or one image.
+ * Query string for a page of a collection or for one image: `?image=<collection URN>&n=3` (the third
+ * page of thumbnails) or `?image=<image URN>`.
  * @param {{urn: string, page?: number}} where
  */
-function formatHash(where) {
-  const page = where.page && where.page > 1 && isCollectionUrn(where.urn) ? `&page=${where.page}` : '';
-  return `#urn=${encodeURIComponent(where.urn)}${page}`;
+function formatImageQuery(where) {
+  return formatQuery(imageParams(where));
 }
 
 /**
- * Read a location hash written by `formatHash`.
- * @param {string} hash
- * @returns {{urn: string, page: number} | null}
+ * The parameters of that query string, for `setQuery`.
+ * @param {{urn: string, page?: number}} where
  */
-function parseHash(hash) {
-  const params = new URLSearchParams(hash.replace(/^#/, ''));
-  const urn = params.get('urn');
-  if (!urn || !/^urn:cite2:/.test(urn)) return null;
-  const page = parseInt(params.get('page') ?? '', 10);
-  return { urn, page: page >= 1 ? page : 1 };
+function imageParams(where) {
+  return { image: where.urn, n: where.page && where.page > 1 && isCollectionUrn(where.urn) ? where.page : null };
+}
+
+/**
+ * Read a query string written by `formatImageQuery`.
+ * @param {string} search
+ * @returns {{urn: string, page: number} | null}  Null if there is no `image` parameter with a CITE2 URN.
+ */
+function parseImageQuery(search) {
+  const { image, n } = readParams(search, ['image', 'n']);
+  if (!image || !/^urn:cite2:/.test(image)) return null;
+  const page = parseInt(n ?? '', 10);
+  return { urn: image, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * What the address of a page can say, shared by the apps that open at a text, a page or an image:
+ * optional query parameters (`?name=value`, never a `#` fragment), each a URN.
+ *
+ *   text   a CTS URN: a passage or range of a text (`urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10`),
+ *          in the text apps also a version or one of its texts (`…msA.normalized:`).
+ *   page   a CITE2 URN of a page of a codex (`urn:cite2:hmt:msA.v1:12r`).
+ *   image  a CITE2 URN of an image (`urn:cite2:hmt:vaimg.2017a:VA012RN_0013`); the images app also
+ *          takes the URN of an image collection.
+ *
+ * The functions that read and format are pure.  `setQuery` changes the address of the page without
+ * reloading it, so a copy of the address is a bookmark; where the browser does not allow that (for
+ * some pages opened from a file) it does nothing and returns false.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** The names of the parameters that hold a URN. */
+const PARAM_NAMES = /** @type {const} */ (['text', 'page', 'image']);
+
+/**
+ * The values of the named parameters in a query string; null for one that is missing or empty.
+ * @template {string} K
+ * @param {string} search  e.g. `location.search`
+ * @param {readonly K[]} [names]
+ * @returns {Record<K, string | null>}
+ */
+function readParams(search, names = /** @type {readonly K[]} */ (/** @type {unknown} */ (PARAM_NAMES))) {
+  const q = new URLSearchParams((search ?? '').replace(/^\?/, ''));
+  /** @type {Record<string, string | null>} */
+  const out = {};
+  for (const name of names) out[name] = q.get(name)?.trim() || null;
+  return /** @type {Record<K, string | null>} */ (out);
+}
+
+/**
+ * Query string for the given parameters, in the order given, without the empty ones: `?page=urn:cite2:hmt:msA.v1:12r`,
+ * or the empty string when none is left.  URN punctuation (`:` `@` `,`) is left readable.
+ * @param {Record<string, string | number | null | undefined>} params
+ */
+function formatQuery(params) {
+  const parts = [];
+  for (const [name, value] of Object.entries(params)) {
+    if (value === null || value === undefined || value === '') continue;
+    const v = encodeURIComponent(String(value)).replace(/%3A/gi, ':').replace(/%40/g, '@').replace(/%2C/g, ',');
+    parts.push(`${name}=${v}`);
+  }
+  return parts.length ? `?${parts.join('&')}` : '';
+}
+
+/**
+ * Put these parameters in the address of the page (and nothing else: no `#`), as a new entry of the
+ * history or, with `replace`, in place of the current one.
+ * @param {Record<string, string | number | null | undefined>} params
+ * @param {boolean} [replace]
+ * @returns {boolean}  False if the browser would not change the address.
+ */
+function setQuery(params, replace = false) {
+  const url = location.pathname + formatQuery(params);
+  if (url === location.pathname + location.search && !location.hash) return true;
+  try {
+    if (replace) history.replaceState(null, '', url); else history.pushState(null, '', url);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 </script>
@@ -1114,6 +1185,7 @@ function parseHash(hash) {
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
+
 
 
 
@@ -1227,15 +1299,139 @@ function pageView(page, regions, catalogImages) {
 }
 
 /**
- * Location hash for a page, and its reading.
+ * Query string that opens a page (`?page=urn:cite2:hmt:msA.v1:12r`), and its reading.
  * @param {string} pageUrn
  */
-const formatPageHash = pageUrn => `#urn=${encodeURIComponent(pageUrn)}`;
+const formatPageQuery = pageUrn => formatQuery({ page: pageUrn });
 
-/** @param {string} hash @returns {string | null} */
-function parsePageHash(hash) {
-  const urn = new URLSearchParams(hash.replace(/^#/, '')).get('urn');
-  return urn && /^urn:cite2:/.test(urn) ? urn : null;
+/** @param {string} search  e.g. `location.search` @returns {string | null} */
+function parsePageQuery(search) {
+  const { page } = readParams(search, ['page']);
+  return page && /^urn:cite2:/.test(page) ? page : null;
+}
+
+/**
+ * The page before and after each page, within its codex (in codex order).
+ * @param {Codex[]} list
+ * @returns {Map<string, {prev: string | null, next: string | null}>}
+ */
+function pageNeighbours(list) {
+  /** @type {Map<string, {prev: string | null, next: string | null}>} */
+  const out = new Map();
+  for (const c of list) {
+    c.pages.forEach((p, i) => out.set(p.urn, { prev: i > 0 ? c.pages[i - 1].urn : null, next: i + 1 < c.pages.length ? c.pages[i + 1].urn : null }));
+  }
+  return out;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Finding one kind of location from another through the DSE records and the catalogs of a release:
+ * the page of an image or of a passage, the image of a page or of a passage, and the passages on a page
+ * or image.  Used by the apps that open at a text (`text`), a page (`page`) or an image (`image`).
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/**
+ * @typedef {Object} Locator
+ * @property {(page: string) => boolean} isPage            Is it a page of a codex of the release?
+ * @property {(page: string) => string} imageOfPage        The image shown for a page ("" if none).
+ * @property {(image: string) => string[]} pagesOfImage    Pages (surfaces) with that image.
+ * @property {(text: string) => string[]} pagesOfPassage   Pages the DSE puts a passage (or the start of a range) on.
+ * @property {(text: string) => string[]} imagesOfPassage  Images the DSE puts it on.
+ * @property {(page: string) => string[]} passagesOnPage   Passages (DSE keys) on a page, in index order.
+ * @property {(image: string) => string[]} passagesOnImage Passages (DSE keys) on an image, in index order.
+ */
+
+/**
+ * Index a release for moving between texts, pages and images.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Locator}
+ */
+function createLocator(release) {
+  /** @param {Map<string, string[]>} m @param {string} k @param {string} v */
+  const add = (m, k, v) => { const l = m.get(k); if (!l) m.set(k, [v]); else if (!l.includes(v)) l.push(v); };
+  /** @type {Map<string, string[]>} */ const pagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const imagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnPage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnImage = new Map();
+  /** @type {Map<string, string[]>} */ const pagesOfImage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  for (const row of set?.rows ?? []) {
+    const key = dseKey(row.passage ?? '');
+    const surface = (row.surface ?? '').trim();
+    const image = parseImageRoi(row.imageroi ?? '')?.image ?? '';
+    if (!key) continue;
+    if (surface) { add(pagesOfPassage, key, surface); add(passagesOnPage, surface, key); }
+    if (image) { add(imagesOfPassage, key, image); add(passagesOnImage, image, key); }
+    if (surface && image) add(pagesOfImage, image, surface);
+  }
+
+  const cs = codices(release);
+  const { bySurface } = indexRegionsBySurface(release);
+  const catalogImages = new Set(imageCollections(release).flatMap(c => c.items.map(i => i.urn)));
+  /** @type {Map<string, string>} */ const imageOf = new Map();
+  for (const c of cs) {
+    for (const p of c.pages) {
+      const image = pageView(p, bySurface.get(p.urn) ?? [], catalogImages).image || p.image;
+      if (image) imageOf.set(p.urn, image);
+      for (const im of new Set([image, p.image])) if (im) add(pagesOfImage, im, p.urn);
+    }
+  }
+  const pages = new Set(cs.flatMap(c => c.pages.map(p => p.urn)));
+
+  return {
+    isPage: page => pages.has(page),
+    imageOfPage: page => imageOf.get(page) ?? '',
+    pagesOfImage: image => pagesOfImage.get(image) ?? [],
+    pagesOfPassage: text => { const k = firstPassageKey(text); return (k && pagesOfPassage.get(k)) || []; },
+    imagesOfPassage: text => { const k = firstPassageKey(text); return (k && imagesOfPassage.get(k)) || []; },
+    passagesOnPage: page => passagesOnPage.get(page) ?? [],
+    passagesOnImage: image => passagesOnImage.get(image) ?? [],
+  };
+}
+
+/** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
+
+/**
+ * The page to open for the parameters of an address: `page` first, then `image`, then `text`
+ * (the first of these that gives a page of the release wins).
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page };
+  const fromImage = p.image ? loc.pagesOfImage(p.image)[0] : '';
+  if (fromImage) return { page: fromImage };
+  const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
+  if (fromText) return { page: fromText };
+  const given = p.page || p.image || p.text;
+  if (!given) return null;
+  return { error: `No page of a codex in this release goes with ${given}.` };
+}
+
+/**
+ * The image to open for the parameters of an address: `image` first (as it is; the caller checks it), then `page`,
+ * then `text`.
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{image: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolveImage(loc, p) {
+  if (p.image) return { image: p.image };
+  const fromPage = p.page ? loc.imageOfPage(p.page) : '';
+  if (fromPage) return { image: fromPage };
+  const fromText = p.text ? loc.imagesOfPassage(p.text)[0] : '';
+  if (fromText) return { image: fromText };
+  const given = p.page || p.text;
+  return given ? { error: `No image in this release goes with ${given}.` } : null;
 }
 
 </script>
@@ -1683,7 +1879,8 @@ class IiifViewer {
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Location hash: `#urn=<page URN>`, so links and the Back button work.
+// Address: `?page=<page URN>`, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
+// the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -1696,6 +1893,7 @@ class IiifViewer {
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
   /** @type {any} */ let release = null;
+  /** @type {any} */ let locator = null;
   /** @type {Map<string, any>} */ let textIndex = new Map();
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, PageRegion[]>} */ let bySurface = new Map();
@@ -1705,7 +1903,6 @@ class IiifViewer {
   let current = -1;            // index of the page in `book.pages`
   let openToken = 0;
   let lastTipKey = '';
-  let ownHash = null;
 
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
   const urlFor = (service, region, size) => matchProtocol(iiifImageUrl(service, region, size), proto);
@@ -1721,6 +1918,7 @@ class IiifViewer {
     bySurface = indexRegionsBySurface(rel).bySurface;
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
+    locator = createLocator(rel);
     book = null; current = -1;
     const sel = $('codex');
     sel.textContent = '';
@@ -1772,19 +1970,20 @@ class IiifViewer {
     $('next').disabled = !book || current < 0 || current >= book.pages.length - 1;
   }
 
-  // --- navigation (location hash) ----------------------------------------------
+  // --- navigation (address of the page) ----------------------------------------------
 
-  /** Show a page (by URN), and put it in the location hash unless `fromHash`. */
+  /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
-    const hash = formatPageHash(urn);
-    ownHash = hash;
-    if (replace) location.replace(hash); else location.hash = hash;
+    setQuery({ page: urn }, replace);
     showPage(urn);
   }
 
   function route() {
-    const urn = parsePageHash(location.hash);
-    if (urn) showPage(urn); else clear();
+    const r = resolvePage(locator, readParams(location.search));
+    if (!r) { clear(); return; }
+    if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
+    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    showPage(r.page);
   }
 
   function clear() {
@@ -2014,9 +2213,9 @@ class IiifViewer {
     chooseCodex(urn);
     current = -1;
     if (urn) { openToken++; if (viewer) viewer.close(); syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
-    else { location.hash = ''; }
+    else { setQuery({}, false); clear(); }
     $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
-    if (urn) { ownHash = null; history.replaceState(null, '', location.pathname + location.search); }
+    if (urn) setQuery({}, true);
   });
   $('page').addEventListener('change', e => {
     if (e.target.value !== '' && book) go(book.pages[Number(e.target.value)].urn, false);
@@ -2029,11 +2228,7 @@ class IiifViewer {
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
 
-  window.addEventListener('hashchange', () => {
-    if (ownHash === location.hash) { ownHash = null; return; }
-    ownHash = null;
-    if (books.length) route();
-  });
+  window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if (current < 0 || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }

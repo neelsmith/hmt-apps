@@ -9,6 +9,7 @@
 import { collectionOfObject } from './hmt-release.js';
 import { DSE_URN, parseImageRoi } from './dse.js';
 import { cellLabel } from './images.js';
+import { formatQuery, readParams } from './location.js';
 
 /** Data model of codices (collections of pages). */
 export const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
@@ -120,13 +121,27 @@ export function pageView(page, regions, catalogImages) {
 }
 
 /**
- * Location hash for a page, and its reading.
+ * Query string that opens a page (`?page=urn:cite2:hmt:msA.v1:12r`), and its reading.
  * @param {string} pageUrn
  */
-export const formatPageHash = pageUrn => `#urn=${encodeURIComponent(pageUrn)}`;
+export const formatPageQuery = pageUrn => formatQuery({ page: pageUrn });
 
-/** @param {string} hash @returns {string | null} */
-export function parsePageHash(hash) {
-  const urn = new URLSearchParams(hash.replace(/^#/, '')).get('urn');
-  return urn && /^urn:cite2:/.test(urn) ? urn : null;
+/** @param {string} search  e.g. `location.search` @returns {string | null} */
+export function parsePageQuery(search) {
+  const { page } = readParams(search, ['page']);
+  return page && /^urn:cite2:/.test(page) ? page : null;
+}
+
+/**
+ * The page before and after each page, within its codex (in codex order).
+ * @param {Codex[]} list
+ * @returns {Map<string, {prev: string | null, next: string | null}>}
+ */
+export function pageNeighbours(list) {
+  /** @type {Map<string, {prev: string | null, next: string | null}>} */
+  const out = new Map();
+  for (const c of list) {
+    c.pages.forEach((p, i) => out.set(p.urn, { prev: i > 0 ? c.pages[i - 1].urn : null, next: i + 1 < c.pages.length ? c.pages[i + 1].urn : null }));
+  }
+  return out;
 }

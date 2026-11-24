@@ -46,7 +46,7 @@ export function shortVersionLabel(label) {
 }
 
 /**
- * Interpret a CTS URN given to the app (`?urn=…`) as a version of the Iliad,
+ * Interpret a CTS URN given to the app (`?text=…`) as a version of the Iliad,
  * optionally a text of it (exemplar), and optionally a passage or range.
  *   urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10                 version + range
  *   urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.5           + a specific text
@@ -305,4 +305,56 @@ export function scholionPassage(textIndex, scholionUrn, kind) {
   const { parts } = passageText(textIndex, scholionUrn, kind);
   const get = (/** @type {string} */ name) => parts.find(p => p.part === name)?.text ?? '';
   return { label: `${m[2].split('.')[1] ?? m[2]} ${m[3]}`, lemma: get('lemma'), comment: get('comment') };
+}
+
+/**
+ * The passage of the *Iliad* that a set of passages on a page points to, as a CTS URN to open in a text app:
+ * the Iliad lines among them (of the version with the most), from the first to the last in the order of the
+ * text; or, if there are no Iliad lines, the passages the scholia among them are indexed to.
+ * @param {string[]} keys  Passages as DSE keys (version URN + reference), e.g. from `createLocator`.
+ * @param {ReturnType<typeof iliadVersions>} versions
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {{scholion: string, target: string}[]} pairs  The commentary index (see `commentaryPairs`).
+ * @returns {{text: string} | {error: string}}  `text` is `<version URN><first>` or `<version URN><first>-<last>`.
+ */
+export function iliadRangeOf(keys, versions, textIndex, pairs) {
+  /** @param {string} version @returns {TextIndex | null} */
+  const textOf = version => {
+    const v = versions.find(x => x.urn === version);
+    return v && v.texts.length ? (textIndex.get(v.texts[0].urn) ?? null) : null;
+  };
+  /** @type {Map<string, {first: number, last: number, n: number}>} */
+  const found = new Map();
+  /** @param {string} version @param {number} start @param {number} end */
+  const note = (version, start, end) => {
+    const f = found.get(version);
+    if (!f) found.set(version, { first: start, last: end, n: 1 });
+    else { f.first = Math.min(f.first, start); f.last = Math.max(f.last, end); f.n++; }
+  };
+  for (const k of keys) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec(k);
+    if (!m || !ILIAD_VERSION.test(ctsVersionOf(m[1]))) continue;
+    const text = textOf(ctsVersionOf(m[1]));
+    const at = text?.pos.get(m[2]);
+    if (at !== undefined) note(ctsVersionOf(m[1]), at, at);
+  }
+  if (!found.size) {
+    const wanted = new Set(keys);
+    for (const p of pairs) {
+      const sm = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec(p.scholion);
+      if (!sm || !wanted.has(ctsVersionOf(sm[1]) + sm[2])) continue;
+      const tm = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(p.target);
+      if (!tm || !ILIAD_VERSION.test(ctsVersionOf(tm[1]))) continue;
+      const text = textOf(ctsVersionOf(tm[1]));
+      const r = text && resolveRange(text, tm[2], { allowBook: false });
+      if (r && !('error' in r)) { note(ctsVersionOf(tm[1]), r.start, r.end); }
+    }
+  }
+  let best = '';
+  for (const [v, f] of found) if (!best || f.n > (found.get(best)?.n ?? 0)) best = v;
+  if (!best) return { error: 'No passage of the Iliad can be found for this in the DSE records.' };
+  const text = /** @type {TextIndex} */ (textOf(best));
+  const f = /** @type {{first: number, last: number}} */ (found.get(best));
+  const a = text.refs[f.first], b = text.refs[f.last];
+  return { text: a === b ? best + a : `${best}${a}-${b}` };
 }

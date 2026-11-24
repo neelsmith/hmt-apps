@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex } from '../src/text-index.js';
 import { axisTicks, wrapLabel } from '../src/bar-chart.js';
-import { BOOKS, iliadLinesByBook, dsePagesByCodex } from '../src/coverage.js';
+import { BOOKS, iliadLinesByBook, dsePagesByCodex, scholiaByBook } from '../src/coverage.js';
 
 const CEX = `#!ctscatalog
 urn|citationScheme|groupName|workTitle|versionLabel|exemplarLabel|online|language
@@ -15,6 +15,8 @@ urn:cts:greekLit:tlg0012.tlg001.msB:|book/line|Homer|Iliad|Venetus B (Marciana 4
 urn:cts:greekLit:tlg0012.tlg001.msB.diplomatic:|book/line|Homer|Iliad|Venetus B (Marciana 453 = 821)|diplomatic|true|grc
 urn:cts:greekLit:tlg0012.tlg001.e4:|book/line|Homer|Iliad|Escorial, Ω 1.12||false|grc
 urn:cts:greekLit:tlg5026.msA.hmt:|x|Scholia|Scholia|Main scholia||true|grc
+urn:cts:greekLit:tlg5026.msAint.hmt:|x|Scholia|Scholia|Interior scholia||true|grc
+urn:cts:greekLit:tlg5026.zz.hmt:|x|Scholia|Scholia|Orphan scholia||true|grc
 #!ctsdata
 urn:cts:greekLit:tlg0012.tlg001.msA.diplomatic:1.title|ΙΛΙΑΔΟΣ α
 urn:cts:greekLit:tlg0012.tlg001.msA.diplomatic:1.1|μηνιν
@@ -27,6 +29,12 @@ urn:cts:greekLit:tlg0012.tlg001.msA.diplomatic:24.1|y
 urn:cts:greekLit:tlg0012.tlg001.msA.diplomatic:25.1|too far
 urn:cts:greekLit:tlg0012.tlg001.msB.diplomatic:9.1|z
 urn:cts:greekLit:tlg5026.msA.hmt:1.1.comment|scholion
+urn:cts:greekLit:tlg5026.msA.hmt:1.1.lemma|lemma
+urn:cts:greekLit:tlg5026.msAint.hmt.diplomatic:1.2.comment|c
+urn:cts:greekLit:tlg5026.msAint.hmt.normalized:2.1.lemma|l
+urn:cts:greekLit:tlg5026.msAint.hmt.diplomatic:2.2.comment|
+urn:cts:greekLit:tlg5026.msAint.hmt.diplomatic:30.1.comment|out of range
+urn:cts:greekLit:tlg5026.zz.hmt.diplomatic:1.1.comment|orphan
 #!datamodels
 Collection|Model|Label|Description
 urn:cite2:hmt:msA.v1:|urn:cite2:hmt:datamodels.v1:codexmodel|Codex|x
@@ -86,6 +94,17 @@ test('dsePagesByCodex: distinct pages, share of the codex, unlisted pages', () =
   assert.equal(dsePagesByCodex(parseRelease('#!cexversion\n3.0\n')).found, false);
 });
 
+test('scholiaByBook: all groups of a manuscript added together, by book', () => {
+  const rel = parseRelease(CEX);
+  const { manuscripts, unassigned } = scholiaByBook(rel, buildTextIndex(rel));
+  assert.equal(manuscripts.length, 1);
+  const a = manuscripts[0];
+  assert.equal(a.short, 'Venetus A');
+  assert.deepEqual([a.byBook[0], a.byBook[1], a.total], [2, 1, 3], '1.1 (comment and lemma are one scholion) and 1.2 in book 1; 2.1 in book 2');
+  assert.deepEqual(a.groups.map(g => g.count).sort(), [1, 2]);
+  assert.deepEqual(unassigned, ['Orphan scholia']);
+});
+
 test('axisTicks and wrapLabel', () => {
   assert.deepEqual(axisTicks(0), [0, 1]);
   assert.deepEqual(axisTicks(1), [0, 1]);
@@ -113,6 +132,10 @@ test('on the real release', { skip: !existsSync(REAL) }, () => {
   assert.ok(a.byBook[0] >= 600 && a.byBook[0] <= 625);
   for (const l of lines) assert.equal(l.total, l.byBook.reduce((x, y) => x + y, 0));
   assert.deepEqual(lines.filter(l => l.total > 0).map(l => l.short).sort(), ['Escorial, Upsilon 1.1', 'Venetus A', 'Venetus B']);
+  const sc = scholiaByBook(rel, ti).manuscripts;
+  assert.deepEqual(sc.map(m => m.short), ['Venetus A', 'Venetus B', 'Escorial, Upsilon 1.1']);
+  assert.equal(sc[0].groups.length, 6, 'six groups of Venetus A scholia');
+  assert.equal(sc[0].total, sc[0].groups.reduce((n, g) => n + g.count, 0));
   const p = dsePagesByCodex(rel);
   const va = p.codices.find(c => c.urn === 'urn:cite2:hmt:msA.v1:');
   assert.ok(va.pages > 600 && va.pages <= va.total + va.unlisted.length);

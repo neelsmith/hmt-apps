@@ -151,22 +151,14 @@ export function dseKey(urn) {
 }
 
 /**
- * Optional parameters of the facsimile page, read from the hash
- * (`#text=<CTS URN>`) or a query string (`?text=<CTS URN>`).  Values are
- * percent-decoded; the first string that has a parameter wins.
- * @param {...string} sources  e.g. `location.hash`, `location.search`
- * @returns {{page: string | null, text: string | null, image: string | null}}
+ * The DSE key (version URN + reference) of the passage a CTS URN names, or of the first of a range.
+ * `urn:cts:greekLit:tlg0012.tlg001.msA.normalized:1.1-1.10` gives `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} textUrn
+ * @returns {string | null}  Null if the URN has no passage.
  */
-export function parseFacsimileParams(...sources) {
-  /** @type {{page: string | null, text: string | null, image: string | null}} */
-  const out = { page: null, text: null, image: null };
-  for (const name of /** @type {const} */ (['page', 'text', 'image'])) {
-    for (const src of sources) {
-      const m = new RegExp(`(?:^[#?]|&)${name}=([^&]+)`).exec(src ?? '');
-      if (!m) continue;
-      try { out[name] = decodeURIComponent(m[1]).trim(); } catch { out[name] = m[1].trim(); }
-      break;
-    }
-  }
-  return out;
+export function firstPassageKey(textUrn) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.+)$/.exec((textUrn || '').trim());
+  if (!m) return null;
+  const first = m[2].split(/[-‐-―]/)[0].trim();
+  return first ? dseKey(m[1] + first) : null;
 }

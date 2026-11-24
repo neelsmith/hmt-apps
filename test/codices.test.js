@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import { imageCollections } from '../src/images.js';
-import { codices, indexRegionsBySurface, pageView, formatPageHash, parsePageHash } from '../src/codices.js';
+import { codices, indexRegionsBySurface, pageView, formatPageQuery, parsePageQuery } from '../src/codices.js';
 
 const IMG = 'urn:cite2:hmt:vaimg.2017a:';
 const CEX = `#!datamodels
@@ -89,11 +89,14 @@ test('pageView: no usable DSE image falls back to the catalog image, without reg
   assert.equal(pageView({ ...page, image: '' }, [], cat).source, 'none');
 });
 
-test('page hash round trip', () => {
+test('address of a page', () => {
   const urn = 'urn:cite2:hmt:msA.v1:12r';
-  assert.equal(parsePageHash(formatPageHash(urn)), urn);
-  assert.equal(parsePageHash(''), null);
-  assert.equal(parsePageHash('#urn=notaurn'), null);
+  assert.equal(formatPageQuery(urn), '?page=' + urn);
+  assert.equal(parsePageQuery(formatPageQuery(urn)), urn);
+  assert.equal(parsePageQuery(''), null);
+  assert.equal(parsePageQuery('?page=notaurn'), null);
+  assert.equal(parsePageQuery('?urn=' + urn), null, 'the old name is not read');
+  assert.equal(parsePageQuery('#page=' + urn), null, 'nor a # fragment');
 });
 
 const REAL = new URL('../scratch/hmt-current.cex', import.meta.url);
@@ -119,4 +122,18 @@ test('real release: seven codices; Venetus A and Escorial have regions', { skip:
   assert.equal(v91.image, 'urn:cite2:hmt:vaimg.2017a:VA091RN_0263');
   assert.equal(v91.elsewhere, 0);
   assert.ok(idx.skipped >= 1);
+});
+
+test('pageNeighbours: the page before and after, within each codex', async () => {
+  const { pageNeighbours } = await import('../src/codices.js');
+  const m = pageNeighbours([
+    { urn: 'c1:', label: 'One', pages: [{ urn: 'c1:a' }, { urn: 'c1:b' }, { urn: 'c1:c' }] },
+    { urn: 'c2:', label: 'Two', pages: [{ urn: 'c2:a' }] },
+    { urn: 'c3:', label: 'Three', pages: [] },
+  ]);
+  assert.deepEqual(m.get('c1:a'), { prev: null, next: 'c1:b' });
+  assert.deepEqual(m.get('c1:b'), { prev: 'c1:a', next: 'c1:c' });
+  assert.deepEqual(m.get('c1:c'), { prev: 'c1:b', next: null });
+  assert.deepEqual(m.get('c2:a'), { prev: null, next: null }, 'a codex does not run into the next');
+  assert.equal(m.get('nope'), undefined);
 });

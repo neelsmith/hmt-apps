@@ -2,7 +2,16 @@
 
 ## Repository version tag
 
-Current version:  **0.10.0**
+Current version:  **0.11.0**
+
+**0.11.0**, *Nov. 24, 2026*:
+
+- adds scholia summary to `coverage.html` app
+- adds new `commentary-check.html` app
+- adds uniform bookmarking with `text`, `image`, and `page` parameters to all text browsing apps
+- adds uniform previous/next navigation to all text displays
+- expands documentation for individual apps
+
 
 **0.10.0**, *Nov. 23, 2026*:  adds new `coverage.html` app.
 
@@ -36,17 +45,11 @@ Current version:  **0.10.0**
 **0.1.0**, *Nov. 17, 2026*: initial release. Shared code to parse a release of the HMT archive, and two initial apps, an *Iliad* + *scholia* reader, and a Venetus A facsimile reader.
 
 
-## `iliad-scholia.html`
+## Facsimile apps
 
+### `va-facsimile.html`
 
-**0.2.0**, *Nov. 23, 2026*: Adds standard menu. Changes text display to page orientation.
-
-**0.1.1**, *Nov. 18, 2026*: link to github pages, use app-specific version.
-
-**0.1.0**, *Nov. 17, 2026*: select passage of *Iliad* to read in a particular version. Optionally view scholia on the passage.
-
-
-## `va-facsimile.html`
+**0.4.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.3.0**, *Nov. 23, 2026*: adds options to open from reference to a page, an image or a text passage. Adds standard menu to top of page.
 
@@ -58,30 +61,64 @@ Current version:  **0.10.0**
 **0.1.0**, *Nov. 17, 2026*: from a lightbox view of Venetus A images, choose individual page to view, see text on hovering over highlighted area.
 
 
+## Text browsing apps
 
+### `iliad-scholia.html`
 
-## `images.html`
+**0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
-**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+**0.2.0**, *Nov. 23, 2026*: Adds standard menu. Changes text display to page orientation.
 
-**0.1.0**, *Nov. 19, 2026*: browse all image collections.
+**0.1.1**, *Nov. 18, 2026*: link to github pages, use app-specific version.
 
+**0.1.0**, *Nov. 17, 2026*: select passage of *Iliad* to read in a particular version. Optionally view scholia on the passage.
 
-## `all-scholia.html`
+### `all-scholia.html`
+
+**0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.2.0**, *Nov. 23, 2026*: Adds standard menu to top of page. Changes to page-oriented text display.
 
 **0.1.0**, *Nov. 19, 2026*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
 
+### `editorial.html`
 
-## `codices.html`
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
+**0.1.0**, *Nov. 18, 2026*: Browse *Iliad* and *scholia* texts, see diplomatic transcription with interleaved normalized text.
+
+## Text searching apps
+
+
+### `stringsearch.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
-**0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
+**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.
 
 
-## `propernames.html`
+### `stringcounter.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
+**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
+
+### `lemmatizedsearch.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
+**0.1.0**, *Nov. 23, 2026*: search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).
+
+
+### `propernames.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
@@ -89,26 +126,49 @@ Current version:  **0.10.0**
 
 
 
-## `stringsearch.html`
+## Apps starting from physical artifacts and images
+
+### `images.html`
+
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
-**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text.
+**0.1.0**, *Nov. 19, 2026*: browse all image collections.
 
 
-## `stringcounter.html`
 
-**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+### `codices.html`
 
-**0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
-
-## `lemmatizedsearch.html`
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
 
-**0.1.0**, *Nov. 23, 2026*: search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).
+**0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
 
 
-## `coverage.html`
+
+
+
+## Editorial status
+
+### `coverage.html`
+
+**0.2.0**, *Nov. 24, 2026*: summarize coverage of editing of *scholia* in different MSS of the HMT project.
 
 **0.1.0**, *Nov. 23, 2026*: summarize coverage of editing of *Iliad* in different MSS of the HMT project.
+
+
+
+### `commentary-check.html`
+
+**0.1.0**, *Nov. 24, 2026*: Review consistency of scholia-Iliad indexing.
+
+
+
+### `dse-check.html`
+
+**0.1.1**,  *Nov. 24, 2026*: Adds standard menu to top of page.
+
+
+**0.1.0**, *Nov. 19, 2026*: Review consistency of DSE indexing.

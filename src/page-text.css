@@ -2,6 +2,9 @@
    Rules are keyed to `#page` (or to classes only page-view.js creates) so they can sit beside an app's own styles.
    Needs `.btn`, and the variables --bg --fg --muted --line --panel --accent --cur from the app. */
   #page h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  #page .pagenav { display: flex; gap: .5rem; margin: 0 0 .75rem; }
+  #page .pagenav .btn { font-size: .8125rem; padding: .1rem .6rem; }
+  #page .pagenav .btn:disabled { opacity: .45; cursor: default; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
   #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }

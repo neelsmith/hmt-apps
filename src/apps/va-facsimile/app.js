@@ -2,6 +2,7 @@
 // pannable, zoomable viewer with the indexed text regions drawn over the image.
 // Uses the shared sources inlined ahead of this file (see index.html).
 (function () {
+  const VA_PAGES = 'urn:cite2:hmt:msA.v1:';   // the pages of the Venetus A; a page's object id is its canvas id in the manifest
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
   const THUMB_W = 240;
@@ -56,8 +57,7 @@
     buildGrid();
     $('table-view').hidden = current >= 0;
     updateStatus();
-    showFromHash();
-    tryPending();
+    showFromLocation();
   }
 
   function onRelease(rel) {
@@ -168,11 +168,27 @@
     $('empty').hidden = shown > 0 || !canvases.length;
   }
 
-  // --- navigation (location hash) -----------------------------------------
+  // --- navigation (address of the page) -----------------------------------
+  //
+  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
+  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage (the app then shows it as
+  // `?page=…`).  There is no `#`.
 
-  function hashPage() {
-    const m = /(?:^#|&)page=([^&]+)/.exec(location.hash);
-    return m ? decodeURIComponent(m[1]) : null;
+  const pageUrn = c => VA_PAGES + c.id;
+
+  /** Open the page named by a `page` parameter, or say why not and show the light table. */
+  function openPage(value) {
+    const urn = value.split('@')[0].trim();
+    let idx = -1, problem = '';
+    if (!urn.startsWith(VA_PAGES)) problem = `“${value}” is not a page of the Venetus A (${VA_PAGES}…).`;
+    else {
+      idx = canvases.findIndex(c => pageUrn(c) === urn);
+      if (idx < 0) problem = `${urn} is not a page of the Venetus A manifest.`;
+    }
+    notice = problem;
+    if (idx >= 0) showViewer(idx);
+    else { setQuery({}, true); showTable(); }
+    updateStatus();
   }
 
   /** Turn a `text` or `image` parameter into a page, once the data it needs has loaded. */
@@ -188,7 +204,7 @@
         if (idx < 0) problem = `${urn} is not an image of the Venetus A manifest.`;
       }
     } else {
-      const key = dseKey(value);
+      const key = firstPassageKey(value);           // for a range, its first passage
       if (!key) problem = `“${value}” is not a CTS passage URN (urn:cts:…).`;
       else if (!dse) {
         if (!releaseFailed) return;                       // wait for the release
@@ -197,7 +213,7 @@
       else {
         const images = dse.byPassage.get(key) ?? [];
         idx = canvases.findIndex(c => images.includes(c.imageUrn));
-        if (!images.length) problem = `${value} is not indexed in the DSE records${/-/.test(key.split(':').pop()) ? ' (give a single passage, not a range)' : ''}.`;
+        if (!images.length) problem = `${value} is not indexed in the DSE records.`;
         else if (idx < 0) problem = `${value} is indexed only to images that are not pages of the Venetus A.`;
       }
     }
@@ -205,23 +221,25 @@
     notice = problem;
     if (idx >= 0) { goTo(idx, true); }
     else {
-      history.replaceState(null, '', location.pathname + location.search);
+      setQuery({}, true);
       showTable();
     }
     updateStatus();
   }
 
-  function showFromHash() {
-    const p = parseFacsimileParams(location.hash);
-    if (p.page === null && (p.image || p.text)) {            // #image=… or #text=…
-      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: p.text };
-      notice = '';
+  /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
+  function showFromLocation() {
+    const p = readParams(location.search);
+    pending = null;
+    notice = '';
+    if (p.page) { openPage(p.page); return; }
+    if (p.image || p.text) {
+      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: /** @type {string} */ (p.text) };
       tryPending();
       return;
     }
-    const id = hashPage();
-    const idx = id === null ? -1 : canvases.findIndex(c => c.id === id);
-    if (idx < 0) showTable(); else showViewer(idx);
+    showTable();
+    updateStatus();
   }
 
   function showTable() {
@@ -234,9 +252,16 @@
     document.title = 'Venetus A facsimile';
   }
 
+  /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
-    const target = '#page=' + encodeURIComponent(canvases[idx].id);
-    if (replace) location.replace(target); else location.hash = target;
+    setQuery({ page: pageUrn(canvases[idx]) }, replace);
+    showViewer(idx);
+  }
+
+  /** Back to the light table. */
+  function toTable() {
+    setQuery({}, false);
+    showTable();
   }
 
   // --- viewer ---------------------------------------------------------------
@@ -402,7 +427,7 @@
   $('only-indexed').addEventListener('change', applyFilter);
   $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
 
-  $('back').addEventListener('click', () => { location.hash = ''; });
+  $('back').addEventListener('click', toTable);
   $('prev').addEventListener('click', () => { if (current > 0) goTo(current - 1, true); });
   $('next').addEventListener('click', () => { if (current < canvases.length - 1) goTo(current + 1, true); });
   $('zoom-in').addEventListener('click', () => viewer && viewer.zoomBy(1.5));
@@ -411,10 +436,10 @@
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
   for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
-  window.addEventListener('hashchange', showFromHash);
+  window.addEventListener('popstate', showFromLocation);   // Back, Forward
   document.addEventListener('keydown', e => {
     if ($('viewer-view').hidden || e.target.closest('input[type=text], input[type=search]') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Escape') { location.hash = ''; }
+    if (e.key === 'Escape') toTable();
     else if ((e.key === '[' || e.key === 'PageUp') && current > 0) { e.preventDefault(); goTo(current - 1, true); }
     else if ((e.key === ']' || e.key === 'PageDown') && current < canvases.length - 1) { e.preventDefault(); goTo(current + 1, true); }
   });
@@ -427,12 +452,6 @@
     if (e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]);
   });
 
-  {                                                  // ?image=… or ?text=…, used once when the page opens
-    const h = parseFacsimileParams(location.hash), q = parseFacsimileParams(location.search);
-    if (h.page === null && !h.image && !h.text && (q.image || q.text)) {
-      pending = q.image ? { kind: 'image', value: q.image } : { kind: 'text', value: q.text };
-    }
-  }
   loadManifest();
   loadRelease();
 })();

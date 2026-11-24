@@ -338,3 +338,45 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - New `src/bar-chart.js` (generic SVG grouped bars, ticks, legend, table), `src/coverage.js` (`iliadLinesByBook`, `dsePagesByCodex`), tests in `test/coverage.test.js`.
 - A line = passage `book.line[suffix]` with text in either exemplar; titles excluded. Real release 2024c: msA 15,639, msB 709, e3 1,692.
 - DSE pages: msA 631 of 662 (95.3%), e3 71 of 660 (10.8%), others 0. Warnings: 1 DSE record skipped; msA surface `211v1` is not in the codex page list (still counted in the numerator).
+
+### Scholia chart (added to coverage.html 0.1.0)
+
+- New chart "Edited scholia, by book" between the lines chart and the DSE page charts: `scholiaByBook` in `src/coverage.js`.
+- A scholion = `book.scholion` with lemma or comment text in either exemplar. A group of scholia belongs to the manuscript whose Iliad version id begins its own (`msAint` → `msA`), so the six Venetus A groups are added together.
+- Release 2024c: Venetus A 10,253 (groups 1,107 / 4,732 / 349 / 3 / 2,339 / 1,723), Venetus B 324 (book 9 only), Escorial Y 1.1 627 (books 8-10).
+
+## commentary-check.html (0.1.0)
+
+- New app `commentary-check.html`: gaps between the commentary index (`urn:cite2:hmt:commentary.v1:all`), the editions of the scholia and the DSE. New `src/commentary-check.js` (`checkCommentary`, `countByBook`, `commentaryCsv`), tests in `test/commentary-check.test.js`; `src/coverage.js` gained `manuscriptOfScholia` (shared with `scholiaByBook`).
+- A scholion = `book.scholion` reference in an edition (text or not); indexed = an index entry names it and its target is an Iliad passage. Group of scholia → manuscript by identifier prefix (`msAint` → `msA`).
+- Release 2024c: 7 scholia not indexed (Venetus A: 16.209r1-r4 interior, 16.209r4 main, 23.800/23.801 interior); 0 index entries for scholia absent from editions; 76 scholia indexed to an Iliad passage on a different page (of 9,126 comparable); 73 index entries whose Iliad passage cannot be found (e.g. `13.UNKNOWN`, `9.523XXXX`, whole-book `4`).
+- 1,986 entries could not be compared by page because the scholion has no DSE record; 19 because the Iliad passage has none.
+- Needs `commentary-check.html   0.1.0` in version.txt (user-owned; also check a newline precedes it).
+
+## Bookmarkable addresses (va-facsimile, codices, images, iliad-scholia, all-scholia, editorial)
+
+- New `src/location.js` (`readParams`, `formatQuery`, `setQuery`): optional URN parameters `text`, `page`, `image` in the query string; these apps no longer use `#` and the old `#urn=`, `#page=<canvas id>`, `#text=`, `#image=`, `?urn=` forms are not read.
+- `text` = CTS URN (text apps: replaces `?urn=`, and Show now writes it into the address); `page` = CITE2 page URN (codices: replaces `#urn=`; va-facsimile: `urn:cite2:hmt:msA.v1:<canvas id>`, replaces `#page=12r`); `image` = CITE2 image URN (images: replaces `#urn=`, collection URNs allowed; va-facsimile as before). va-facsimile reads all three (`page`, then `image`, then `text`) and rewrites the address to `?page=…`.
+- images: thumbnail paging moved from `&page=N` to `&n=N` so `page` means a codex page everywhere.
+- In-app navigation uses `history.pushState`/`replaceState` and `popstate` (Back/Forward work); where a browser refuses to change the address of a page opened from a file, `setQuery` returns false and navigation still works without the address.
+- Removed `parseFacsimileParams` (dse.js), `formatPageHash`/`parsePageHash` (codices.js), `formatHash`/`parseHash` (images.js); added `formatPageQuery`/`parsePageQuery`, `formatImageQuery`/`imageParams`/`parseImageQuery`.
+- Not changed: propernames, stringsearch, stringcounter, lemmatizedsearch still keep their state in `#` hashes.
+
+## All three parameters in codices, images and the text apps
+
+- codices, images, iliad-scholia, all-scholia and editorial now accept `text`, `page` and `image` (va-facsimile already did). New `src/locate.js` (`firstPassageKey`, `createLocator`, `resolvePage`, `resolveImage`), tests in `test/locate.test.js`; `iliadRangeOf` added to `src/iliad-scholia.js`.
+- Precedence: codices `page` > `image` > `text` (the first that gives a page of the release; an unusable earlier one falls through); images `image` > `page` > `text`; text apps `text` > `page` > `image`. The address is then rewritten to the app's own parameter (`?page=`, `?image=`, `?text=`).
+- text → page/image: the DSE record of the passage (the first passage of a range; version label ignored, scholion `.lemma`/`.comment` suffix dropped). page → image: DSE image of the page, else the catalog image. image → page: pages whose DSE rows or catalog use the image.
+- page/image → text: the Iliad lines on it become one range (first to last in the text's order, in the version with most lines there); a page with only scholia gives the range of the lines they are indexed to. Ranges can include title lines (e.g. `1.title-1.25`).
+- Search apps (propernames, stringsearch, stringcounter, lemmatizedsearch) unchanged, still `#`.
+
+## Previous / next page (iliad-scholia, all-scholia, editorial, stringsearch, propernames, stringcounter, lemmatizedsearch)
+
+- The shared page view (`src/page-view.js`) now puts **‹ Previous page** / **Next page ›** under the heading of every manuscript page it shows. Order comes from the codex sequence (`pageNeighbours` in `src/codices.js`, tested in `test/codices.test.js`); the buttons are disabled at the ends of a codex.
+- Search apps: the view re-renders in place on the neighbouring page (empty pages included), keeping the hits marked. No change to their `#` addresses.
+- Text apps: `onNavigate` hands the page to the app, which opens the Iliad range of that page via `locator.passagesOnPage` and `iliadRangeOf` (so the address is a normal `?text=` bookmark); `skipEmpty` skips pages with no indexed passages. In a multi-page range each page's buttons move from that page.
+
+## A range in `text` for the one-page-at-a-time apps (va-facsimile, codices, images)
+
+- These apps show one page or image at a time, so a `text` range uses only its first passage and opens that page or image; the user moves on with the normal page navigation. va-facsimile previously refused ranges; it now uses `firstPassageKey`, which moved from `src/locate.js` to `src/dse.js` so va-facsimile can use it without inlining the locator.
+- Text-oriented apps (iliad-scholia, all-scholia, editorial, and the search apps' page views) still show whole ranges, over as many pages as they span.
