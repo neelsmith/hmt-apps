@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.4.0">
+<meta name="app-version" content="0.4.1">
 <title>Venetus A facsimile</title>
 <style>
   :root {
@@ -98,14 +98,14 @@
 <body>
 <header>
   <h1>Venetus A facsimile</h1>
-  <span id="status" role="status">Loading the manifest…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
+  <span id="status" role="status">Loading the Venetus A from the HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
   <p id="problem"></p>
-  <p>You can load saved copies instead: the IIIF manifest (<code>vaimg.2017a.json</code>) and/or the release (<code>hmt-current.cex</code>).
-     Drop the files here or <input type="file" id="file" accept=".json,.cex,.txt" multiple>.</p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>):
+     drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
 </div>
 
 <main id="table-view" hidden>
@@ -699,95 +699,8 @@ function passageText(textIndex, urn, kind) {
 <script>
 // @ts-check
 /**
- * Reading an IIIF Presentation 3 manifest of a manuscript, and building IIIF
- * Image API URLs.  No DOM access.
+ * Building IIIF Image API URLs.  No DOM access.
  */
-
-/** Manifest of the Venetus A images in the HMT archive. */
-const VA_MANIFEST_URL =
-  'https://raw.githubusercontent.com/homermultitext/hmt-archive/refs/heads/master/iiif/vaimg.2017a.json';
-
-/**
- * @typedef {Object} Canvas
- * @property {string} id         Last part of the canvas id, e.g. `12r` or `insidefrontcover`.
- * @property {string} label      Label with the manuscript-wide prefix removed, e.g. `folio 12, recto`.
- * @property {string} fullLabel  Label as given in the manifest.
- * @property {string} gridLabel  Short label for a grid: `12r` for folios, otherwise `label`.
- * @property {number} width      Image width in pixels.
- * @property {number} height     Image height in pixels.
- * @property {string} service    IIIF Image API base URL (without region/size/...).
- * @property {string | null} imageUrn  CITE2 URN of the image, e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`, or null.
- */
-
-/**
- * CITE2 image URN for an image service URL whose path ends in
- * `hmt/<collection>/<version>/<image>.tif`.  For example
- * `.../hmt/vaimg/2017a/VA012RN_0013.tif` gives
- * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`.
- * @param {string} service
- * @returns {string | null}
- */
-function imageUrnFromService(service) {
-  const m = /\/hmt\/([^/?#]+)\/([^/?#]+)\/([^/?#]+?)\.tif$/i.exec(service);
-  return m ? `urn:cite2:hmt:${m[1]}.${m[2]}:${m[3]}` : null;
-}
-
-/** First string of an IIIF language map (`{"en": ["..."]}`) or a plain string. */
-function firstLabel(label) {
-  if (typeof label === 'string') return label;
-  if (label && typeof label === 'object') {
-    const first = Object.values(label)[0];
-    if (Array.isArray(first) && first.length) return String(first[0]);
-    if (typeof first === 'string') return first;
-  }
-  return '';
-}
-
-/** Longest prefix shared by all labels, cut after the last ", ". */
-function commonLabelPrefix(labels) {
-  if (labels.length < 2) return '';
-  let p = labels[0];
-  for (const l of labels) { while (p && !l.startsWith(p)) p = p.slice(0, -1); }
-  const cut = p.lastIndexOf(', ');
-  return cut < 0 ? '' : p.slice(0, cut + 2);
-}
-
-/**
- * Canvases of a manifest, in order.  Canvases without a usable image service
- * are skipped; their number is returned as `skipped`.
- * @param {any} manifest  Parsed JSON.
- * @returns {{label: string, canvases: Canvas[], skipped: number}}
- */
-function parseManifest(manifest) {
-  const items = Array.isArray(manifest?.items) ? manifest.items : [];
-  const raw = [];
-  let skipped = 0;
-  for (const c of items) {
-    const anno = c?.items?.[0]?.items?.[0];
-    const body = anno?.body;
-    const svc = [].concat(anno?.service ?? body?.service ?? [])[0];
-    const service = svc?.id ?? svc?.['@id'];
-    const width = Number(body?.width ?? c?.width);
-    const height = Number(body?.height ?? c?.height);
-    if (typeof service !== 'string' || !(width > 0) || !(height > 0)) { skipped++; continue; }
-    raw.push({
-      id: String(c.id ?? '').split('/').pop() || String(raw.length),
-      fullLabel: firstLabel(c.label),
-      width, height, service,
-    });
-  }
-  const prefix = commonLabelPrefix(raw.map(r => r.fullLabel));
-  const canvases = raw.map(r => {
-    const label = r.fullLabel.slice(prefix.length) || r.fullLabel;
-    return {
-      ...r,
-      label,
-      gridLabel: /^\d+[rv]$/.test(r.id) ? r.id : label,
-      imageUrn: imageUrnFromService(r.service),
-    };
-  });
-  return { label: firstLabel(manifest?.label), canvases, skipped };
-}
 
 /**
  * IIIF Image API URL.
@@ -979,6 +892,155 @@ function firstPassageKey(textUrn) {
 <script>
 // @ts-check
 /**
+ * Logic for the images app: the image collections of a release, their items,
+ * where the pictures are served, paging, and the address of a page or image.
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+/** Data model of image collections. */
+const IMAGE_MODEL = 'urn:cite2:cite:datamodels.v1:imagemodel';
+
+/**
+ * Base of the HMT IIIF image server.  The release lists images by CITE2 URN
+ * only, so their location follows the server's convention:
+ * `urn:cite2:hmt:vaimg.2017a:VA012RN_0013` is the image
+ * `<base>hmt/vaimg/2017a/VA012RN_0013.tif`.  (Verified for the `hmt` namespace
+ * from the Venetus A manifest; the other namespaces assume the same layout.)
+ */
+const IMAGE_SERVICE_BASE =
+  'http://www.homermultitext.org/iipsrv?IIIF=/project/homer/pyramidal/deepzoom/';
+
+/**
+ * @typedef {Object} ImageItem
+ * @property {string} urn      Image URN.
+ * @property {string} id       Object part of the URN, e.g. `VA012RN_0013`.
+ * @property {string} caption
+ * @property {string} rights
+ * @property {string} label    Short label for a grid cell, e.g. `folio 12, recto`.
+ */
+
+/**
+ * @typedef {Object} ImageCollection
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:vaimg.2017a:`.
+ * @property {string} label
+ * @property {string} license
+ * @property {ImageItem[]} items  In the order of the release.
+ */
+
+/**
+ * Short label for an image: the part of its caption that says which page it
+ * is (`folio 12, recto`, `front cover`, `page 7`), else the whole caption's
+ * tail, else the id.
+ * @param {string} caption
+ * @param {string} id
+ */
+function cellLabel(caption, id) {
+  const m = /\b(?:bifolio|folio|page|front|inside|back|rear|spine|cover|fly)\b.*$/i.exec(caption);
+  const s = (m ? m[0] : '').replace(/[\s.]+$/, '').trim();
+  return s && s.length <= 48 ? s : id;
+}
+
+/**
+ * Every collection documented in `datamodels` as following the image model,
+ * with its items, ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {ImageCollection[]}
+ */
+function imageCollections(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === IMAGE_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, ImageCollection>} */
+  const out = new Map();
+  for (const urn of wanted) {
+    const c = info.get(urn);
+    out.set(urn, { urn, label: c?.description || urn, license: c?.license || '', items: [] });
+  }
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const coll = out.get(collectionOfObject(urn) ?? '');
+      if (!coll) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const caption = row.caption ?? '';
+      coll.items.push({ urn, id, caption, rights: row.rights ?? '', label: cellLabel(caption, id) });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * IIIF Image API base URL of an image.
+ * @param {string} imageUrn  e.g. `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`
+ * @param {string} [base]
+ * @returns {string | null}
+ */
+function imageService(imageUrn, base = IMAGE_SERVICE_BASE) {
+  const m = /^urn:cite2:([^:]+):([^:.]+)\.([^:]+):([^:]+)$/.exec(imageUrn);
+  return m ? `${base}${m[1]}/${m[2]}/${m[3]}/${m[4]}.tif` : null;
+}
+
+/**
+ * Width and height from an IIIF Image API `info.json` (any version).
+ * @param {any} info
+ * @returns {{width: number, height: number} | null}
+ */
+function parseInfo(info) {
+  const width = Number(info?.width), height = Number(info?.height);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/**
+ * One page of a list.  Out-of-range pages are clamped.
+ * @param {number} total
+ * @param {number} pageSize
+ * @param {number} page  1-based
+ * @returns {{page: number, pages: number, start: number, end: number}}  `start`..`end` is a half-open index range.
+ */
+function paginate(total, pageSize, page) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages);
+  const start = (p - 1) * pageSize;
+  return { page: p, pages, start, end: Math.min(total, start + pageSize) };
+}
+
+/**
+ * Query string for a page of a collection or for one image: `?image=<collection URN>&n=3` (the third
+ * page of thumbnails) or `?image=<image URN>`.
+ * @param {{urn: string, page?: number}} where
+ */
+function formatImageQuery(where) {
+  return formatQuery(imageParams(where));
+}
+
+/**
+ * The parameters of that query string, for `setQuery`.
+ * @param {{urn: string, page?: number}} where
+ */
+function imageParams(where) {
+  return { image: where.urn, n: where.page && where.page > 1 && isCollectionUrn(where.urn) ? where.page : null };
+}
+
+/**
+ * Read a query string written by `formatImageQuery`.
+ * @param {string} search
+ * @returns {{urn: string, page: number} | null}  Null if there is no `image` parameter with a CITE2 URN.
+ */
+function parseImageQuery(search) {
+  const { image, n } = readParams(search, ['image', 'n']);
+  if (!image || !/^urn:cite2:/.test(image)) return null;
+  const page = parseInt(n ?? '', 10);
+  return { urn: image, page: page >= 1 ? page : 1 };
+}
+
+</script>
+<script>
+// @ts-check
+/**
  * What the address of a page can say, shared by the apps that open at a text, a page or an image:
  * optional query parameters (`?name=value`, never a `#` fragment), each a URN.
  *
@@ -1044,6 +1106,265 @@ function setQuery(params, replace = false) {
   } catch (e) {
     return false;
   }
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Logic for the codices app: the codices (manuscripts) of a release, their
+ * pages, and for each page the image and indexed text regions given by the
+ * DSE records.  Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+
+/** Data model of codices (collections of pages). */
+const CODEX_MODEL = 'urn:cite2:hmt:datamodels.v1:codexmodel';
+
+/**
+ * @typedef {Object} CodexPage
+ * @property {string} urn       Page (surface) URN, e.g. `urn:cite2:hmt:msA.v1:12r`.
+ * @property {string} id        Object part of the URN, e.g. `12r`.
+ * @property {string} label     Label from the release.
+ * @property {string} short     Short label for a menu, e.g. `folio 12, recto`.
+ * @property {number} sequence  Position in the codex (the release's `sequence`), else order of appearance.
+ * @property {string} image     Image URN the catalog gives for the page, or "".
+ */
+
+/**
+ * @typedef {Object} Codex
+ * @property {string} urn      Collection URN, e.g. `urn:cite2:hmt:msA.v1:`.
+ * @property {string} label
+ * @property {CodexPage[]} pages  In codex order.
+ */
+
+/**
+ * Every collection documented as following the codex model, with its pages,
+ * ordered by label.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Codex[]}
+ */
+function codices(release) {
+  const wanted = new Set(release.dataModels().filter(m => m.model === CODEX_MODEL).map(m => m.collection));
+  const info = new Map(release.collections().map(c => [c.urn, c]));
+  /** @type {Map<string, Codex>} */
+  const out = new Map();
+  for (const urn of wanted) out.set(urn, { urn, label: info.get(urn)?.description || urn, pages: [] });
+  for (const block of release.citeData()) {
+    const urnField = block.header.find(h => h.toLowerCase() === 'urn');
+    if (!urnField || !block.collections.some(c => wanted.has(c))) continue;
+    for (const row of block.rows) {
+      const urn = row[urnField];
+      const codex = out.get(collectionOfObject(urn) ?? '');
+      if (!codex) continue;
+      const id = urn.slice(urn.lastIndexOf(':') + 1);
+      const label = row.label ?? '';
+      const seq = parseFloat(row.sequence ?? '');
+      codex.pages.push({
+        urn, id, label, short: cellLabel(label, id),
+        sequence: Number.isFinite(seq) ? seq : codex.pages.length,
+        image: (row.image ?? '').trim(),
+      });
+    }
+  }
+  for (const c of out.values()) c.pages.sort((a, b) => a.sequence - b.sequence);   // stable: ties keep release order
+  return [...out.values()].sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/**
+ * @typedef {Object} PageRegion
+ * @property {string} passage  Passage URN as in the DSE record.
+ * @property {string} image    Image URN of the record.
+ * @property {import('./dse.js').Roi} roi
+ */
+
+/**
+ * Indexed regions of the DSE records, by surface (page) URN.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {{bySurface: Map<string, PageRegion[]>, rows: number, skipped: number, found: boolean}}
+ *   `skipped` counts records without a usable surface, passage or region.
+ */
+function indexRegionsBySurface(release) {
+  /** @type {Map<string, PageRegion[]>} */
+  const bySurface = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  if (!set) return { bySurface, rows: 0, skipped: 0, found: false };
+  let skipped = 0;
+  for (const row of set.rows) {
+    const parsed = parseImageRoi(row.imageroi ?? '');
+    const surface = (row.surface ?? '').trim();
+    const passage = (row.passage ?? '').trim();
+    if (!parsed || !surface || !passage) { skipped++; continue; }
+    const list = bySurface.get(surface) ?? [];
+    list.push({ passage, image: parsed.image, roi: parsed.roi });
+    bySurface.set(surface, list);
+  }
+  return { bySurface, rows: set.rows.length, skipped, found: true };
+}
+
+/**
+ * What to show for a page: the image of its DSE records and the regions on it.
+ * The DSE records decide the image: the one they name most often among the
+ * images of the catalog (a record may carry a different image from the
+ * catalog's page image, e.g. another scan).  Without usable records the
+ * catalog's image for the page is shown, without regions.
+ * @param {CodexPage} page
+ * @param {PageRegion[]} regions        DSE regions of the page
+ * @param {Set<string>} catalogImages   Image URNs of the image catalog
+ * @returns {{image: string, regions: PageRegion[], elsewhere: number, source: 'dse' | 'catalog' | 'none'}}
+ *   `elsewhere` counts regions on other images, which are not shown.
+ */
+function pageView(page, regions, catalogImages) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const r of regions) if (catalogImages.has(r.image)) counts.set(r.image, (counts.get(r.image) ?? 0) + 1);
+  let best = '';
+  for (const [image, n] of counts) if (n > (counts.get(best) ?? 0)) best = image;
+  if (best) {
+    const shown = regions.filter(r => r.image === best);
+    return { image: best, regions: shown, elsewhere: regions.length - shown.length, source: 'dse' };
+  }
+  return { image: page.image, regions: [], elsewhere: regions.length, source: page.image ? 'catalog' : 'none' };
+}
+
+/**
+ * Query string that opens a page (`?page=urn:cite2:hmt:msA.v1:12r`), and its reading.
+ * @param {string} pageUrn
+ */
+const formatPageQuery = pageUrn => formatQuery({ page: pageUrn });
+
+/** @param {string} search  e.g. `location.search` @returns {string | null} */
+function parsePageQuery(search) {
+  const { page } = readParams(search, ['page']);
+  return page && /^urn:cite2:/.test(page) ? page : null;
+}
+
+/**
+ * The page before and after each page, within its codex (in codex order).
+ * @param {Codex[]} list
+ * @returns {Map<string, {prev: string | null, next: string | null}>}
+ */
+function pageNeighbours(list) {
+  /** @type {Map<string, {prev: string | null, next: string | null}>} */
+  const out = new Map();
+  for (const c of list) {
+    c.pages.forEach((p, i) => out.set(p.urn, { prev: i > 0 ? c.pages[i - 1].urn : null, next: i + 1 < c.pages.length ? c.pages[i + 1].urn : null }));
+  }
+  return out;
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Finding one kind of location from another through the DSE records and the catalogs of a release:
+ * the page of an image or of a passage, the image of a page or of a passage, and the passages on a page
+ * or image.  Used by the apps that open at a text (`text`), a page (`page`) or an image (`image`).
+ * Pure functions; no DOM access.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+
+
+/**
+ * @typedef {Object} Locator
+ * @property {(page: string) => boolean} isPage            Is it a page of a codex of the release?
+ * @property {(page: string) => string} imageOfPage        The image shown for a page ("" if none).
+ * @property {(image: string) => string[]} pagesOfImage    Pages (surfaces) with that image.
+ * @property {(text: string) => string[]} pagesOfPassage   Pages the DSE puts a passage (or the start of a range) on.
+ * @property {(text: string) => string[]} imagesOfPassage  Images the DSE puts it on.
+ * @property {(page: string) => string[]} passagesOnPage   Passages (DSE keys) on a page, in index order.
+ * @property {(image: string) => string[]} passagesOnImage Passages (DSE keys) on an image, in index order.
+ */
+
+/**
+ * Index a release for moving between texts, pages and images.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Locator}
+ */
+function createLocator(release) {
+  /** @param {Map<string, string[]>} m @param {string} k @param {string} v */
+  const add = (m, k, v) => { const l = m.get(k); if (!l) m.set(k, [v]); else if (!l.includes(v)) l.push(v); };
+  /** @type {Map<string, string[]>} */ const pagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const imagesOfPassage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnPage = new Map();
+  /** @type {Map<string, string[]>} */ const passagesOnImage = new Map();
+  /** @type {Map<string, string[]>} */ const pagesOfImage = new Map();
+  const set = release.relationSets().find(r => r.urn === DSE_URN);
+  for (const row of set?.rows ?? []) {
+    const key = dseKey(row.passage ?? '');
+    const surface = (row.surface ?? '').trim();
+    const image = parseImageRoi(row.imageroi ?? '')?.image ?? '';
+    if (!key) continue;
+    if (surface) { add(pagesOfPassage, key, surface); add(passagesOnPage, surface, key); }
+    if (image) { add(imagesOfPassage, key, image); add(passagesOnImage, image, key); }
+    if (surface && image) add(pagesOfImage, image, surface);
+  }
+
+  const cs = codices(release);
+  const { bySurface } = indexRegionsBySurface(release);
+  const catalogImages = new Set(imageCollections(release).flatMap(c => c.items.map(i => i.urn)));
+  /** @type {Map<string, string>} */ const imageOf = new Map();
+  for (const c of cs) {
+    for (const p of c.pages) {
+      const image = pageView(p, bySurface.get(p.urn) ?? [], catalogImages).image || p.image;
+      if (image) imageOf.set(p.urn, image);
+      for (const im of new Set([image, p.image])) if (im) add(pagesOfImage, im, p.urn);
+    }
+  }
+  const pages = new Set(cs.flatMap(c => c.pages.map(p => p.urn)));
+
+  return {
+    isPage: page => pages.has(page),
+    imageOfPage: page => imageOf.get(page) ?? '',
+    pagesOfImage: image => pagesOfImage.get(image) ?? [],
+    pagesOfPassage: text => { const k = firstPassageKey(text); return (k && pagesOfPassage.get(k)) || []; },
+    imagesOfPassage: text => { const k = firstPassageKey(text); return (k && imagesOfPassage.get(k)) || []; },
+    passagesOnPage: page => passagesOnPage.get(page) ?? [],
+    passagesOnImage: image => passagesOnImage.get(image) ?? [],
+  };
+}
+
+/** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
+
+/**
+ * The page to open for the parameters of an address: `page` first, then `image`, then `text`
+ * (the first of these that gives a page of the release wins).
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page };
+  const fromImage = p.image ? loc.pagesOfImage(p.image)[0] : '';
+  if (fromImage) return { page: fromImage };
+  const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
+  if (fromText) return { page: fromText };
+  const given = p.page || p.image || p.text;
+  if (!given) return null;
+  return { error: `No page of a codex in this release goes with ${given}.` };
+}
+
+/**
+ * The image to open for the parameters of an address: `image` first (as it is; the caller checks it), then `page`,
+ * then `text`.
+ * @param {Locator} loc
+ * @param {LocationParams} p
+ * @returns {{image: string} | {error: string} | null}  Null if no parameter is given.
+ */
+function resolveImage(loc, p) {
+  if (p.image) return { image: p.image };
+  const fromPage = p.page ? loc.imageOfPage(p.page) : '';
+  if (fromPage) return { image: fromPage };
+  const fromText = p.text ? loc.imagesOfPassage(p.text)[0] : '';
+  if (fromText) return { image: fromText };
+  const given = p.page || p.text;
+  return given ? { error: `No image in this release goes with ${given}.` } : null;
 }
 
 </script>
@@ -1487,31 +1808,38 @@ class IiifViewer {
 <script>
 // Browser UI for the Venetus A facsimile app: a light table of all pages and a
 // pannable, zoomable viewer with the indexed text regions drawn over the image.
+// The pages come from the codex model of the Venetus A in the HMT release (`urn:cite2:hmt:msA.v1:`); each page is
+// shown by the documentary image indexed to it (the image of its DSE records, else the catalog's image).
 // Uses the shared sources inlined ahead of this file (see index.html).
 (function () {
-  const VA_PAGES = 'urn:cite2:hmt:msA.v1:';   // the pages of the Venetus A; a page's object id is its canvas id in the manifest
+  const VA_CODEX = 'urn:cite2:hmt:msA.v1:';   // the codex of the Venetus A
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
   const THUMB_W = 240;
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
 
-  /** @type {any[]} */ let canvases = [];
+  /**
+   * The pages of the Venetus A that have an image, in codex order.
+   * @type {{id: string, urn: string, label: string, fullLabel: string, gridLabel: string, imageUrn: string, service: string, regions: any[], elsewhere: number, width?: number, height?: number}[]}
+   */
+  let canvases = [];
   /** @type {any} */ let release = null;
+  /** @type {any} */ let locator = null;
   /** @type {Map<string, any>} */ let textIndex = new Map();
-  /** @type {any} */ let dse = null;
+  /** @type {{found: boolean, skipped: number} | null} */ let dse = null;
   /** @type {Map<string, string>} */ let titles = new Map();
+  /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
   let current = -1;
+  let openToken = 0;
   let tableScroll = 0;
   let lastTipKey = '';
-  /** A `text` or `image` parameter waiting for the data it needs. */
-  let pending = null;
   let notice = '';
-  let releaseFailed = false;
+  let noImage = 0;
 
   const url = (c, region, size) => matchProtocol(iiifImageUrl(c.service, region, size), proto);
-  const regionsOf = c => (dse && c.imageUrn && dse.byImage.get(c.imageUrn)) || [];
+  const regionsOf = c => c.regions;
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
 
   // --- status and loading ---------------------------------------------------
@@ -1519,15 +1847,16 @@ class IiifViewer {
   function setStatus(msg) { $('status').textContent = msg; }
 
   function updateStatus() {
-    if (!canvases.length) return;
+    if (!release) return;
+    if (!canvases.length) { setStatus(`${release.library.name}: no pages of the Venetus A (${VA_CODEX}) with an image`); return; }
     let regions = 0, pages = 0;
     for (const c of canvases) { const n = regionsOf(c).length; if (n) { regions += n; pages++; } }
-    const parts = [plural(canvases.length, 'image', 'images')];
-    if (dse) parts.push(`${plural(regions, 'indexed region', 'indexed regions')} on ${plural(pages, 'page', 'pages')}`);
-    else parts.push('loading indexed text…');
+    const parts = [plural(canvases.length, 'page', 'pages')];
+    if (dse && dse.found) parts.push(`${plural(regions, 'indexed region', 'indexed regions')} on ${plural(pages, 'page', 'pages')}`);
     let msg = parts.join(' · ');
-    if (dse && dse.skipped) msg += ` · ${plural(dse.skipped, 'index row', 'index rows')} without a usable region not drawn`;
-    if (dse && !dse.found) msg = `${plural(canvases.length, 'image', 'images')} · this release has no ${DSE_URN} index`;
+    if (dse && dse.found && dse.skipped) msg += ` · ${plural(dse.skipped, 'index row', 'index rows')} without a usable region not drawn`;
+    if (dse && !dse.found) msg += ` · this release has no ${DSE_URN} index`;
+    if (noImage) msg += ` · ${plural(noImage, 'page', 'pages')} without an image left out`;
     if (notice) msg += ` · ${notice}`;
     setStatus(msg);
   }
@@ -1537,61 +1866,61 @@ class IiifViewer {
     $('drop').hidden = false;
   }
 
-  function onManifest(json) {
-    const m = parseManifest(json);
-    if (!m.canvases.length) throw new Error('the manifest has no usable images');
-    canvases = m.canvases;
-    buildGrid();
-    $('table-view').hidden = current >= 0;
-    updateStatus();
-    showFromLocation();
-  }
-
+  /** Build the pages of the Venetus A from a release, and show what the address asks for. */
   function onRelease(rel) {
     release = rel;
     textIndex = buildTextIndex(rel);
     titles = catalogTitles(rel);
-    dse = indexDse(rel);
-    if (!$('problem').textContent.startsWith('Could not load the manifest')) { $('problem').textContent = ''; $('drop').hidden = true; }
-    updateCounts();
-    updateStatus();
-    if (current >= 0) renderRegions();
-    tryPending();
-  }
-
-  async function loadManifest() {
-    try {
-      const resp = await fetch(VA_MANIFEST_URL);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      onManifest(await resp.json());
-    } catch (e) {
-      setStatus('');
-      showProblem(`Could not load the manifest (${e.message || e}).`);
+    locator = createLocator(rel);
+    const idx = indexRegionsBySurface(rel);
+    dse = { found: idx.found, skipped: idx.skipped };
+    const catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
+    const codex = codices(rel).find(c => c.urn === VA_CODEX);
+    canvases = []; noImage = 0; current = -1;
+    for (const p of codex ? codex.pages : []) {
+      const view = pageView(p, idx.bySurface.get(p.urn) ?? [], catalogImages);
+      const service = view.image ? imageService(view.image) : null;
+      if (!service) { noImage++; continue; }
+      canvases.push({
+        id: p.id, urn: p.urn, label: p.short || p.id, fullLabel: p.label || p.short || p.id,
+        gridLabel: /^\d+[rv]$/.test(p.id) ? p.id : (p.short || p.id),
+        imageUrn: view.image, service, regions: view.regions, elsewhere: view.elsewhere,
+      });
     }
+    if (!codex) showProblem(`This release has no codex ${VA_CODEX} (the Venetus A).`);
+    else { $('problem').textContent = ''; $('drop').hidden = true; }
+    buildGrid();
+    $('table-view').hidden = false;
+    updateStatus();
+    showFromLocation();
   }
 
   async function loadRelease() {
     try { onRelease(await fetchRelease()); }
     catch (e) {
-      releaseFailed = true;
-      updateStatus();
-      tryPending();
-      showProblem(`Could not load the HMT release (${e.message || e}). Page images still work; indexed text needs the release.`);
+      setStatus('');
+      showProblem(`Could not load the HMT release (${e.message || e}). The pages and images come from the release; load a saved copy.`);
     }
   }
 
   async function loadFiles(files) {
     for (const file of files) {
-      try {
-        const text = await file.text();
-        if (/\.json$/i.test(file.name) || text.trimStart().startsWith('{')) onManifest(JSON.parse(text));
-        else onRelease(parseRelease(text));
-        $('problem').textContent = '';
-        $('drop').hidden = true;
-      } catch (e) {
-        showProblem(`${file.name}: ${e.message || e}`);
-      }
+      try { onRelease(parseRelease(await file.text())); }
+      catch (e) { showProblem(`${file.name}: ${e.message || e}`); }
     }
+  }
+
+  /** Pixel size of an image, from its IIIF info.json (asked once per image). */
+  function imageSize(service) {
+    let p = sizes.get(service);
+    if (!p) {
+      p = fetch(matchProtocol(`${service}/info.json`, proto))
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(j => parseInfo(j) || Promise.reject(new Error('no width and height in the image information')));
+      p.catch(() => sizes.delete(service));
+      sizes.set(service, p);
+    }
+    return p;
   }
 
   // --- light table ----------------------------------------------------------
@@ -1601,36 +1930,26 @@ class IiifViewer {
     grid.textContent = '';
     const frag = document.createDocumentFragment();
     canvases.forEach((c, i) => {
+      const n = regionsOf(c).length;
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'cell'; b.dataset.index = String(i);
-      b.title = c.fullLabel;
+      b.title = n ? `${c.fullLabel}: ${plural(n, 'indexed region', 'indexed regions')}` : c.fullLabel;
       const thumb = document.createElement('span');
       thumb.className = 'thumb';
-      thumb.style.aspectRatio = `${c.width} / ${c.height}`;
+      thumb.style.aspectRatio = '3 / 4';   // until the picture says which shape it is
       const img = document.createElement('img');
       img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+      img.addEventListener('load', () => { if (img.naturalWidth && img.naturalHeight) thumb.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; });
       img.src = url(c, 'full', `${THUMB_W},`);
       thumb.appendChild(img);
       const lbl = document.createElement('span');
       lbl.className = 'lbl'; lbl.textContent = c.gridLabel;
       const count = document.createElement('span');
-      count.className = 'count'; count.hidden = true;
+      count.className = 'count'; count.hidden = n === 0; count.textContent = String(n);
       b.append(thumb, lbl, count);
       frag.appendChild(b);
     });
     grid.appendChild(frag);
-    applyFilter();
-  }
-
-  function updateCounts() {
-    const cells = $('grid').children;
-    canvases.forEach((c, i) => {
-      const n = regionsOf(c).length;
-      const badge = cells[i].querySelector('.count');
-      badge.hidden = n === 0;
-      badge.textContent = String(n);
-      cells[i].title = n ? `${c.fullLabel}: ${plural(n, 'indexed region', 'indexed regions')}` : c.fullLabel;
-    });
     applyFilter();
   }
 
@@ -1658,78 +1977,30 @@ class IiifViewer {
   // --- navigation (address of the page) -----------------------------------
   //
   // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
-  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage (the app then shows it as
-  // `?page=…`).  There is no `#`.
-
-  const pageUrn = c => VA_PAGES + c.id;
-
-  /** Open the page named by a `page` parameter, or say why not and show the light table. */
-  function openPage(value) {
-    const urn = value.split('@')[0].trim();
-    let idx = -1, problem = '';
-    if (!urn.startsWith(VA_PAGES)) problem = `“${value}” is not a page of the Venetus A (${VA_PAGES}…).`;
-    else {
-      idx = canvases.findIndex(c => pageUrn(c) === urn);
-      if (idx < 0) problem = `${urn} is not a page of the Venetus A manifest.`;
-    }
-    notice = problem;
-    if (idx >= 0) showViewer(idx);
-    else { setQuery({}, true); showTable(); }
-    updateStatus();
-  }
-
-  /** Turn a `text` or `image` parameter into a page, once the data it needs has loaded. */
-  function tryPending() {
-    if (!pending || !canvases.length) return;
-    const { kind, value } = pending;
-    let idx = -1, problem = '';
-    if (kind === 'image') {
-      const urn = value.split('@')[0].trim();
-      if (!/^urn:cite2:[^:]+:[^:]+:[^:]+$/.test(urn)) problem = `“${value}” is not an image URN (urn:cite2:…).`;
-      else {
-        idx = canvases.findIndex(c => c.imageUrn === urn);
-        if (idx < 0) problem = `${urn} is not an image of the Venetus A manifest.`;
-      }
-    } else {
-      const key = firstPassageKey(value);           // for a range, its first passage
-      if (!key) problem = `“${value}” is not a CTS passage URN (urn:cts:…).`;
-      else if (!dse) {
-        if (!releaseFailed) return;                       // wait for the release
-        problem = `Cannot look up ${value}: the HMT release did not load.`;
-      } else if (!dse.found) problem = `Cannot look up ${value}: this release has no ${DSE_URN} index.`;
-      else {
-        const images = dse.byPassage.get(key) ?? [];
-        idx = canvases.findIndex(c => images.includes(c.imageUrn));
-        if (!images.length) problem = `${value} is not indexed in the DSE records.`;
-        else if (idx < 0) problem = `${value} is indexed only to images that are not pages of the Venetus A.`;
-      }
-    }
-    pending = null;
-    notice = problem;
-    if (idx >= 0) { goTo(idx, true); }
-    else {
-      setQuery({}, true);
-      showTable();
-    }
-    updateStatus();
-  }
+  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
+  // (the app then shows it as `?page=…`).  There is no `#`.
 
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
-    const p = readParams(location.search);
-    pending = null;
+    if (!release) return;
     notice = '';
-    if (p.page) { openPage(p.page); return; }
-    if (p.image || p.text) {
-      pending = p.image ? { kind: 'image', value: p.image } : { kind: 'text', value: /** @type {string} */ (p.text) };
-      tryPending();
-      return;
+    const p = readParams(location.search);
+    for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
+    const r = resolvePage(locator, p);
+    if (!r) { showTable(); updateStatus(); return; }
+    if ('error' in r) { notice = r.error; setQuery({}, true); showTable(); updateStatus(); return; }
+    const idx = canvases.findIndex(c => c.urn === r.page);
+    if (idx < 0) {
+      notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
+      setQuery({}, true); showTable(); updateStatus(); return;
     }
-    showTable();
+    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    showViewer(idx);
     updateStatus();
   }
 
   function showTable() {
+    openToken++;
     if (viewer) viewer.close();
     current = -1;
     hideTip();
@@ -1741,7 +2012,7 @@ class IiifViewer {
 
   /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
-    setQuery({ page: pageUrn(canvases[idx]) }, replace);
+    setQuery({ page: canvases[idx].urn }, replace);
     showViewer(idx);
   }
 
@@ -1755,10 +2026,11 @@ class IiifViewer {
 
   function kind() { return document.querySelector('input[name=kind]:checked').value; }
 
-  function showViewer(idx) {
+  async function showViewer(idx) {
     if (idx === current && !$('viewer-view').hidden) return;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
+    const token = ++openToken;
     const c = canvases[idx];
     $('table-view').hidden = true;
     $('viewer-view').hidden = false;
@@ -1768,10 +2040,20 @@ class IiifViewer {
       bindHover();
     }
     hideTip();
+    viewer.close();
+    viewer.overlay.textContent = '';
     $('viewer-title').textContent = c.label;
     document.title = `${c.label} – Venetus A facsimile`;
     $('prev').disabled = idx === 0;
     $('next').disabled = idx === canvases.length - 1;
+    $('viewer-note').textContent = 'Loading the image…';
+    try {
+      if (!c.width) Object.assign(c, await imageSize(c.service));
+    } catch (e) {
+      if (token === openToken) $('viewer-note').textContent = `Could not load the image of ${c.label} (${e.message || e}).`;
+      return;
+    }
+    if (token !== openToken) return;
     viewer.open({
       width: c.width, height: c.height,
       urlFor: (region, size) => url(c, region, size),
@@ -1804,7 +2086,7 @@ class IiifViewer {
     overlay.appendChild(frag);
     applyLayers();
     const note = $('viewer-note');
-    if (!dse) note.textContent = release ? '' : 'Loading indexed text…';
+    if (!dse || !dse.found) note.textContent = '';
     else if (!regions.length) note.textContent = 'No indexed text on this page.';
     else {
       const bits = [];
@@ -1813,6 +2095,7 @@ class IiifViewer {
       if (counts.other) bits.push(`${counts.other} other`);
       note.textContent = `${plural(regions.length, 'region', 'regions')}: ${bits.join(', ')}`;
     }
+    if (c.elsewhere) note.textContent += ` · ${plural(c.elsewhere, 'region', 'regions')} on another image not shown`;
   }
 
   function applyLayers() {
@@ -1939,7 +2222,6 @@ class IiifViewer {
     if (e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]);
   });
 
-  loadManifest();
   loadRelease();
 })();
 
