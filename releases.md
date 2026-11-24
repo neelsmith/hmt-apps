@@ -116,4 +116,6 @@ Current version:  **0.11.0**
 
 ## `coverage.html`
 
+**0.2.0**, *Nov. 24, 2026*: summarize coverage of editing of *scholia* in different MSS of the HMT project.
+
 **0.1.0**, *Nov. 23, 2026*: summarize coverage of editing of *Iliad* in different MSS of the HMT project.
