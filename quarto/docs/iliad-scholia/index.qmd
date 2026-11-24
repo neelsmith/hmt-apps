@@ -8,13 +8,13 @@ title: "*Iliad* + *scholia* reader"
 
 ## User options and display
 
-- Choose the **Version of the *Iliad*** (versions with no online text are listed but disabled) and, when it has both, the **Text**: diplomatic or normalized.
-- The count for a line is the number of scholia indexed to it in the version being read.
-- Enter a **Passage**: a line (`1.5`), a range (`1.1-1.10`) or a whole book (`1`); the example buttons fill the field, and a note shows which books the text has. Press **Show**.
-- The display lists the lines grouped by manuscript page (at most 2,000 lines and 40 pages), each line with a badge counting its scholia; clicking the badge unfolds them. Requested lines are marked. A note lists passages the DSE does not place on a page.
-- **Unfold all scholia** opens or folds every scholion on a page.
-- Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex; the first and last page of a codex have one button disabled). These reopen the app at the *Iliad* lines on the neighbouring page (skipping pages with no indexed text); the address becomes the `?text=…` range of that page, in the version of the page, so the version menu may change.
-- Changing the version or text re-runs the display.
+- **Version of the *Iliad***: choose a manuscript.
+- **Text**: display diplomatic or normalized *Iliad* edition.
+- **Passage**: a line (`1.5`), a range (`1.1-1.10`) or a whole book (`1`)
+- **Show**: displays requested passage highlighted, along with all other text on the same manuscript page.
+- **Scholia count**: appears next to a line commented on by *scholia*. Click the button to show *scholia* refernces; selecting a *scholion* displays its text.
+- **Unfold/fold all scholia** unfolds or folds up all *scholia* on a page.
+-  **‹ Previous page** and **Next page ›**: display a single preceding or following page.
 
 
 ## Optional parameters
