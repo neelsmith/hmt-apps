@@ -1,4 +1,4 @@
-# editorial.html — Iliad scholia: editorial view
+# editorial.html — Interwoven diplomatic/editorial reader
 
 Read a passage of the *Iliad* in a Homer Multitext edition, with the number of scholia on each line, in the context of the manuscript page it is on.
 
