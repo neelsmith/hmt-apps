@@ -47,6 +47,8 @@
   details { margin-top: .5rem; }
   summary { cursor: pointer; color: var(--muted); font-size: .875rem; }
   .tablewrap { overflow-x: auto; }
+  #t-ranges td { cursor: help; }
+  .sr { position: absolute; left: -9999px; }
   table { border-collapse: collapse; font-size: .875rem; margin-top: .5rem; }
   th, td { padding: .2rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
@@ -87,6 +89,12 @@
     <details><summary>Data table</summary><div class="tablewrap" id="t-sch"></div></details>
   </section>
 
+  <section class="chart" id="c-ranges">
+    <h2>Edited pages of each manuscript, by book of the <i>Iliad</i></h2>
+    <p class="desc" id="d-ranges"></p>
+    <div class="tablewrap" id="t-ranges"></div>
+  </section>
+
   <section class="chart" id="c-pages">
     <h2>Pages with DSE records, by manuscript</h2>
     <p class="desc">Number of distinct pages that appear in at least one DSE record.</p>
@@ -104,7 +112,7 @@
   <footer>
     A line of the <i>Iliad</i> counts as edited if its passage (<code>book.line</code>) has text in either the diplomatic or the
     normalized exemplar; book titles are not counted. A scholion is a numbered scholion (<code>book.scholion</code>) with a lemma or comment in either exemplar; all groups of scholia of a manuscript (for the Venetus A: main, interior, exterior, interlinear, intermarginal and others) are added together. Only manuscripts with edited lines, and codices with at least one page in a DSE record, are shown. A page counts if any DSE
-    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). Findings are warnings only.
+    record names it as its surface, whatever the text it is linked to (<i>Iliad</i> lines or scholia). In the table of page ranges, a manuscript’s pages for a book are those named as surface by DSE records whose passage is an edited line of that book; the range runs from the first to the last of them in the codex’s order (hover a cell for the number of pages and any gaps). Findings are warnings only.
   </footer>
 </main>
 

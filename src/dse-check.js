@@ -6,6 +6,7 @@
  *  1. Which text passages of the editions have no DSE record?
  *  2. Which DSE records name a text passage that is not in the editions?
  *  3. Which DSE records name an image that is not in the image catalog?
+ *  4. Which pages of each codex (manuscript) have no DSE record, as runs of consecutive pages?
  *
  * Passages are compared at the level of the version: `…tlg0012.tlg001.msA:1.1`
  * stands for that line in whichever exemplar (diplomatic, normalized) holds it,
@@ -17,6 +18,7 @@
 import { ctsVersionOf } from './hmt-release.js';
 import { DSE_URN } from './dse.js';
 import { imageCollections } from './images.js';
+import { codices } from './codices.js';
 
 /**
  * @typedef {Object} DseRecord
@@ -50,6 +52,30 @@ import { imageCollections } from './images.js';
  */
 
 /**
+ * @typedef {Object} PageRef
+ * @property {string} urn
+ * @property {string} id      Object id of the page URN, e.g. `12r`.
+ * @property {string} label   Label of the page without the codex name, e.g. `folio 12, recto`.
+ */
+
+/**
+ * @typedef {Object} PageRun   Consecutive pages of a codex that no DSE record names as its surface.
+ * @property {PageRef} from
+ * @property {PageRef} to
+ * @property {number} count    Pages in the run, from `from` to `to` inclusive.
+ */
+
+/**
+ * @typedef {Object} CodexCoverage
+ * @property {string} urn         Collection URN of the codex.
+ * @property {string} label
+ * @property {number} pages       Pages in the codex model.
+ * @property {number} covered     Pages named as the surface of at least one DSE record.
+ * @property {number} uncovered   Pages no DSE record names (the sum of the runs).
+ * @property {PageRun[]} runs     In codex order.
+ */
+
+/**
  * @typedef {Object} DseCheck
  * @property {boolean} found        The release has the DSE relation set.
  * @property {number} records       DSE records in it.
@@ -58,6 +84,7 @@ import { imageCollections } from './images.js';
  * @property {ImageProblem[]} imageProblems
  * @property {number} imagesChecked       Distinct image URNs the records refer to.
  * @property {number} catalogImages       Images in the image catalog.
+ * @property {CodexCoverage[]} codices    Every codex of the release with at least one page.
  */
 
 /** Strip a subreference from a passage reference. */
@@ -132,9 +159,13 @@ export function checkDse(release) {
   const catalogCollections = new Set(catalog.map(c => c.urn));
 
   const rows = set ? set.rows : [];
+  /** @type {Set<string>} surfaces (pages) that at least one record names */
+  const surfaces = new Set();
   rows.forEach((row, i) => {
     /** @type {DseRecord} */
     const rec = { passage: (row.passage ?? '').trim(), imageroi: (row.imageroi ?? '').trim(), surface: (row.surface ?? '').trim(), row: i + 1 };
+
+    if (rec.surface) surfaces.add(rec.surface);
 
     // -- the passage
     const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(rec.passage);
@@ -184,6 +215,7 @@ export function checkDse(release) {
 
   return {
     found: !!set,
+    codices: codexCoverage(release, surfaces),
     records: rows.length,
     versions: [...versions.values()],
     badPassages,
@@ -194,8 +226,42 @@ export function checkDse(release) {
 }
 
 /**
+ * For each codex of the release, the runs of consecutive pages (in codex order) that no DSE record names as its
+ * surface.  A codex that no record mentions at all is one run from its first page to its last.
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @param {Set<string>} surfaces  Surfaces named by DSE records.
+ * @returns {CodexCoverage[]}
+ */
+export function codexCoverage(release, surfaces) {
+  /** @type {CodexCoverage[]} */
+  const out = [];
+  for (const codex of codices(release)) {
+    if (!codex.pages.length) continue;
+    /** @type {PageRun[]} */
+    const runs = [];
+    /** @type {PageRun | null} */
+    let run = null;
+    let covered = 0;
+    for (const p of codex.pages) {
+      if (surfaces.has(p.urn)) { covered++; run = null; continue; }
+      /** @type {PageRef} */
+      const ref = { urn: p.urn, id: p.id, label: p.short || p.id };
+      if (run) { run.to = ref; run.count++; }
+      else { run = { from: ref, to: ref, count: 1 }; runs.push(run); }
+    }
+    out.push({ urn: codex.urn, label: codex.label, pages: codex.pages.length, covered, uncovered: codex.pages.length - covered, runs });
+  }
+  return out;
+}
+
+/** A run of pages as text: `folio 12, recto`, or `folio 12, recto to folio 15, verso (6 pages)`. @param {PageRun} r */
+export function describeRun(r) {
+  return r.count === 1 ? r.from.label : `${r.from.label} to ${r.to.label} (${r.count} pages)`;
+}
+
+/**
  * The report as CSV, one line per inconsistency:
- * `group,version,passage,image,surface,detail`.
+ * `group,version,passage,image,surface,detail` (for a codex page, `version` is the codex and `surface` its first page).
  * @param {DseCheck} check
  */
 export function reportCsv(check) {
@@ -219,6 +285,12 @@ export function reportCsv(check) {
     const detail = p.kind === 'item' ? `no such image in ${p.collection}`
       : p.kind === 'collection' ? `${p.collection} is not an image collection of this release` : 'record has no image reference';
     for (const r of p.records) lines.push(['reference to image not in catalog', '', r.passage, r.imageroi, r.surface, detail]);
+  }
+  for (const c of check.codices) {
+    for (const r of c.runs) {
+      lines.push(['codex page without DSE record', c.label, '', '', r.from.urn,
+        `${describeRun(r)}${r.count > 1 ? `; last page ${r.to.urn}` : ''}${c.covered === 0 ? '; no DSE records for this codex at all' : ''}`]);
+    }
   }
   return lines.map(l => l.map(esc).join(',')).join('\n') + '\n';
 }

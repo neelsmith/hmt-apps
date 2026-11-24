@@ -73,17 +73,22 @@
   <p><button class="btn" id="csv">Download report as CSV</button></p>
   <h2>By text</h2>
   <div class="tablewrap"><table id="summary"></table></div>
+  <h2 id="codex-summary-head">By codex</h2>
+  <div class="tablewrap" id="codex-summary-wrap"><table id="codex-summary"></table></div>
   <div id="groups"></div>
   <footer>
     Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar
     (diplomatic or normalized); a scholion's lemma and comment are one passage. Subreferences (<code>1.1@word</code>) are ignored.
-    Physical surfaces (pages) are not checked here. Findings are warnings only.
+    A codex page counts as covered if any record names it as its surface; the runs of pages that no record names are listed in codex order.
+    Findings are warnings only.
   </footer>
 </main>
 
 <!-- @inline src/hmt-release.js -->
 <!-- @inline src/dse.js -->
 <!-- @inline src/images.js -->
+<!-- @inline src/location.js -->
+<!-- @inline src/codices.js -->
 <!-- @inline src/dse-check.js -->
 <!-- @inline src/apps/dse-check/app.js -->
 </body>

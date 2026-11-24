@@ -392,3 +392,15 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 
 - The light box of `images.html` now follows `va-facsimile.html`: **Find** (matches the typed text in the caption, or the id when there is no caption; `imageMatches` in `src/images.js`), a **Size** slider, and the whole collection on one scrolling page (thumbnails load lazily). Paging is removed: no Per page menu, no pagers, no `n` parameter; `paginate` is deleted (and its test), `formatImageQuery`/`imageParams`/`parseImageQuery` now deal only with `image`. Thumbnails take the aspect ratio of the loaded picture.
 - The grid is built once per collection and kept when you open an image and come back; it is rebuilt when the collection changes. The "none of the thumbnails loaded" note now appears when the first six thumbnails all fail.
+
+## dse-check.html (0.1.x): codex pages without DSE records
+
+- New fourth check: for each codex of the release (collections of the codex model, via `codices()`), compare its pages, in codex order, with the surfaces named by DSE records, and report the runs of consecutive pages no record names. `codexCoverage(release, surfaces)` and `describeRun` in `src/dse-check.js`; `checkDse` returns `codices` (pages, covered, uncovered, runs). Tests in `test/dse-check.test.js` (synthetic release with two codices, order independent of the data, and the real release). The CSV gets lines in the group `codex page without DSE record`; the app gets a **By codex** table and a fourth group. The app now inlines `src/location.js` and `src/codices.js`.
+- A page is covered if any record names it as `surface`, whatever the record's passage or image. Surfaces that are not pages of the codex are ignored here (the Venetus A has `211v1`; `coverage.html` still counts it, so its 631 is 630 here).
+- Release 2024c: Venetus A 662 pages, 630 covered, 3 runs (inside front cover to folio 11 verso, 25 pages; folio 211 verso; folio 327 verso to inside back cover, 6 pages). Escorial Y 1.1: 660 pages, 71 covered, 4 runs. Burney 86, Escorial Ω 1.12, Laurentian 32.3, Venetus B and Marciana 841 have no DSE records: one run each.
+
+## coverage.html: edited pages by book
+
+- New table: a row per book of the Iliad, a column per manuscript with edited lines, each cell the range of codex pages holding edited lines of that book. `iliadPagesByBook(release, textIndex)` in `src/coverage.js`: an edited line (same definition as `iliadLinesByBook`) is placed on the surfaces of DSE records whose `dseKey(passage)` is the version URN plus the line reference; pages are ordered by codex order (`codices()`), and the manuscript's codex is the one holding most of its placed lines. Each book gives `first`/`last` page ids, `pages`, `span`, `lines`, `unplaced`.
+- Release 2024c: Venetus A runs from 12r (book 1) to 326v (book 24), every book on a contiguous run of pages (book 16 has 30 lines with no DSE page); Escorial Y 1.1 covers books 8-10 (98r-134r); Venetus B has 709 edited lines in book 9 but no DSE records, so the cell reads "no page".
+- Tests: `test/coverage.test.js` (synthetic and real release; 163 unit tests in all).

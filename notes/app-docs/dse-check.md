@@ -1,12 +1,12 @@
 # dse-check.html — DSE check
 
-The relational inconsistencies of the DSE records of a release.
+The relational inconsistencies of the DSE records of a release, and the runs of codex pages that no DSE record covers.
 
 ## Data blocks used
 
 - `#!citerelationset`: the DSE (`urn:cite2:hmt:hmtdse.v1:all`, `passage|imageroi|surface`).
 - `#!ctscatalog` and `#!ctsdata`: the passages of the editions, to compare with the DSE.
-- `#!datamodels`, `#!citecollections` and `#!citedata`: the image collections, to check image references.
+- `#!datamodels`, `#!citecollections` and `#!citedata`: the image collections, to check image references; and the codices (collections of the codex model: their pages in sequence), to find the pages no DSE record names as its surface.
 - `#!citelibrary`: the release name in the status line.
 - The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
@@ -16,10 +16,11 @@ None.
 
 ## Output options
 
-- **Download report as CSV** of all findings (`dse-check.csv`).
+- **Download report as CSV** of all findings (`dse-check.csv`), one line per finding with a group name; a codex page run is a line in the group `codex page without DSE record` (the codex in the version column, the first page of the run in the surface column, and the run described in the detail column).
 
 ## User options and display
 
-- A summary table by text: passages, DSE records, passages missing from the DSE, records not in the text.
-- Three groups, each with a count badge: text passages missing from the DSE; DSE records for passages not in the textual editions; references to images not in the image catalog. Each folds open to a list (200 at a time, with a "show more" button).
+- Two summary tables: **By text** (passages, DSE records, passages missing from the DSE, records not in the text) and **By codex** (pages, pages with DSE records, pages without, runs of pages without).
+- Four groups, each with a count badge: text passages missing from the DSE; DSE records for passages not in the textual editions; references to images not in the image catalog; and **codex pages without DSE records**. Each folds open to a list (200 at a time, with a "show more" button).
+- Codex pages without DSE records: for each codex, the pages are taken in codex order, and a page counts as covered if any DSE record names it as its surface. The pages that are not covered are reported as runs of consecutive pages (e.g. *inside front cover to folio 11, verso (25 pages)*, then *folio 211, verso*). A codex that no record mentions at all is reported as a single run and flagged. A DSE surface that is not a page of the codex (such as `211v1` of the Venetus A) is ignored here.
 - Findings are warnings only.

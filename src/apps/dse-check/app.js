@@ -1,5 +1,5 @@
 // Browser UI for the DSE check: summarizes the relational inconsistencies of the
-// DSE records of a release in three groups.  Uses the shared sources inlined
+// DSE records of a release in four groups.  Uses the shared sources inlined
 // ahead of this file (see index.html).
 (function () {
   const $ = id => document.getElementById(id);
@@ -62,6 +62,22 @@
       tr.appendChild(el('td', v.unknown.length ? 'bad' : '', n(v.unknown.length)));
       table.appendChild(tr);
     }
+
+    const ctable = $('codex-summary');
+    ctable.textContent = '';
+    const chead = el('tr');
+    for (const t of ['Codex', 'Pages', 'Pages with DSE records', 'Pages without', 'Runs without']) chead.appendChild(el('th', '', t));
+    ctable.appendChild(chead);
+    for (const x of c.codices) {
+      const tr = el('tr');
+      tr.appendChild(el('td', '', x.label));
+      tr.appendChild(el('td', '', n(x.pages)));
+      tr.appendChild(el('td', '', n(x.covered)));
+      tr.appendChild(el('td', x.uncovered ? 'bad' : '', n(x.uncovered)));
+      tr.appendChild(el('td', x.runs.length ? 'bad' : '', n(x.runs.length)));
+      ctable.appendChild(tr);
+    }
+    $('codex-summary-head').hidden = $('codex-summary-wrap').hidden = !c.codices.length;
 
     // 1. text passages missing from DSE
     const miss = c.versions.filter(v => v.missing.length);
@@ -143,6 +159,35 @@
     }
     root.appendChild(g3);
 
+    // 4. codex pages without DSE records
+    const gaps = c.codices.filter(x => x.runs.length);
+    const g4 = group('Codex pages without DSE records',
+      'Pages of each codex (manuscript) that no DSE record names as its surface, as runs of consecutive pages in codex order.',
+      gaps.reduce((s, x) => s + x.runs.length, 0), ['run', 'runs']);
+    for (const x of gaps) {
+      const d = el('details', 'entry');
+      const sum = el('summary', '', `${x.label} `);
+      sum.appendChild(el('span', 'n', `${plural(x.runs.length, 'run', 'runs')}, ${plural(x.uncovered, 'page', 'pages')} of ${n(x.pages)}`));
+      if (x.covered === 0) sum.appendChild(el('span', 'flag', '  no DSE records for this codex at all'));
+      d.appendChild(sum);
+      let built = false;
+      d.addEventListener('toggle', () => {
+        if (!d.open || built) return;
+        built = true;
+        const box = el('div');
+        d.appendChild(box);
+        renderLimited(box, x.runs, r => {
+          const p = el('div', 'rec');
+          p.appendChild(el('span', 'row', r.count === 1 ? '1 page  ' : `${n(r.count)} pages  `));
+          p.appendChild(document.createTextNode(r.count === 1 ? r.from.label : `${r.from.label} to ${r.to.label}`));
+          p.title = r.count === 1 ? r.from.urn : `${r.from.urn} to ${r.to.urn}`;
+          return p;
+        });
+      });
+      g4.appendChild(d);
+    }
+    root.appendChild(g4);
+
     $('intro').textContent = c.found
       ? `${plural(c.records, 'DSE record', 'DSE records')} checked against the editions and the image catalog.`
       : 'This release has no DSE relation set; nothing to check.';
@@ -154,7 +199,8 @@
     const c = checkDse(rel);
     render(c);
     const total = c.versions.reduce((s, v) => s + v.missing.length + v.unknown.length, 0)
-      + c.badPassages.length + c.imageProblems.reduce((s, p) => s + p.records.length, 0);
+      + c.badPassages.length + c.imageProblems.reduce((s, p) => s + p.records.length, 0)
+      + c.codices.reduce((s, x) => s + x.runs.length, 0);
     setStatus(`${rel.library.name}: ${total ? plural(total, 'inconsistency', 'inconsistencies') : 'no inconsistencies'}`);
   }
 
