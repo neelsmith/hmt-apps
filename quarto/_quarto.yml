@@ -63,3 +63,4 @@ website:
           - "---"
           - docs/coverage/index.qmd          
           - docs/dse-check/index.qmd
+          - docs/commentary-check/index.qmd

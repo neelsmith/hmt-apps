@@ -1,22 +1,24 @@
-# images.html — Images
+# images.html — Images (version 0.3.0)
 
-A light box of the image collections in the release (all the thumbnails of a collection on one scrolling page, with a Find box and a size slider), and a pannable, zoomable viewer.
+A light box of the image collections in a release, and a pannable, zoomable viewer for any image.
 
 ## Data blocks used
 
 - `#!datamodels` (image model `urn:cite2:cite:datamodels.v1:imagemodel`), `#!citecollections` and `#!citedata`: the image collections and their items (URN, caption, rights).
-- For the `page` and `text` parameters: the codex pages (`#!datamodels`, `#!citedata`) and the DSE (`#!citerelationset`, `urn:cite2:hmt:hmtdse.v1:all`).
-- `#!citelibrary`: the release name in the status line. The pictures come from the IIIF service named in the data.
+- Only for the `page` and `text` parameters: the codex pages (`#!datamodels` codex model, `#!citedata`) and the DSE (`#!citerelationset`, `urn:cite2:hmt:hmtdse.v1:all`).
+- `#!citelibrary`: the release name in the status line.
+- The pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture's pixel size is read from its IIIF `info.json` when it is opened.
 - The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
 ## Optional parameters
 
-Query-string parameters (`?name=value`), never `#` tags.
+Query-string parameters (`?name=value`), never `#` tags. The address follows what is shown, so bookmarks, links and the Back and Forward buttons work.
 
-- `image` — an image URN opens that image; a collection URN shows the light box of that collection (e.g. `?image=urn:cite2:hmt:vaimg.2017a:`). There is no paging, so the old `n` parameter is no longer read.
-- `page` — a page URN: opens the image of that page.
-- `text` — a passage URN: opens the image the DSE puts it on. For a range only the first passage is used (one image is shown at a time; move on with ‹ ›).
-- If several are given, `image` wins, then `page`, then `text`; the address is rewritten as `?image=…`. A value with no image gives a message above the thumbnails. The address follows what is shown, so bookmarks, links and Back and Forward work.
+- `image` — an image URN opens that image in the viewer; a collection URN shows the light box of that collection, e.g. `?image=urn:cite2:hmt:vaimg.2017a:`.
+- `page` — a page URN, e.g. `urn:cite2:hmt:msA.v1:12r`: opens the image of that page.
+- `text` — a passage URN: opens the image the DSE puts it on. For a range, only its first passage is used; the viewer shows one image at a time, so move on with ‹ ›.
+- If several are given, `image` wins, then `page`, then `text`. The address is then rewritten as `?image=…`.
+- A value that leads to no image, or a collection or image not in the release, gives a message (above the thumbnails of the collection if there is one, otherwise in place of the prompt).
 
 ## Output options
 
@@ -24,8 +26,12 @@ None.
 
 ## User options and display
 
-- Choose a **Collection**: all its thumbnails appear on one page (the browser loads the pictures as they scroll into view; none are held back by paging).
-- **Find** shows only the images whose caption contains the text you type (capitals and extra spaces do not matter; for an image with no caption, its id); the count line says how many of the collection are shown. The Find box is cleared when you choose another collection.
+- **Collection** menu: choose an image collection (the menu shows how many images each has; empty collections are disabled). All its thumbnails appear at once on one scrolling page; the browser loads the pictures as they scroll into view.
+- **Find** shows only the images whose caption contains the text you type (capitals and extra spaces do not matter; an image with no caption is matched by its id). The count beside the controls says how many images of the collection are shown, and a message appears if none match. The box is cleared when you choose another collection.
 - **Size** slider sets the width of the thumbnails; each thumbnail takes the shape of its picture.
-- Choosing a thumbnail opens the image: **‹ ›** (or `[` `]`) for the previous or next image, a **Rights** button for the rights statement, and **← Images** or Esc for the thumbnails.
-- Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
+- Choosing a thumbnail opens the image in the viewer:
+  - **‹ ›** (or `[` and `]`) move to the previous or next image of the collection, and the title area shows the image's position (e.g. "24 of 966");
+  - **Rights** shows or hides the rights statement from the release;
+  - **← Images** (or Esc) returns to the light box, with the same filter and scroll position;
+  - drag to pan; scroll or pinch to zoom; **+**, **−** and **Fit** (or the `+`, `-` and `0` keys).
+- If the image server cannot be reached, the thumbnails show "no image", a note says so, and the viewer reports the failure.
