@@ -10,3 +10,4 @@ stringsearch.html   0.1.1
 stringcounter.html   0.1.1
 lemmatizedsearch.html   0.1.1
 coverage.html   0.2.0
+commentary-check.html   0.1.0

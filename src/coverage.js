@@ -111,6 +111,20 @@ export function dsePagesByCodex(release) {
 const SCHOLIA_WORK = 'tlg5026';
 
 /**
+ * The manuscript a group of scholia belongs to: the Iliad version whose identifier begins the group's
+ * own (`msAint` to `msA`; the longest such identifier wins).
+ * @param {string} groupUrn  Version URN of the group of scholia, e.g. `urn:cts:greekLit:tlg5026.msAint.hmt:`.
+ * @param {{urn: string, label: string}[]} iliad  Iliad versions (see `iliadVersions`).
+ * @returns {{urn: string, label: string, short: string} | null}
+ */
+export function manuscriptOfScholia(groupUrn, iliad) {
+  const id = /^urn:cts:[^:]+:tlg5026\.([^.:]+)/.exec(groupUrn)?.[1] ?? '';
+  const idOf = (/** @type {string} */ u) => /\.([^.:]+):$/.exec(u)?.[1] ?? '';
+  const ms = iliad.filter(i => idOf(i.urn) && id.startsWith(idOf(i.urn))).sort((a, b) => idOf(b.urn).length - idOf(a.urn).length)[0];
+  return ms ? { urn: ms.urn, label: ms.label, short: shortVersionLabel(ms.label) } : null;
+}
+
+/**
  * @typedef {Object} ScholiaCoverage
  * @property {string} urn      URN of the manuscript's Iliad version.
  * @property {string} label
@@ -132,7 +146,7 @@ const SCHOLIA_WORK = 'tlg5026';
  *   `unassigned` lists labels of groups of scholia that match no Iliad version.
  */
 export function scholiaByBook(release, textIndex) {
-  const iliad = iliadVersions(release, textIndex).map(v => ({ ...v, id: /\.([^.:]+):$/.exec(v.urn)?.[1] ?? '' }));
+  const iliad = iliadVersions(release, textIndex);
   const catalog = new Map(release.ctsCatalog().map(c => [c.urn, c.versionLabel]));
   /** @type {Map<string, Set<string>>} group version URN -> scholia ("book.scholion") with text */
   const groups = new Map();
@@ -152,13 +166,12 @@ export function scholiaByBook(release, textIndex) {
   /** @type {string[]} */
   const unassigned = [];
   for (const [v, set] of groups) {
-    const id = /^urn:cts:[^:]+:tlg5026\.([^.:]+)/.exec(v)?.[1] ?? '';
-    const ms = iliad.filter(i => i.id && id.startsWith(i.id)).sort((a, b) => b.id.length - a.id.length)[0];
+    const ms = manuscriptOfScholia(v, iliad);
     const label = catalog.get(v) ?? v;
     if (!ms) { unassigned.push(label); continue; }
     let rec = byMs.get(ms.urn);
     if (!rec) {
-      rec = { urn: ms.urn, label: ms.label, short: shortVersionLabel(ms.label), byBook: new Array(BOOKS).fill(0), total: 0, groups: [] };
+      rec = { urn: ms.urn, label: ms.label, short: ms.short, byBook: new Array(BOOKS).fill(0), total: 0, groups: [] };
       byMs.set(ms.urn, rec);
     }
     let count = 0;
