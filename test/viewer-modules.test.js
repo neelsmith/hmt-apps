@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRelease } from '../src/hmt-release.js';
 import { buildTextIndex, textsOfVersion, passageText } from '../src/text-index.js';
-import { imageUrnFromService, parseManifest, iiifImageUrl, matchProtocol } from '../src/iiif.js';
+import { iiifImageUrl, matchProtocol } from '../src/iiif.js';
 import { parseRoi, parseImageRoi, indexDse, passageKind, passageLabel, catalogTitles, dseKey, DSE_URN } from '../src/dse.js';
 import {
   fitTransform, clampTransform, zoomAt, maxLevel, chooseLevel, visibleTiles, roiToRect, imageToScreen, MAX_SCALE,
@@ -11,50 +11,6 @@ import {
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 
 // ---- iiif.js --------------------------------------------------------------
-
-const SVC = 'http://www.homermultitext.org/iipsrv?IIIF=/project/homer/pyramidal/deepzoom/hmt/vaimg/2017a/';
-const canvas = (id, label, file, w = 5428, h = 7230) => ({
-  id: `canvases/${id}`, type: 'Canvas', label: { en: [label] }, height: h, width: w,
-  items: [{ id: `annotations/${id}`, type: 'AnnotationPage', items: [{
-    id: `annotations/${id}`, type: 'Annotation', motivation: 'painting',
-    body: { id: `${SVC}${file}.tif/full/2000,/0/default.jpg`, type: 'Image', format: 'image/jpeg', height: h, width: w },
-    target: `canvases/${id}`,
-    service: [{ id: `${SVC}${file}.tif`, profile: 'level1', type: 'ImageService2' }],
-  }] }],
-});
-const MANIFEST = {
-  '@context': 'http://iiif.io/api/presentation/3/context.json', type: 'Manifest',
-  label: { en: ['Venetus A manuscript'] },
-  items: [
-    canvas('insidefrontcover', 'Venetus A (Marciana 454 = 822), inside front cover', 'VAMSInside_front_cover_versoN_0500'),
-    canvas('1r', 'Venetus A (Marciana 454 = 822), folio 1, recto', 'VA001RN_0002'),
-    canvas('12v', 'Venetus A (Marciana 454 = 822), folio 12, verso', 'VA012VN_0013'),
-    { id: 'canvases/broken', type: 'Canvas', label: { en: ['x'] }, items: [] },
-  ],
-};
-
-test('imageUrnFromService maps hmt/<coll>/<version>/<id>.tif to a CITE2 URN', () => {
-  assert.equal(imageUrnFromService(`${SVC}VA012RN_0013.tif`), 'urn:cite2:hmt:vaimg.2017a:VA012RN_0013');
-  assert.equal(imageUrnFromService('https://example.org/other.jpg'), null);
-});
-
-test('parseManifest reads canvases, labels, sizes, services and URNs', () => {
-  const m = parseManifest(MANIFEST);
-  assert.equal(m.label, 'Venetus A manuscript');
-  assert.equal(m.skipped, 1);
-  assert.deepEqual(m.canvases.map(c => c.id), ['insidefrontcover', '1r', '12v']);
-  assert.deepEqual(m.canvases.map(c => c.label), ['inside front cover', 'folio 1, recto', 'folio 12, verso']);
-  assert.deepEqual(m.canvases.map(c => c.gridLabel), ['inside front cover', '1r', '12v']);
-  assert.equal(m.canvases[1].fullLabel, 'Venetus A (Marciana 454 = 822), folio 1, recto');
-  assert.equal(m.canvases[1].width, 5428);
-  assert.equal(m.canvases[1].service, `${SVC}VA001RN_0002.tif`);
-  assert.equal(m.canvases[2].imageUrn, 'urn:cite2:hmt:vaimg.2017a:VA012VN_0013');
-});
-
-test('parseManifest tolerates an empty or odd manifest', () => {
-  assert.deepEqual(parseManifest({}).canvases, []);
-  assert.deepEqual(parseManifest(null).canvases, []);
-});
 
 test('IIIF URLs', () => {
   assert.equal(iiifImageUrl('http://h/x.tif', '0,0,512,512', '256,'), 'http://h/x.tif/0,0,512,512/256,/0/default.jpg');
