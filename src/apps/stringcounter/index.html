@@ -65,6 +65,11 @@
   #tablebox th, #tablebox td { text-align: left; padding: .15rem .8rem .15rem 0; border-bottom: 1px solid var(--line); }
   #tablebox td.num, #tablebox th.num { text-align: right; }
   #tablebox button { border: 0; background: none; color: var(--accent); padding: 0; text-decoration: underline; }
+  #fold { padding: .15rem .6rem; }
+  #foldnote { color: var(--fg); }
+  #chartbox.folded { padding-bottom: .4rem; }
+  #chartbox.folded #chart, #chartbox.folded #tbl, #chartbox.folded #chartnote, #chartbox.folded .charthead .group, #chartbox.folded #csv { display: none; }
+  #chartbox:not(.folded) #foldnote { display: none; }
   #chart { overflow-x: auto; padding-bottom: .25rem; }
   #chart svg { display: block; }
   #chart .grid { stroke: var(--line); stroke-width: 1; }
@@ -119,6 +124,8 @@
 
 <section id="chartbox" aria-label="Counts by word token" hidden>
   <div class="charthead">
+    <button type="button" class="btn" id="fold" aria-expanded="true" aria-controls="chart" title="Fold the chart up to leave more room for the passages">Fold up chart</button>
+    <span id="foldnote" lang="grc"></span>
     <span id="chartnote"></span>
     <span class="group" role="radiogroup" aria-label="Order of the word forms">Sort:
       <label><input type="radio" name="order" value="alpha" checked> alphabetically</label>

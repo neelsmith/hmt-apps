@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.2.1">
 <title>String search</title>
 <style>
   :root {
@@ -87,6 +87,7 @@
   #page .pagenav .btn { font-size: .8125rem; padding: .1rem .6rem; }
   #page .pagenav .btn:disabled { opacity: .45; cursor: default; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
+  #page .sub a.pageurn { color: var(--accent); }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
   #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
   .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.15rem; line-height: 1.6; }
@@ -117,7 +118,7 @@
 <header>
   <h1>String search</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/stringsearch/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/stringsearch/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -1944,6 +1945,9 @@ function parseNameHash(hash) {
 
 
 
+/** The codices app on GitHub Pages, where the URN of a page links to. */
+const PV_CODICES_APP = 'https://neelsmith.github.io/hmt-apps/codices.html';
+
 /** Version URN of a passage key (version URN + reference). @param {string} pk */
 const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
 
@@ -2116,7 +2120,13 @@ function createPageView(data) {
 
   function renderPage(box, surface, current, surfaces, o) {
     box.appendChild(pvEl('h2', '', pageLabels.get(surface) ?? surface));
-    const sub = pvEl('p', 'sub', surface);
+    const sub = pvEl('p', 'sub');
+    const link = /** @type {HTMLAnchorElement} */ (pvEl('a', 'pageurn', surface));
+    link.href = `${PV_CODICES_APP}?page=${surface}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.title = 'Open this page in the codices app';
+    sub.appendChild(link);
     if (surfaces.length > 1) {
       sub.append(' · also on: ');
       for (const s of surfaces.filter(x => x !== surface)) {

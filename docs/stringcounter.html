@@ -65,6 +65,11 @@
   #tablebox th, #tablebox td { text-align: left; padding: .15rem .8rem .15rem 0; border-bottom: 1px solid var(--line); }
   #tablebox td.num, #tablebox th.num { text-align: right; }
   #tablebox button { border: 0; background: none; color: var(--accent); padding: 0; text-decoration: underline; }
+  #fold { padding: .15rem .6rem; }
+  #foldnote { color: var(--fg); }
+  #chartbox.folded { padding-bottom: .4rem; }
+  #chartbox.folded #chart, #chartbox.folded #tbl, #chartbox.folded #chartnote, #chartbox.folded .charthead .group, #chartbox.folded #csv { display: none; }
+  #chartbox:not(.folded) #foldnote { display: none; }
   #chart { overflow-x: auto; padding-bottom: .25rem; }
   #chart svg { display: block; }
   #chart .grid { stroke: var(--line); stroke-width: 1; }
@@ -118,6 +123,7 @@
   #page .pagenav .btn { font-size: .8125rem; padding: .1rem .6rem; }
   #page .pagenav .btn:disabled { opacity: .45; cursor: default; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
+  #page .sub a.pageurn { color: var(--accent); }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
   #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
   .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.15rem; line-height: 1.6; }
@@ -174,6 +180,8 @@
 
 <section id="chartbox" aria-label="Counts by word token" hidden>
   <div class="charthead">
+    <button type="button" class="btn" id="fold" aria-expanded="true" aria-controls="chart" title="Fold the chart up to leave more room for the passages">Fold up chart</button>
+    <span id="foldnote" lang="grc"></span>
     <span id="chartnote"></span>
     <span class="group" role="radiogroup" aria-label="Order of the word forms">Sort:
       <label><input type="radio" name="order" value="alpha" checked> alphabetically</label>
@@ -1988,6 +1996,9 @@ function parseNameHash(hash) {
 
 
 
+/** The codices app on GitHub Pages, where the URN of a page links to. */
+const PV_CODICES_APP = 'https://neelsmith.github.io/hmt-apps/codices.html';
+
 /** Version URN of a passage key (version URN + reference). @param {string} pk */
 const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
 
@@ -2160,7 +2171,13 @@ function createPageView(data) {
 
   function renderPage(box, surface, current, surfaces, o) {
     box.appendChild(pvEl('h2', '', pageLabels.get(surface) ?? surface));
-    const sub = pvEl('p', 'sub', surface);
+    const sub = pvEl('p', 'sub');
+    const link = /** @type {HTMLAnchorElement} */ (pvEl('a', 'pageurn', surface));
+    link.href = `${PV_CODICES_APP}?page=${surface}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.title = 'Open this page in the codices app';
+    sub.appendChild(link);
     if (surfaces.length > 1) {
       sub.append(' · also on: ');
       for (const s of surfaces.filter(x => x !== surface)) {
@@ -2973,7 +2990,24 @@ function parseCounterHash(hash) {
     markBar();
   }
 
+  /** Fold the chart up (or open it again): the bars and their controls go, leaving the passages more room. */
+  function setFolded(folded) {
+    $('chartbox').classList.toggle('folded', folded);
+    $('fold').textContent = folded ? 'Show chart' : 'Fold up chart';
+    $('fold').setAttribute('aria-expanded', String(!folded));
+    $('fold').title = folded ? 'Show the bar chart again' : 'Fold the chart up to leave more room for the passages';
+    updateFoldNote();
+  }
+
+  /** While the chart is folded, say which word form is chosen. */
+  function updateFoldNote() {
+    const c = counts.find(x => x.token === selBar);
+    $('foldnote').textContent = !counts.length ? '' : c ? `Chosen: ${c.form} (${plural(c.count, 'occurrence', 'occurrences')})` : 'No bar chosen';
+    $('foldnote').lang = c ? 'grc' : 'en';
+  }
+
   function markBar() {
+    updateFoldNote();
     for (const g of $('chart').querySelectorAll('.barg')) {
       const on = g.dataset.token === selBar;
       g.classList.toggle('on', on);
@@ -3159,6 +3193,7 @@ function parseCounterHash(hash) {
     clearTimeout(timer);
     timer = setTimeout(() => { showCounts(selBar, true); go('replace'); }, DEBOUNCE);
   });
+  $('fold').addEventListener('click', () => setFolded(!$('chartbox').classList.contains('folded')));
   $('chart').addEventListener('click', e => {
     const g = e.target.closest('.barg');
     if (g) pick(g.dataset.token);

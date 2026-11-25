@@ -2,7 +2,16 @@
 
 ## Repository version tag
 
-Current version:  **0.12.0**
+Current version:  **0.12.1**
+
+
+
+**0.12.1**, *??*:
+
+- adds links from page references to `codices` app on github pages
+- fixes a bug in text display in `va-facsimile`
+- adds RoI display of indexed texts to `images.html`
+- adds option to fold up bar chart in `stringcounter.html`
 
 **0.12.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest in `va-facsimile.html`, `codices.html` and `images.html`.
 
@@ -64,6 +73,10 @@ Current version:  **0.12.0**
 
 ### `va-facsimile.html`
 
+
+
+**0.5.1**, *Nov. 25, 2026*: hovering on an RoI displays the edited text; clicking on an RoI now copies to clipboard.
+
 **0.5.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
 
 **0.4.1**, *Nov. 24, 2026*:  corrects behavior for forming sequence of pages in facsimile.
@@ -111,6 +124,8 @@ Current version:  **0.12.0**
 
 ### `stringsearch.html`
 
+**0.2.1**, *Nov. 25, 2026*: Adds option to fold up bar chart display
+
 **0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
@@ -149,6 +164,7 @@ Current version:  **0.12.0**
 
 ### `images.html`
 
+**0.5.0**, *Nov. 25, 2026*: adds optional display of indeed text to single image view.
 
 **0.4.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
 

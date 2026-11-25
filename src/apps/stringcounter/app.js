@@ -268,7 +268,24 @@
     markBar();
   }
 
+  /** Fold the chart up (or open it again): the bars and their controls go, leaving the passages more room. */
+  function setFolded(folded) {
+    $('chartbox').classList.toggle('folded', folded);
+    $('fold').textContent = folded ? 'Show chart' : 'Fold up chart';
+    $('fold').setAttribute('aria-expanded', String(!folded));
+    $('fold').title = folded ? 'Show the bar chart again' : 'Fold the chart up to leave more room for the passages';
+    updateFoldNote();
+  }
+
+  /** While the chart is folded, say which word form is chosen. */
+  function updateFoldNote() {
+    const c = counts.find(x => x.token === selBar);
+    $('foldnote').textContent = !counts.length ? '' : c ? `Chosen: ${c.form} (${plural(c.count, 'occurrence', 'occurrences')})` : 'No bar chosen';
+    $('foldnote').lang = c ? 'grc' : 'en';
+  }
+
   function markBar() {
+    updateFoldNote();
     for (const g of $('chart').querySelectorAll('.barg')) {
       const on = g.dataset.token === selBar;
       g.classList.toggle('on', on);
@@ -454,6 +471,7 @@
     clearTimeout(timer);
     timer = setTimeout(() => { showCounts(selBar, true); go('replace'); }, DEBOUNCE);
   });
+  $('fold').addEventListener('click', () => setFolded(!$('chartbox').classList.contains('folded')));
   $('chart').addEventListener('click', e => {
     const g = e.target.closest('.barg');
     if (g) pick(g.dataset.token);

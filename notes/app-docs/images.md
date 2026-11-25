@@ -5,7 +5,7 @@ A light box of the image collections in a release, and a pannable, zoomable view
 ## Data blocks used
 
 - `#!datamodels` (image model `urn:cite2:cite:datamodels.v1:imagemodel`), `#!citecollections` and `#!citedata`: the image collections and their items (URN, caption, rights).
-- Only for the `page` and `text` parameters: the codex pages (`#!datamodels` codex model, `#!citedata`) and the DSE (`#!citerelationset`, `urn:cite2:hmt:hmtdse.v1:all`).
+- The DSE (`#!citerelationset`, `urn:cite2:hmt:hmtdse.v1:all`): the indexed text regions drawn on an image, and the `page` and `text` parameters. The `#!ctscatalog` and `#!ctsdata` blocks give the text shown for each region, and the codex pages (`#!datamodels` codex model, `#!citedata`) are used for `page` and `text`.
 - `#!citelibrary`: the release name in the status line.
 - The pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture's pixel size is read from its IIIF `info.json` when it is opened.
 - The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
@@ -44,3 +44,7 @@ On the open image you can mark rectangular regions and cite them. Hold **Shift**
 The **Regions of interest** panel under the image lists each region as the image's CITE2 URN plus `@x,y,w,h` (four decimals, each from 0 to 1), e.g. `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225`. **Copy** puts one URN on the clipboard, **Copy all** puts them all, one per line. Regions are kept for each image while the page stays open; they are not saved or written to the address.
 
 An `image` parameter with a region, `?image=<image URN>@x,y,w,h`, opens the image with that region already marked (and zoomed to), so it can be adjusted and copied like the others.
+
+## Indexed text on an image
+
+When the DSE indexes text to the open image, the viewer draws a rectangle over each region, as codices.html does: red for the *Iliad*, blue for scholia, green for anything else. The note on the image says how many indexed passages it has. **Iliad**, **Scholia** and **Other** checkboxes in the toolbar (shown only for an image that has indexed text) turn each kind off and on. Hover over a rectangle to read the diplomatic text of its passage (where rectangles overlap, all of them are listed); click one to copy the passage URN and its text, URN on the first line, text on the second. Dragging to pan and Shift-dragging to mark a region of interest copy nothing, and your own regions are drawn above the indexed ones. An image with no indexed text shows no rectangles and no checkboxes.

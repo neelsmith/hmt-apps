@@ -21,7 +21,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 ## Output options
 
-- Clicking a region **copies its text to the clipboard** (a message confirms). Nothing is saved to a file.
+- Clicking a region **copies its passage URN and its text to the clipboard** (URN on the first line, diplomatic text on the second; a message confirms). Nothing is saved to a file.
 
 ## User options and display
 

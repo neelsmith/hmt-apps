@@ -438,3 +438,15 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## Page URN links to codices (all text displays)
 
 - In the shared page view (`src/page-view.js`, so in iliad-scholia, all-scholia, editorial, stringsearch, stringcounter, propernames and lemmatizedsearch) the page URN under the heading is now `<a class="pageurn" href="https://neelsmith.github.io/hmt-apps/codices.html?page=<URN>" target="_blank" rel="noopener">`; it follows Previous/Next and the "also on" buttons because it is made in `renderPage`. Opens in a new tab so a search or reading position is not lost. Built by string, not `formatPageQuery`, because location.js is not inlined in the search apps. Style in `src/page-text.css`. Checked in `ui-test-pagenav.js`.
+
+## va-facsimile: click a region to copy it
+
+- Clicking an indexed region in va-facsimile copies `<passage URN>\n<text>` (the text as hover shows it, diplomatic or normalized; lemma and comment of a scholion joined by a space) and shows a toast, as codices already did (`copyAt`, `toast`, `copyToClipboard` from `roi-panel.js`). Codices now copies the URN line too. A click on a region of interest the user drew (`.roi-layer`) does not copy; drags do not copy. Checked in `ui-test-va-copy.js` and `ui-test-codices.js`.
+
+## images.html: indexed text on the image
+
+- images.html now behaves like codices for an image with DSE records: `src/text-regions.js` (`TextRegions`) draws a `rect.roi.<kind>` for each region of `indexDse(release).byImage` on `viewer.overlay` (id `rois`), with Iliad/Scholia/Other checkboxes (group `#layers`, hidden when the image has none), a hover tooltip of the diplomatic text, and click-to-copy of `<passage URN>\n<text>`; CSS in `src/text-regions.css` (needs `--c-iliad`, `--c-scholia`, `--c-other`). The app inlines `src/text-index.js` now and builds the text index and titles when the release loads. The note under the image gains "· N indexed passages". Shift-drag, Select mode and pan do not copy. Codices and va-facsimile still carry their own copies of this code; they could move to `TextRegions` later. Checked in `ui-test-images-text.js` (folio 12 recto: 48 regions).
+
+## stringcounter.html: foldable bar chart
+
+- `#fold` button in `.charthead` (`aria-expanded`, `aria-controls="chart"`) toggles class `folded` on `#chartbox` (`setFolded` in `src/apps/stringcounter/app.js`). CSS hides `#chart`, `#tbl`, `#chartnote`, the sort group and `#csv` when folded; `#foldnote` (`updateFoldNote`, called from `markBar`) shows the chosen form and count. Selection and hash are untouched; the folded state is per page view and not in the hash. Checked in `ui-test-fold.js` (scratchpad): the chart box shrinks and `#main` grows.

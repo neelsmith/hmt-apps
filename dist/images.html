@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.4.0">
+<meta name="app-version" content="0.5.0">
 <title>Images</title>
 <style>
   :root {
     --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --c-iliad: #e0452c; --c-scholia: #2f7de1; --c-other: #2fa36b;
     --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
     --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
   }
@@ -65,6 +66,12 @@
   #viewer-title { font-weight: 600; flex: 1 1 10rem; min-width: 0; }
   #viewer-count { color: var(--muted); font-size: .875rem; }
   .group { display: inline-flex; gap: .4rem; align-items: center; }
+  .group[hidden] { display: none; }
+  .group label { display: inline-flex; gap: .3rem; align-items: center; font-size: .875rem; }
+  .chip { width: .8rem; height: .8rem; border-radius: 2px; display: inline-block; border: 2px solid; }
+  .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
+  .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
+  .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
   #rights { padding: .5rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel); font-size: .875rem; color: var(--muted); }
   #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
   #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
@@ -106,12 +113,36 @@
 #roi-panel .roi-actions { display: flex; gap: .4rem; margin-top: .3rem; }
 #roi-panel .roi-hint { margin: .3rem 0 0; color: var(--muted); font-size: .8125rem; }
 </style>
+<style>
+/* Indexed text on an image (text-regions.js): rectangles, tooltip, copy message.  Needs --c-iliad, --c-scholia, --c-other. */
+  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; }
+  .roi.iliad { fill: var(--c-iliad); stroke: var(--c-iliad); }
+  .roi.scholia { fill: var(--c-scholia); stroke: var(--c-scholia); }
+  .roi.other { fill: var(--c-other); stroke: var(--c-other); }
+  .roi.hot { fill-opacity: .38; stroke-width: 3px; }
+  #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
+  #rois.hide-all .roi { display: none; }
+  #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
+         background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+         padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }
+  #tip .item + .item { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
+  #tip .what { font: .8125rem ui-monospace, monospace; color: var(--muted); }
+  #tip .what b { font-weight: 700; color: var(--fg); }
+  #tip .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.1rem; line-height: 1.5; }
+  #tip .lemma { font-weight: 700; }
+  #tip .none { color: var(--muted); font-style: italic; }
+
+  #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: #1f6b3a; color: #fff; padding: .2rem .6rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  #copied.bad { background: #a3201a; }
+  .roi { cursor: pointer; }
+</style>
 </head>
 <body>
 <header>
   <h1>Images</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.5.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -142,6 +173,11 @@
     <span id="viewer-title"></span>
     <span id="viewer-count"></span>
     <button class="btn" id="rights-toggle" aria-expanded="false" aria-controls="rights">Rights</button>
+    <span class="group" id="layers" role="group" aria-label="Indexed text shown" hidden>
+      <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
+      <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
+      <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
@@ -151,9 +187,11 @@
   </div>
   <div id="rights" hidden></div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
+    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region. Hover over an indexed rectangle to read its text; click to copy it."></div>
     <div id="viewer-note"></div>
     <div id="viewer-error" role="alert" hidden></div>
+    <div id="tip" hidden></div>
+    <div id="copied" role="status" hidden></div>
   </div>
   <div id="roi-panel" hidden></div>
 </section>
@@ -596,6 +634,112 @@ async function fetchRelease(url = DEFAULT_RELEASE_URL) {
 /** Parse a release from a `File`/`Blob` (file picker or drag-and-drop). */
 async function readReleaseFile(file) {
   return parseRelease(await file.text());
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Shared lookup of CTS passage text in a release.  Used by several apps.
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/**
+ * Passages of one text (a version or exemplar), in the order of the release.
+ * @typedef {Object} TextIndex
+ * @property {string} urn                     Work-component URN, ending in ":".
+ * @property {string[]} refs                  Passage references, in order.
+ * @property {string[]} texts                 Passage text, parallel to `refs`.
+ * @property {Map<string, number>} pos        Reference -> position in `refs`.
+ */
+
+/** Preferred order of exemplar kinds when listing the texts of a version. */
+const KIND_ORDER = ['normalized', 'diplomatic'];
+
+/** Name of the exemplar in a work-component URN ("normalized"), or "edition" for a version. */
+function exemplarName(workUrn) {
+  const parts = workUrn.split(':')[3].split('.');
+  return parts.length > 3 ? parts.slice(3).join('.') : 'edition';
+}
+
+/**
+ * Index every text in the release by work-component URN.  The order of
+ * passages in the release is the order of the text (references like
+ * `1.title` or `6.386del` do not sort numerically).
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, TextIndex>}
+ */
+function buildTextIndex(release) {
+  /** @type {Map<string, TextIndex>} */
+  const map = new Map();
+  for (const { urn, text } of release.ctsData()) {
+    const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+    if (!m) continue;
+    let t = map.get(m[1]);
+    if (!t) { t = { urn: m[1], refs: [], texts: [], pos: new Map() }; map.set(m[1], t); }
+    if (!t.pos.has(m[2])) t.pos.set(m[2], t.refs.length);
+    t.refs.push(m[2]);
+    t.texts.push(text);
+  }
+  return map;
+}
+
+/** @type {WeakMap<Map<string, TextIndex>, Map<string, {urn: string, kind: string}[]>>} */
+const versionTexts = new WeakMap();
+
+/**
+ * The texts (exemplars, or the version itself) available for a version URN,
+ * `normalized` first.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} versionUrn  e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:`
+ * @returns {{urn: string, kind: string}[]}
+ */
+function textsOfVersion(textIndex, versionUrn) {
+  let byVersion = versionTexts.get(textIndex);
+  if (!byVersion) {
+    byVersion = new Map();
+    for (const key of textIndex.keys()) {
+      const v = ctsVersionOf(key);
+      if (!v) continue;
+      const list = byVersion.get(v) ?? [];
+      list.push({ urn: key, kind: exemplarName(key) });
+      byVersion.set(v, list);
+    }
+    const rank = (/** @type {string} */ k) => KIND_ORDER.indexOf(k) + 1 || 99;
+    for (const list of byVersion.values()) list.sort((a, b) => rank(a.kind) - rank(b.kind));
+    versionTexts.set(textIndex, byVersion);
+  }
+  return byVersion.get(versionUrn) ?? [];
+}
+
+/**
+ * Text of a passage, from the exemplar of the requested kind when the version
+ * has one (otherwise the first available).  A passage with its own text gives
+ * one part with an empty `part` name; a scholion, whose text is stored as
+ * `<ref>.lemma` and `<ref>.comment`, gives those parts.  Nothing found gives
+ * no parts.
+ * @param {Map<string, TextIndex>} textIndex
+ * @param {string} urn   Passage URN at version level, e.g. `urn:cts:greekLit:tlg0012.tlg001.msA:1.1`.
+ * @param {string} kind  `diplomatic` or `normalized`.
+ * @returns {{parts: {part: string, text: string}[]}}
+ */
+function passageText(textIndex, urn, kind) {
+  const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(urn);
+  if (!m) return { parts: [] };
+  const version = ctsVersionOf(m[1]);
+  const texts = version ? textsOfVersion(textIndex, version) : [];
+  const pick = texts.find(t => t.kind === kind) ?? texts[0];
+  const t = pick ? textIndex.get(pick.urn) : undefined;
+  if (!t) return { parts: [] };
+  const direct = t.pos.get(m[2]);
+  if (direct !== undefined) return { parts: [{ part: '', text: t.texts[direct] }] };
+  /** @type {{part: string, text: string}[]} */
+  const parts = [];
+  for (const part of ['lemma', 'comment']) {
+    const i = t.pos.get(m[2] + '.' + part);
+    if (i !== undefined) parts.push({ part, text: t.texts[i] });
+  }
+  return { parts };
 }
 
 </script>
@@ -2222,6 +2366,210 @@ class RoiUi {
 
 </script>
 <script>
+// @ts-check
+/**
+ * The indexed text of an image, on an `IiifViewer`: a rectangle over each region the DSE records index to the open
+ * image (coloured for the Iliad, scholia and other texts, and switched on and off by checkboxes), the diplomatic text of
+ * the passage in a tooltip when the pointer is over it, and a click that copies the passage URN and its text.
+ *
+ * Needs the release's DSE index (`indexDse`), text index (`buildTextIndex`) and catalog titles (`catalogTitles`), the
+ * viewer's overlay (`viewer.overlay`, in image pixel coordinates), and in the page a `#tip` and a `#copied` element
+ * inside the viewer's wrapper (see text-regions.css).  The rectangles carry the passage as `data-passage`.
+ */
+
+
+
+
+const TR_NS = 'http://www.w3.org/2000/svg';
+const TR_KINDS = /** @type {const} */ (['iliad', 'scholia', 'other']);
+const TR_TIP_MAX_CHARS = 700;
+const TR_TIP_MAX_ITEMS = 4;
+
+class TextRegions {
+  /**
+   * @param {import('./image-viewer.js').IiifViewer} viewer
+   * @param {{tip: HTMLElement, copied: HTMLElement, wrap: HTMLElement, checks: Record<'iliad' | 'scholia' | 'other', HTMLInputElement>, onShown?: (n: number) => void}} els
+   */
+  constructor(viewer, els) {
+    this.viewer = viewer;
+    this.els = els;
+    /** @type {Map<string, {passage: string, roi: import('./dse.js').Roi}[]>} */ this.byImage = new Map();
+    /** @type {Map<string, any>} */ this.textIndex = new Map();
+    /** @type {Map<string, string>} */ this.titles = new Map();
+    this.lastTipKey = '';
+    this.toastTimer = 0;
+    viewer.overlay.id = 'rois';
+    for (const k of TR_KINDS) els.checks[k].addEventListener('change', () => this.applyLayers());
+    this.bind();
+  }
+
+  /**
+   * @param {{byImage: Map<string, {passage: string, roi: import('./dse.js').Roi}[]>, textIndex: Map<string, any>, titles: Map<string, string>}} data
+   */
+  setData(data) {
+    this.byImage = data.byImage;
+    this.textIndex = data.textIndex;
+    this.titles = data.titles;
+  }
+
+  /** Number of indexed regions of an image. @param {string} imageUrn */
+  count(imageUrn) { return (this.byImage.get(imageUrn) ?? []).length; }
+
+  /**
+   * Draw the regions of an image that is open in the viewer.
+   * @param {string} imageUrn
+   * @param {number} width   Image width in pixels.
+   * @param {number} height
+   * @returns {number} How many regions were drawn.
+   */
+  show(imageUrn, width, height) {
+    const regions = this.byImage.get(imageUrn) ?? [];
+    const overlay = this.viewer.overlay;
+    overlay.textContent = '';
+    const frag = document.createDocumentFragment();
+    for (const r of regions) {
+      const rect = document.createElementNS(TR_NS, 'rect');
+      const p = roiToRect(r.roi, width, height);
+      rect.setAttribute('x', String(p.x)); rect.setAttribute('y', String(p.y));
+      rect.setAttribute('width', String(p.w)); rect.setAttribute('height', String(p.h));
+      rect.setAttribute('class', `roi ${passageKind(r.passage)}`);
+      /** @type {SVGElement} */ (rect).dataset.passage = r.passage;
+      frag.appendChild(rect);
+    }
+    overlay.appendChild(frag);
+    this.applyLayers();
+    if (this.els.onShown) this.els.onShown(regions.length);
+    return regions.length;
+  }
+
+  /** The image is no longer shown. */
+  clear() {
+    this.viewer.overlay.textContent = '';
+    this.hideTip();
+    if (this.els.onShown) this.els.onShown(0);
+  }
+
+  applyLayers() {
+    for (const k of TR_KINDS) this.viewer.overlay.classList.toggle(`hide-${k}`, !this.els.checks[k].checked);
+    this.hideTip();
+  }
+
+  hideTip() {
+    this.els.tip.hidden = true;
+    this.lastTipKey = '';
+    for (const el of this.viewer.overlay.querySelectorAll('.hot')) el.classList.remove('hot');
+  }
+
+  /** @param {string} passage */
+  tipItem(passage) {
+    const div = document.createElement('div');
+    div.className = 'item';
+    const what = document.createElement('div');
+    what.className = 'what';
+    const b = document.createElement('b');
+    b.textContent = passageLabel(passage, this.titles);
+    what.appendChild(b);
+    div.appendChild(what);
+    const body = document.createElement('div');
+    body.className = 'greek'; body.lang = 'grc';
+    const { parts } = passageText(this.textIndex, passage, 'diplomatic');
+    if (!parts.length) {
+      body.className = 'none';
+      body.textContent = 'Text not available in this release.';
+    } else {
+      let remaining = TR_TIP_MAX_CHARS;
+      for (const p of parts) {
+        if (remaining <= 0) break;
+        const text = p.text.length > remaining ? p.text.slice(0, remaining) + '…' : p.text;
+        remaining -= text.length;
+        const span = document.createElement('span');
+        if (p.part === 'lemma') span.className = 'lemma';
+        span.textContent = text;
+        if (body.childNodes.length) body.append(' ');
+        body.appendChild(span);
+      }
+    }
+    div.appendChild(body);
+    return div;
+  }
+
+  /** The indexed regions under a point of the screen, topmost first.  @param {number} x @param {number} y */
+  regionsAt(x, y) {
+    return /** @type {SVGElement[]} */ (document.elementsFromPoint(x, y).filter(el => el.classList && el.classList.contains('roi')));
+  }
+
+  /** @param {number} clientX @param {number} clientY */
+  showTipAt(clientX, clientY) {
+    const els = this.regionsAt(clientX, clientY);
+    const tip = this.els.tip;
+    if (!els.length) { this.hideTip(); return; }
+    const key = els.map(el => el.dataset.passage).join('\n');
+    if (key !== this.lastTipKey) {
+      this.lastTipKey = key;
+      for (const el of this.viewer.overlay.querySelectorAll('.hot')) el.classList.remove('hot');
+      for (const el of els) el.classList.add('hot');
+      tip.textContent = '';
+      for (const el of els.slice(0, TR_TIP_MAX_ITEMS)) tip.appendChild(this.tipItem(/** @type {string} */ (el.dataset.passage)));
+      if (els.length > TR_TIP_MAX_ITEMS) {
+        const more = document.createElement('div');
+        more.className = 'what'; more.textContent = `+ ${els.length - TR_TIP_MAX_ITEMS} more here`;
+        tip.appendChild(more);
+      }
+    }
+    tip.hidden = false;
+    const wrap = this.els.wrap.getBoundingClientRect();
+    const x0 = clientX - wrap.left, y0 = clientY - wrap.top;
+    let x = x0 + 14, y = y0 + 18;
+    if (x + tip.offsetWidth > wrap.width - 4) x = x0 - 14 - tip.offsetWidth;
+    if (y + tip.offsetHeight > wrap.height - 4) y = y0 - 14 - tip.offsetHeight;
+    tip.style.left = Math.max(4, x) + 'px';
+    tip.style.top = Math.max(4, y) + 'px';
+  }
+
+  /** @param {string} msg @param {boolean} [bad] */
+  toast(msg, bad = false) {
+    const t = this.els.copied;
+    t.textContent = msg;
+    t.classList.toggle('bad', bad);
+    t.hidden = false;
+    clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => { t.hidden = true; }, 2200);
+  }
+
+  /** Copy the passage URN and the diplomatic text of the topmost region under the pointer.  @param {number} clientX @param {number} clientY */
+  async copyAt(clientX, clientY) {
+    const el = this.regionsAt(clientX, clientY)[0];
+    if (!el) return;
+    const passage = /** @type {string} */ (el.dataset.passage);
+    const label = passageLabel(passage, this.titles);
+    const text = passageText(this.textIndex, passage, 'diplomatic').parts.map(p => p.text).join(' ');
+    if (!text) { this.toast(`No text of ${label} in this release`, true); return; }
+    this.toast((await copyToClipboard(`${passage}\n${text}`)) ? `Copied the URN and text of ${label} to the clipboard` : `Could not copy ${label}`);
+  }
+
+  bind() {
+    const root = this.viewer.root, v = this.viewer;
+    /** @type {PointerEvent | null} */
+    let pending = null;
+    root.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse' || v.dragging) return;
+      pending = e;
+      requestAnimationFrame(() => { if (pending) { this.showTipAt(pending.clientX, pending.clientY); pending = null; } });
+    });
+    root.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { pending = null; this.hideTip(); } });
+    root.addEventListener('pointerdown', () => { if (v.pointers.size === 0) this.els.tip.hidden = true; });
+    root.addEventListener('click', e => {
+      if (v.dragging) return;
+      if (e.target instanceof Element && e.target.closest('.roi-layer')) return;   // a region of interest of your own
+      if (e.pointerType !== 'mouse') this.showTipAt(e.clientX, e.clientY);   // touch has no hover: a tap shows the text too
+      this.copyAt(e.clientX, e.clientY);
+    });
+    root.addEventListener('wheel', () => this.hideTip(), { passive: true });
+  }
+}
+
+</script>
+<script>
 // Browser UI for the images app: choose an image collection of the release,
 // browse all its thumbnails at once (a light box with a Find box and a size slider), and open any image in a
 // pannable, zoomable viewer.  Uses the shared sources inlined ahead of this
@@ -2243,6 +2591,9 @@ class RoiUi {
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let textRegions = null;   // indexed text on the open image
+  /** @type {{byImage: Map<string, any>, textIndex: Map<string, any>, titles: Map<string, string>}} */
+  let textData = { byImage: new Map(), textIndex: new Map(), titles: new Map() };
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open image
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   let openToken = 0;
@@ -2257,6 +2608,8 @@ class RoiUi {
 
   function start(rel) {
     collections = imageCollections(rel);
+    textData = { byImage: indexDse(rel).byImage, textIndex: buildTextIndex(rel), titles: catalogTitles(rel) };
+    if (textRegions) textRegions.setData(textData);
     locator = createLocator(rel);
     coll = null; current = -1;
     const sel = $('collection');
@@ -2329,6 +2682,7 @@ class RoiUi {
     openToken++;
     if (viewer) viewer.close();
     if (roiUi) roiUi.close();
+    if (textRegions) textRegions.clear();
     current = -1;
     $('viewer-view').hidden = true;
     $('table-view').hidden = false;
@@ -2439,10 +2793,17 @@ class RoiUi {
     $('viewer-view').hidden = false;
     if (!viewer) {
       viewer = new IiifViewer($('viewer'));
+      textRegions = new TextRegions(viewer, {
+        tip: $('tip'), copied: $('copied'), wrap: $('viewer-wrap'),
+        checks: { iliad: $('show-iliad'), scholia: $('show-scholia'), other: $('show-other') },
+        onShown: n => { $('layers').hidden = n === 0; },
+      });
+      textRegions.setData(textData);
       roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') });
     }
     viewer.close();
     roiUi.close();
+    textRegions.clear();
     $('viewer-title').textContent = item.label;
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
     $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
@@ -2462,6 +2823,8 @@ class RoiUi {
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
+      const nText = textRegions.show(item.urn, width, height);
+      if (nText) $('viewer-note').textContent += ` · ${plural(nText, 'indexed passage', 'indexed passages')}`;
       roiUi.open(item.urn, roi ? [roi] : []);
       if (roi) zoomToRegion(roi, width, height);
       viewer.root.focus({ preventScroll: true });

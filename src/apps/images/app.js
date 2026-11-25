@@ -19,6 +19,9 @@
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let textRegions = null;   // indexed text on the open image
+  /** @type {{byImage: Map<string, any>, textIndex: Map<string, any>, titles: Map<string, string>}} */
+  let textData = { byImage: new Map(), textIndex: new Map(), titles: new Map() };
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open image
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   let openToken = 0;
@@ -33,6 +36,8 @@
 
   function start(rel) {
     collections = imageCollections(rel);
+    textData = { byImage: indexDse(rel).byImage, textIndex: buildTextIndex(rel), titles: catalogTitles(rel) };
+    if (textRegions) textRegions.setData(textData);
     locator = createLocator(rel);
     coll = null; current = -1;
     const sel = $('collection');
@@ -105,6 +110,7 @@
     openToken++;
     if (viewer) viewer.close();
     if (roiUi) roiUi.close();
+    if (textRegions) textRegions.clear();
     current = -1;
     $('viewer-view').hidden = true;
     $('table-view').hidden = false;
@@ -215,10 +221,17 @@
     $('viewer-view').hidden = false;
     if (!viewer) {
       viewer = new IiifViewer($('viewer'));
+      textRegions = new TextRegions(viewer, {
+        tip: $('tip'), copied: $('copied'), wrap: $('viewer-wrap'),
+        checks: { iliad: $('show-iliad'), scholia: $('show-scholia'), other: $('show-other') },
+        onShown: n => { $('layers').hidden = n === 0; },
+      });
+      textRegions.setData(textData);
       roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') });
     }
     viewer.close();
     roiUi.close();
+    textRegions.clear();
     $('viewer-title').textContent = item.label;
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
     $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
@@ -238,6 +251,8 @@
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
+      const nText = textRegions.show(item.urn, width, height);
+      if (nText) $('viewer-note').textContent += ` · ${plural(nText, 'indexed passage', 'indexed passages')}`;
       roiUi.open(item.urn, roi ? [roi] : []);
       if (roi) zoomToRegion(roi, width, height);
       viewer.root.focus({ preventScroll: true });
