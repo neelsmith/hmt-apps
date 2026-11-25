@@ -94,6 +94,7 @@
   #problem { color: var(--err); }
   @media (max-width: 40rem) { #find { width: 8rem; } header { padding: .5rem .75rem; } }
 </style>
+<!-- @inline-style src/roi.css -->
 </head>
 <body>
 <header>
@@ -139,14 +140,16 @@
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
       <button class="btn" id="fit" title="Fit page (0)">Fit</button>
     </span>
   </div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <div id="viewer-note"></div>
     <div id="tip" hidden></div>
   </div>
+  <div id="roi-panel" hidden></div>
 </section>
 
 <!-- @inline src/hmt-release.js -->
@@ -159,6 +162,9 @@
 <!-- @inline src/locate.js -->
 <!-- @inline src/pan-zoom.js -->
 <!-- @inline src/image-viewer.js -->
+<!-- @inline src/roi.js -->
+<!-- @inline src/roi-tool.js -->
+<!-- @inline src/roi-panel.js -->
 <!-- @inline src/apps/va-facsimile/app.js -->
 </body>
 </html>

@@ -47,6 +47,8 @@ export class IiifViewer {
     /** Group for overlay shapes, in image pixel coordinates. */
     this.overlay = /** @type {SVGGElement} */ (document.createElementNS(SVG_NS, 'g'));
     this.svg.appendChild(this.overlay);
+    /** Further groups in image pixel coordinates that follow the transform and are not cleared when an image is opened. @type {SVGGElement[]} */
+    this.layers_ = [];
     root.append(this.canvas, this.svg);
     this.ctx = /** @type {CanvasRenderingContext2D} */ (this.canvas.getContext('2d'));
 
@@ -54,6 +56,14 @@ export class IiifViewer {
     this.t = { sc: 1, tx: 0, ty: 0 };
     this.minScale = 0.01;
     this.gen = 0;
+    /**
+     * Called first for the pointer that starts a drag, when no other pointer is down; if it returns true the viewer
+     * does not pan.  For tools that draw on the image (see roi-tool.js).
+     * @type {((e: PointerEvent) => boolean) | null}
+     */
+    this.interceptPointer = null;
+    /** Called with the transform whenever the view changes.  @type {((t: {sc: number, tx: number, ty: number}) => void) | null} */
+    this.onViewChange = null;
     /** True while the pointer is being dragged to pan; hover handlers should ignore events then. */
     this.dragging = false;
     /** @type {Map<number, {x: number, y: number}>} */ this.pointers = new Map();
@@ -70,6 +80,19 @@ export class IiifViewer {
     this.ro = new ResizeObserver(() => this.onResize());
     this.ro.observe(root);
     this.bind();
+  }
+
+  /**
+   * A group for shapes in image pixel coordinates, above the overlay; it follows the transform and is left alone when
+   * an image is opened or closed.
+   * @returns {SVGGElement}
+   */
+  addLayer() {
+    const g = /** @type {SVGGElement} */ (document.createElementNS(SVG_NS, 'g'));
+    g.setAttribute('transform', `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`);
+    this.svg.appendChild(g);
+    this.layers_.push(g);
+    return g;
   }
 
   /** Show an image, fitted to the view. */
@@ -157,7 +180,10 @@ export class IiifViewer {
   set(/** @type {{sc: number, tx: number, ty: number}} */ t) {
     if (!this.image) { this.t = t; return; }
     this.t = clampTransform(t, this.size.w, this.size.h, this.image.width, this.image.height, this.minScale, MAX_SCALE);
-    this.overlay.setAttribute('transform', `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`);
+    const tf = `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`;
+    this.overlay.setAttribute('transform', tf);
+    for (const g of this.layers_) g.setAttribute('transform', tf);
+    if (this.onViewChange) this.onViewChange(this.t);
     this.schedule();
   }
 
@@ -246,6 +272,7 @@ export class IiifViewer {
 
     root.addEventListener('pointerdown', e => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
+      if (this.image && this.pointers.size === 0 && this.interceptPointer && this.interceptPointer(e)) return;
       root.setPointerCapture(e.pointerId);
       const p = local(e);
       this.pointers.set(e.pointerId, p);

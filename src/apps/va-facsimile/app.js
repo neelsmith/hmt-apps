@@ -23,6 +23,7 @@
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
   let current = -1;
   let openToken = 0;
   let tableScroll = 0;
@@ -193,7 +194,7 @@
 
   function showTable() {
     openToken++;
-    if (viewer) viewer.close();
+    if (viewer) { viewer.close(); roiUi.close(); }
     current = -1;
     hideTip();
     $('viewer-view').hidden = true;
@@ -230,9 +231,11 @@
       viewer = new IiifViewer($('viewer'));
       viewer.overlay.id = 'rois';
       bindHover();
+      roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') });
     }
     hideTip();
     viewer.close();
+    roiUi.close();
     viewer.overlay.textContent = '';
     $('viewer-title').textContent = c.label;
     document.title = `${c.label} – Venetus A facsimile`;
@@ -252,6 +255,7 @@
       placeholders: [url(c, 'full', `${THUMB_W},`)],
     });
     renderRegions();
+    roiUi.open(c.imageUrn);
     viewer.root.focus({ preventScroll: true });
   }
 

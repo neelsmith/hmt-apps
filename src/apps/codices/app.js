@@ -25,6 +25,7 @@
   /** @type {Set<string>} */ let catalogImages = new Set();
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
   let current = -1;            // index of the page in `book.pages`
   let openToken = 0;
   let lastTipKey = '';
@@ -113,7 +114,7 @@
 
   function clear() {
     openToken++;
-    if (viewer) viewer.close();
+    if (viewer) { viewer.close(); roiUi.close(); }
     current = -1;
     hideTip();
     $('intro').hidden = false;
@@ -152,8 +153,9 @@
     hideTip();
     document.title = `${page.label || page.id} – Codices`;
     const view = pageView(page, regionsOn(page), catalogImages);
-    if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); }
+    if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
     viewer.close();
+    roiUi.close();
     const note = $('viewer-note');
     note.hidden = false;
     note.textContent = page.label || page.id;
@@ -168,6 +170,7 @@
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
       drawRegions(view.regions, width, height);
+      roiUi.open(view.image);
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
@@ -337,7 +340,7 @@
     const urn = e.target.value;
     chooseCodex(urn);
     current = -1;
-    if (urn) { openToken++; if (viewer) viewer.close(); syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
+    if (urn) { openToken++; if (viewer) { viewer.close(); roiUi.close(); } syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
     else { setQuery({}, false); clear(); }
     $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
     if (urn) setQuery({}, true);

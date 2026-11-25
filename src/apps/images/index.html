@@ -50,7 +50,6 @@
           gap: .75rem; padding: 1rem; }
   .cell { display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
           border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
-  .roi-hl { fill: #ffd400; fill-opacity: .3; stroke: #ffd400; stroke-width: 2.5px; vector-effect: non-scaling-stroke; pointer-events: none; }
   .cell:hover { border-color: var(--accent); }
   .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
   .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -81,6 +80,7 @@
   #problem { color: var(--err); }
   @media (max-width: 40rem) { header { padding: .5rem .75rem; } #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
 </style>
+<!-- @inline-style src/roi.css -->
 </head>
 <body>
 <header>
@@ -120,15 +120,17 @@
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
       <button class="btn" id="fit" title="Fit image (0)">Fit</button>
     </span>
   </div>
   <div id="rights" hidden></div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <div id="viewer-note"></div>
     <div id="viewer-error" role="alert" hidden></div>
   </div>
+  <div id="roi-panel" hidden></div>
 </section>
 
 <!-- @inline src/hmt-release.js -->
@@ -140,6 +142,9 @@
 <!-- @inline src/locate.js -->
 <!-- @inline src/pan-zoom.js -->
 <!-- @inline src/image-viewer.js -->
+<!-- @inline src/roi.js -->
+<!-- @inline src/roi-tool.js -->
+<!-- @inline src/roi-panel.js -->
 <!-- @inline src/apps/images/app.js -->
 </body>
 </html>

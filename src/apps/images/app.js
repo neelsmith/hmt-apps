@@ -4,7 +4,7 @@
 // file (see index.html).
 //
 // Address (no `#`): `?image=<collection URN>` is the light box of a collection,
-// `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` highlights a region of it); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
+// `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` also marks that region of it; Shift-drag marks others); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
@@ -19,6 +19,7 @@
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open image
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   let openToken = 0;
   let renderToken = 0;       // identifies the latest grid, so late thumbnail events can be ignored
@@ -103,6 +104,7 @@
   function showTable(message) {
     openToken++;
     if (viewer) viewer.close();
+    if (roiUi) roiUi.close();
     current = -1;
     $('viewer-view').hidden = true;
     $('table-view').hidden = false;
@@ -211,8 +213,12 @@
     const token = ++openToken;
     $('table-view').hidden = true;
     $('viewer-view').hidden = false;
-    if (!viewer) viewer = new IiifViewer($('viewer'));
+    if (!viewer) {
+      viewer = new IiifViewer($('viewer'));
+      roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') });
+    }
     viewer.close();
+    roiUi.close();
     $('viewer-title').textContent = item.label;
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
     $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
@@ -232,7 +238,8 @@
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
-      if (roi) highlight(roi, width, height);
+      roiUi.open(item.urn, roi ? [roi] : []);
+      if (roi) zoomToRegion(roi, width, height);
       viewer.root.focus({ preventScroll: true });
     } catch (e) {
       if (token !== openToken) return;
@@ -241,14 +248,9 @@
     }
   }
 
-  /** Mark a region of the open image and bring it into view (zoomed to it, but never past full resolution). */
-  function highlight(roi, width, height) {
+  /** Bring a region of the open image into view: zoomed to it, but never past full resolution. */
+  function zoomToRegion(roi, width, height) {
     const r = roiToRect(roi, width, height);
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    for (const [k, v] of [['x', r.x], ['y', r.y], ['width', r.w], ['height', r.h]]) rect.setAttribute(k, String(v));
-    rect.setAttribute('class', 'roi-hl');
-    viewer.overlay.textContent = '';
-    viewer.overlay.appendChild(rect);
     const { w: vw, h: vh } = viewer.size;
     if (!vw || !vh) return;
     const sc = Math.max(viewer.minScale, Math.min(0.5 * vw / r.w, 0.5 * vh / r.h, 1));
