@@ -2241,6 +2241,21 @@ function pvPassageLink(urn, text) {
   return a;
 }
 
+/**
+ * A row of a list of passages, to choose from: a `div` that acts as a button (a real button cannot hold a link).
+ * Enter or Space on it clicks it.  Its clicks are for the list; a click on a link inside is the link's own.
+ * @returns {HTMLElement}
+ */
+function pvRowEl() {
+  const b = pvEl('div', 'row');
+  b.setAttribute('role', 'button');
+  b.tabIndex = 0;
+  b.addEventListener('keydown', e => {
+    if (e.target === b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); b.click(); }
+  });
+  return b;
+}
+
 /** A span of the given class holding a passage link. @param {string} cls @param {string} urn @param {string} text */
 function pvRefEl(cls, urn, text) {
   const s = pvEl('span', cls);

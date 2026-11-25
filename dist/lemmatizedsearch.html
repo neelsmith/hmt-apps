@@ -83,6 +83,7 @@
   .hint { color: var(--muted); padding: 1rem; }
   .vh { font-size: .8125rem; font-weight: 700; color: var(--muted); margin: .75rem .5rem .2rem; }
   .row { display: flex; flex-direction: column; align-items: stretch; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: inherit; padding: .25rem .5rem; border-radius: 6px; }
+  .row { cursor: pointer; }
   .row:hover { background: var(--cur); }
   .row.on { background: var(--cur); border-color: var(--accent); }
   .row .ref { font: .8125rem ui-monospace, Menlo, monospace; }
@@ -2030,6 +2031,21 @@ function pvPassageLink(urn, text) {
   return a;
 }
 
+/**
+ * A row of a list of passages, to choose from: a `div` that acts as a button (a real button cannot hold a link).
+ * Enter or Space on it clicks it.  Its clicks are for the list; a click on a link inside is the link's own.
+ * @returns {HTMLElement}
+ */
+function pvRowEl() {
+  const b = pvEl('div', 'row');
+  b.setAttribute('role', 'button');
+  b.tabIndex = 0;
+  b.addEventListener('keydown', e => {
+    if (e.target === b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); b.click(); }
+  });
+  return b;
+}
+
 /** A span of the given class holding a passage link. @param {string} cls @param {string} urn @param {string} text */
 function pvRefEl(cls, urn, text) {
   const s = pvEl('span', cls);
@@ -3271,8 +3287,7 @@ function parseLemmaHash(hash) {
 
   function rowFor(entry, i) {
     const occ = occurrenceOf(/** @type {LemmaData} */ (lemmata), entry, i);
-    const b = el('button', 'row');
-    b.type = 'button';
+    const b = pvRowEl();
     b.dataset.lemma = entry.lemma;
     b.dataset.token = occ.tokenUrn;
     b.dataset.i = String(i);
@@ -3280,7 +3295,8 @@ function parseLemmaHash(hash) {
     const t = el('span', 'tok', occ.token);
     t.lang = 'grc';
     b.appendChild(t);
-    b.appendChild(el('span', 'ref', occ.key ? `${refOf(occ.key)}${occ.n ? ` · token ${occ.n}` : ''}` : occ.tokenUrn));
+    if (occ.key) { const r = pvRefEl('ref', occ.key, refOf(occ.key)); if (occ.n) r.append(` · token ${occ.n}`); b.appendChild(r); }
+    else b.appendChild(el('span', 'ref', occ.tokenUrn));
     const pages = occ.key ? surfacesOf.get(occ.key) : null;
     const where = occ.key
       ? `${versionLabels.get(occ.version) ?? occ.version} · ${pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'}`
@@ -3395,7 +3411,7 @@ function parseLemmaHash(hash) {
   $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => ready && search('replace'), DEBOUNCE); });
   $('passages').addEventListener('click', e => {
     const row = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.row'));
-    if (!row) return;
+    if (!row || /** @type {HTMLElement} */ (e.target).closest('a.plink')) return;   // a passage link is the link's own click
     const entry = found.find(x => x.lemma === row.dataset.lemma);
     if (!entry) return;
     showToken(entry, Number(row.dataset.i));
