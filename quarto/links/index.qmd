@@ -14,4 +14,6 @@ In all text browsing and text searching apps, text displays are organized by man
 ## Linked information in image displays
 
 Light table views of image collections show badges  
-image displays load all RoIs
+image displays load all RoIs.
+
+Single-image views load all RoI information.
