@@ -100,24 +100,28 @@
 
   /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
+    focusKey = '';
     setQuery({ page: urn }, replace);
     showPage(urn);
   }
 
-  /**
-   * Show what the address asks for.  An `image` opens the page that has it (and `page` is then ignored); without one,
-   * `page`, then `text`.  The region of the `text` passage on the shown image is marked like a region just drawn by
-   * Shift-drag, and `text` stays in the address (`?page=…&text=…`); the page buttons drop it.
-   */
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
+
   function route() {
-    const p = readParams(location.search);
-    if (p.image) { p.image = p.image.split('@')[0].trim(); p.page = null; }   // an image decides alone; its region is ignored
-    const r = resolvePage(locator, p);
+    const params = readParams(location.search);
+    setFocus(params.text);
+    const r = resolvePage(locator, params);
     if (!r) { clear(); return; }
     if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
-    const params = p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text };
-    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(params))) setQuery(params, true);   // the canonical address
-    showPage(r.page, p.text, p.image);
+    const canon = { page: r.page, text: focusKey ? params.text : null };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    showPage(r.page);
   }
 
   function clear() {
@@ -147,12 +151,7 @@
     return p;
   }
 
-  /**
-   * @param {string} urn  The page.
-   * @param {string | null} [text]  A passage whose region on the image is marked.
-   * @param {string | null} [image]  The image asked for, when the page has more than one (a page the DSE puts on another image).
-   */
-  async function showPage(urn, text = null, image = null) {
+  async function showPage(urn) {
     const owner = books.find(c => c.urn === (collectionOfObject(urn) ?? ''));
     const idx = owner ? owner.pages.findIndex(p => p.urn === urn) : -1;
     if (idx < 0) { clear(); setStatus(`${release.library.name}: no page ${urn} in this release`); return; }
@@ -165,11 +164,7 @@
     $('viewer-error').hidden = true;
     hideTip();
     document.title = `${page.label || page.id} – Codices`;
-    let view = pageView(page, regionsOn(page), catalogImages);
-    if (image && image !== view.image && catalogImages.has(image) && locator.pagesOfImage(image).includes(urn)) {   // the image asked for
-      const regions = regionsOn(page);
-      view = { image, regions: regions.filter(r => r.image === image), elsewhere: regions.filter(r => r.image !== image).length, source: 'dse' };
-    }
+    const view = pageView(page, regionsOn(page), catalogImages);
     if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
     viewer.close();
     roiUi.close();
@@ -187,14 +182,12 @@
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
       drawRegions(view.regions, width, height);
-      const marked = text ? locator.regionsOfText(text, view.image) : [];   // the passage of `text`, marked as if just drawn
-      roiUi.open(view.image, marked);
+      roiUi.open(view.image);
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
       else bits.push(release && view.source !== 'none' ? 'no indexed text on this page' : '');
       if (view.elsewhere) bits.push(`${plural(view.elsewhere, 'region', 'regions')} on another image not shown`);
-      if (text && !marked.length) bits.push(`no region of ${text} on this image`);
       note.textContent = bits.filter(Boolean).join(' · ');
     } catch (e) {
       if (token !== openToken) return;
@@ -212,7 +205,7 @@
       const p = roiToRect(r.roi, width, height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${passageKind(r.passage)}`);
+      rect.setAttribute('class', `roi ${passageKind(r.passage)}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
       frag.appendChild(rect);
     }

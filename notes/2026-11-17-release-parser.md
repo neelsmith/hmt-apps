@@ -458,3 +458,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - The address keeps the `text` (`?image=…&text=…` or `?page=…&text=…`; a text-only address is rewritten to the page/image plus the text); stepping with the buttons drops it; Back/Forward re-marks it.
 - codices: an `image` that is not the one the DSE would show for its page (the catalog's other image) is shown as asked.
 - Tests: `test/locate.test.js` (155 pass). Browser (Chromium, synthetic release, stubbed image server, 3 apps × 12 checks): text only, image beats page, image+text+page, text not on the image, `@region` plus text (images), layer checkboxes, next drops text, popstate re-marks, no errors. Not run against the real release. Nothing committed.
+
+## `text` parameter: layers start off, passage shown
+
+- In images, codices and va-facsimile, `setFocus(text)` sets `focusKey = firstPassageKey(text)` and unchecks `#show-iliad/scholia/other`; regions with `dseKey(passage) === focusKey` get class `target` (`.roi.target {display: inline !important}` overrides the layer hiding, so it stays visible). `TextRegions.show(imageUrn, w, h, target)` takes the key. The canonical address keeps `text` (`formatQuery({page|image, text})`); `go()`/`goTo()` clear `focusKey`. Checked in `ui-test-textparam.js` (scratchpad); `ui-test-va.js` expectations updated for the address.

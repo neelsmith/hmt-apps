@@ -9,7 +9,7 @@
  * inside the viewer's wrapper (see text-regions.css).  The rectangles carry the passage as `data-passage`.
  */
 
-import { passageKind, passageLabel } from './dse.js';
+import { dseKey, passageKind, passageLabel } from './dse.js';
 import { passageText } from './text-index.js';
 import { roiToRect } from './pan-zoom.js';
 import { copyToClipboard } from './roi-panel.js';
@@ -54,9 +54,10 @@ export class TextRegions {
    * @param {string} imageUrn
    * @param {number} width   Image width in pixels.
    * @param {number} height
+   * @param {string} [target]  DSE key of a passage whose regions are marked `target` and shown whatever the checkboxes say.
    * @returns {number} How many regions were drawn.
    */
-  show(imageUrn, width, height) {
+  show(imageUrn, width, height, target = '') {
     const regions = this.byImage.get(imageUrn) ?? [];
     const overlay = this.viewer.overlay;
     overlay.textContent = '';
@@ -66,7 +67,7 @@ export class TextRegions {
       const p = roiToRect(r.roi, width, height);
       rect.setAttribute('x', String(p.x)); rect.setAttribute('y', String(p.y));
       rect.setAttribute('width', String(p.w)); rect.setAttribute('height', String(p.h));
-      rect.setAttribute('class', `roi ${passageKind(r.passage)}`);
+      rect.setAttribute('class', `roi ${passageKind(r.passage)}${target && dseKey(r.passage) === target ? ' target' : ''}`);
       /** @type {SVGElement} */ (rect).dataset.passage = r.passage;
       frag.appendChild(rect);
     }

@@ -25,7 +25,6 @@
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
   let current = -1;
-  let currentText = null;     // the `text` parameter whose region is marked on the open page
   let openToken = 0;
   let tableScroll = 0;
   let lastTipKey = '';
@@ -170,19 +169,25 @@
 
   // --- navigation (address of the page) -----------------------------------
   //
-  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` opens the page that
-  // has that image (and then `page` is ignored); `?text=<CTS passage URN>` (for a range, its first passage) opens the
-  // page that has that passage when neither is given.  Whichever page is opened, the region of the `text` passage on
-  // its image is marked like a region just drawn by Shift-drag.  A `text` stays in the address (`?page=…&text=…`);
-  // the page buttons drop it.  There is no `#`.
+  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
+  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
+  // (the app then shows it as `?page=…`).  There is no `#`.
+
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
 
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
     if (!release) return;
     notice = '';
     const p = readParams(location.search);
+    setFocus(p.text);
     for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
-    if (p.image) p.page = null;                                                       // an image decides alone
     const r = resolvePage(locator, p);
     if (!r) { showTable(); updateStatus(); return; }
     if ('error' in r) { notice = r.error; setQuery({}, true); showTable(); updateStatus(); return; }
@@ -191,9 +196,9 @@
       notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
       setQuery({}, true); showTable(); updateStatus(); return;
     }
-    const canonical = decodeURIComponent(formatQuery(p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text }));
-    if (decodeURIComponent(location.search) !== canonical) setQuery(p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text }, true);
-    showViewer(idx, p.text);
+    const canon = { page: r.page, text: focusKey ? p.text : null };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    showViewer(idx);
     updateStatus();
   }
 
@@ -210,6 +215,7 @@
 
   /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
+    focusKey = '';
     setQuery({ page: canvases[idx].urn }, replace);
     showViewer(idx);
   }
@@ -224,9 +230,8 @@
 
   function kind() { return document.querySelector('input[name=kind]:checked').value; }
 
-  async function showViewer(idx, text = null) {
-    if (idx === current && text === currentText && !$('viewer-view').hidden) return;
-    currentText = text;
+  async function showViewer(idx) {
+    if (idx === current && !$('viewer-view').hidden) return;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     const token = ++openToken;
@@ -261,9 +266,7 @@
       placeholders: [url(c, 'full', `${THUMB_W},`)],
     });
     renderRegions();
-    const marked = text ? locator.regionsOfText(text, c.imageUrn) : [];   // the passage of `text`, marked as if just drawn
-    roiUi.open(c.imageUrn, marked);
-    if (text && !marked.length) $('viewer-note').textContent += ` · no region of ${text} on this image`;
+    roiUi.open(c.imageUrn);
     viewer.root.focus({ preventScroll: true });
   }
 
@@ -283,7 +286,7 @@
       const p = roiToRect(r.roi, c.width, c.height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${k}`);
+      rect.setAttribute('class', `roi ${k}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
       frag.appendChild(rect);
     }
