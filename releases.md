@@ -4,14 +4,14 @@
 
 Current version:  **0.13.0**
 
-**0.13.0**, *?*:
+**0.13.0**, *No. 25, 2026*:
 
 - changes response of image display apps `va-facsimile`, `codices` and `images` when both `image` and `text` are identified by URL parameters.
 - in `propernames`, displayed proper names are now live search links.
 - adds linking to `codices` from all text searching and text browsing apps.
 
 
-**0.12.1**, *Nov. 25, 2027*:
+**0.12.1**, *Nov. 25, 2026*:
 
 - adds links from page references to `codices` app on github pages
 - fixes a bug in text display in `va-facsimile`
