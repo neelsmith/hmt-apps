@@ -29,6 +29,7 @@ None.
 - Light table: **Find** (e.g. `12r`, `cover`, `flyleaf`), **Only pages with indexed text**, a **Size** slider for the thumbnails; click a page to open it.
 - Viewer: **‹ ›** (or `[` `]`) for the previous or next page; **← Pages** or Esc for the light table.
 - **Iliad**, **Scholia** and **Other** checkboxes show or hide those regions; **diplomatic** or **normalized** chooses the text shown when you hover (or tap) a region.
+- Clicking a region **copies its passage URN and the text shown (diplomatic or normalized) to the clipboard**: the URN on the first line, the text on the second; a message confirms. Nothing is saved to a file. Dragging to pan, or Shift-dragging to draw a region of interest, copies nothing.
 - Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
 ## Marking regions of interest

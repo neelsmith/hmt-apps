@@ -6,6 +6,7 @@
   #page .pagenav .btn { font-size: .8125rem; padding: .1rem .6rem; }
   #page .pagenav .btn:disabled { opacity: .45; cursor: default; }
   #page .sub { color: var(--muted); font-size: .875rem; margin: 0 0 .75rem; }
+  #page .sub a.pageurn { color: var(--accent); }
   #page h3 { font-size: .9rem; margin: 1.25rem 0 .4rem; color: var(--muted); display: flex; gap: .75rem; align-items: baseline; }
   #page h3 .btn { font-size: .8125rem; padding: 0 .5rem; }
   .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.15rem; line-height: 1.6; }

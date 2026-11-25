@@ -8,6 +8,7 @@
 <style>
   :root {
     --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --c-iliad: #e0452c; --c-scholia: #2f7de1; --c-other: #2fa36b;
     --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
     --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
   }
@@ -65,6 +66,12 @@
   #viewer-title { font-weight: 600; flex: 1 1 10rem; min-width: 0; }
   #viewer-count { color: var(--muted); font-size: .875rem; }
   .group { display: inline-flex; gap: .4rem; align-items: center; }
+  .group[hidden] { display: none; }
+  .group label { display: inline-flex; gap: .3rem; align-items: center; font-size: .875rem; }
+  .chip { width: .8rem; height: .8rem; border-radius: 2px; display: inline-block; border: 2px solid; }
+  .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
+  .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
+  .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
   #rights { padding: .5rem 1rem; border-bottom: 1px solid var(--line); background: var(--panel); font-size: .875rem; color: var(--muted); }
   #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
   #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
@@ -81,6 +88,7 @@
   @media (max-width: 40rem) { header { padding: .5rem .75rem; } #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
 </style>
 <!-- @inline-style src/roi.css -->
+<!-- @inline-style src/text-regions.css -->
 </head>
 <body>
 <header>
@@ -117,6 +125,11 @@
     <span id="viewer-title"></span>
     <span id="viewer-count"></span>
     <button class="btn" id="rights-toggle" aria-expanded="false" aria-controls="rights">Rights</button>
+    <span class="group" id="layers" role="group" aria-label="Indexed text shown" hidden>
+      <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
+      <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
+      <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
@@ -126,14 +139,17 @@
   </div>
   <div id="rights" hidden></div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
+    <div id="viewer" aria-label="Image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region. Hover over an indexed rectangle to read its text; click to copy it."></div>
     <div id="viewer-note"></div>
     <div id="viewer-error" role="alert" hidden></div>
+    <div id="tip" hidden></div>
+    <div id="copied" role="status" hidden></div>
   </div>
   <div id="roi-panel" hidden></div>
 </section>
 
 <!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
 <!-- @inline src/iiif.js -->
 <!-- @inline src/dse.js -->
 <!-- @inline src/images.js -->
@@ -145,6 +161,7 @@
 <!-- @inline src/roi.js -->
 <!-- @inline src/roi-tool.js -->
 <!-- @inline src/roi-panel.js -->
+<!-- @inline src/text-regions.js -->
 <!-- @inline src/apps/images/app.js -->
 </body>
 </html>

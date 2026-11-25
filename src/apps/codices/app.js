@@ -286,7 +286,8 @@
     const label = passageLabel(passage, titles);
     const text = passageString(passage);
     if (!text) { toast(`No text of ${label} in this release`, true); return; }
-    toast((await copyText(text)) ? `Copied ${label} to the clipboard` : `Could not copy ${label}`, false);
+    // the passage URN, then its text
+    toast((await copyText(`${passage}\n${text}`)) ? `Copied the URN and text of ${label} to the clipboard` : `Could not copy ${label}`, false);
   }
 
   function showTipAt(clientX, clientY) {
@@ -328,6 +329,7 @@
     root.addEventListener('pointerdown', () => { if (viewer.pointers.size === 0) $('tip').hidden = true; });
     root.addEventListener('click', e => {
       if (viewer.dragging) return;
+      if (e.target instanceof Element && e.target.closest('.roi-layer')) return;   // clicking a region of interest of your own
       if (e.pointerType !== 'mouse') showTipAt(e.clientX, e.clientY);   // touch has no hover: a tap shows the text too
       copyAt(e.clientX, e.clientY);
     });

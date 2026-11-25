@@ -32,3 +32,5 @@ None.
 - **Unfold all scholia** opens or folds every scholion on a page.
 - Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons (the page before or after in the codex; the first and last page of a codex have one button disabled). These reopen the app at the *Iliad* lines on the neighbouring page (skipping pages with no indexed text); the address becomes the `?text=…` range of that page, in the version of the page, so the version menu may change.
 - Changing the version or text re-runs the display.
+
+The page URN under each page heading is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's URN; it opens in a new tab, so your place here is kept.

@@ -1,0 +1,22 @@
+/* Indexed text on an image (text-regions.js): rectangles, tooltip, copy message.  Needs --c-iliad, --c-scholia, --c-other. */
+  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; }
+  .roi.iliad { fill: var(--c-iliad); stroke: var(--c-iliad); }
+  .roi.scholia { fill: var(--c-scholia); stroke: var(--c-scholia); }
+  .roi.other { fill: var(--c-other); stroke: var(--c-other); }
+  .roi.hot { fill-opacity: .38; stroke-width: 3px; }
+  #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
+  #rois.hide-all .roi { display: none; }
+  #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
+         background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+         padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }
+  #tip .item + .item { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
+  #tip .what { font: .8125rem ui-monospace, monospace; color: var(--muted); }
+  #tip .what b { font-weight: 700; color: var(--fg); }
+  #tip .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.1rem; line-height: 1.5; }
+  #tip .lemma { font-weight: 700; }
+  #tip .none { color: var(--muted); font-style: italic; }
+
+  #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: #1f6b3a; color: #fff; padding: .2rem .6rem;
+         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
+  #copied.bad { background: #a3201a; }
+  .roi { cursor: pointer; }
