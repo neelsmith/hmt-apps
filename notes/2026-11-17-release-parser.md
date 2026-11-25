@@ -470,3 +470,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## Passage links to codices.html?text=
 
 - `src/page-view.js`: `pvPassageLink(urn, text)` (anchor class `plink`, new tab) and `pvRefEl(cls, urn, text)`; used for Iliad/other line refs, scholion summary ids and the loose-passage heading. `src/apps/iliad-scholia/app.js` (`renderPassage`, `renderScholion`, also the editorial and all-scholia apps) uses `pvPassageLink` too (`dseKey(urn)` for scholia). Style `a.plink` in `src/page-text.css`. The result-list rows are buttons and are not linked. Checked in `ui-test-plinks.js` (scratchpad). `ui-test-editorial.js` still looks for `.passage` rows and fails as before (stale).
+
+## Passage links in the result lists
+
+- The rows of the passage lists (stringsearch, stringcounter, propernames, lemmatizedsearch) are now `div.row[role=button][tabindex=0]` from `pvRowEl()` in `src/page-view.js` (Enter/Space click it), because a link cannot sit inside a `<button>`. The reference in each row is `pvRefEl('ref', passageKey, ref)`, a link to `codices.html?text=<passage URN>`; the list click handlers ignore clicks on `a.plink`. `.row {cursor: pointer}` in `src/page-view.css`. Checked in `ui-test-rowlinks.js` and a copy of the lemmatized test (scratchpad).

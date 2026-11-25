@@ -184,10 +184,10 @@
   }
 
   function rowFor(pk) {
-    const b = el('button', 'row');
-    b.type = 'button'; b.dataset.passage = pk;
+    const b = pvRowEl();
+    b.dataset.passage = pk;
     if (pk === selPassage) b.classList.add('on');
-    b.appendChild(el('span', 'ref', refOf(pk)));
+    b.appendChild(pvRefEl('ref', pk, refOf(pk)));
     const pages = surfacesOf.get(pk);
     b.appendChild(el('span', 'pg', pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'));
     const t = joinedText(pk, textKind());
@@ -270,7 +270,7 @@
   });
   $('passages').addEventListener('click', e => {
     const row = e.target.closest('.row');
-    if (!row) return;
+    if (!row || e.target.closest('a.plink')) return;   // a passage link is the link's own click
     showPassage(row.dataset.passage);
     go(false);
   });

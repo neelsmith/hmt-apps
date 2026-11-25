@@ -370,10 +370,10 @@
   }
 
   function rowFor(pk, ix, token) {
-    const b = el('button', 'row');
-    b.type = 'button'; b.dataset.passage = pk;
+    const b = pvRowEl();
+    b.dataset.passage = pk;
     if (pk === selPassage) b.classList.add('on');
-    b.appendChild(el('span', 'ref', refOf(pk)));
+    b.appendChild(pvRefEl('ref', pk, refOf(pk)));
     const pages = surfacesOf.get(pk);
     b.appendChild(el('span', 'pg', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} · ${pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'}`));
     const sn = snippet(ix.byKey.get(pk), query, 36, token);
@@ -493,7 +493,7 @@
   $('csv').addEventListener('click', downloadCsv);
   $('passages').addEventListener('click', e => {
     const row = e.target.closest('.row');
-    if (!row) return;
+    if (!row || e.target.closest('a.plink')) return;   // a passage link is the link's own click
     showPassage(row.dataset.passage);
     go('push');
   });
