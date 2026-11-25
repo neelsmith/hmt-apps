@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.3.0">
 <title>Codices</title>
 <style>
   :root {
@@ -87,12 +87,38 @@
   #problem { color: var(--err); }
   @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar { padding: .5rem .75rem; } #controls { width: 100%; } #controls label.sel { flex: 1 1 100%; } #codex, #page { flex: 1; width: auto; } }
 </style>
+<style>
+/* Regions of interest drawn on an image (roi-tool.js) and their list (roi-panel.js). */
+.iiif-viewer.roi-draw { cursor: crosshair; }
+#viewer.roi-draw, #viewer.roi-draw.dragging { cursor: crosshair; }   /* more specific than the apps' own `#viewer { cursor: grab }` */
+.iiif-viewer.roi-shift, .iiif-viewer.roi-shift * { cursor: crosshair !important; }   /* Shift held over the image, or a Shift-drag: draws, whatever is under the pointer */
+.roi-layer .user-roi { fill: #ffd23f; fill-opacity: .14; stroke: #ffd23f; stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.roi-layer .user-roi.current { fill: #ff4fd8; stroke: #ff4fd8; fill-opacity: .16; }
+.roi-layer.selecting .user-roi { pointer-events: all; cursor: move; }
+.roi-layer .user-roi-label { fill: #ffd23f; font-family: system-ui, sans-serif; font-weight: 700; paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.roi-layer .user-roi-label.current { fill: #ff4fd8; }
+.roi-layer .user-roi-handle { fill: #ff4fd8; stroke: #111; stroke-width: 1px; vector-effect: non-scaling-stroke; pointer-events: all; }
+.roi-layer .user-roi-handle.nw, .roi-layer .user-roi-handle.se { cursor: nwse-resize; }
+.roi-layer .user-roi-handle.ne, .roi-layer .user-roi-handle.sw { cursor: nesw-resize; }
+#roi-select.on { background: #ff4fd8; border-color: #ff4fd8; color: #111; }
+#roi-panel { border-top: 1px solid var(--line); background: var(--panel); padding: .4rem 1rem .5rem; max-height: 11rem; overflow: auto; font-size: .875rem; }
+#roi-panel .roi-head { font-size: .875rem; margin: 0 0 .25rem; }
+#roi-panel .roi-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+#roi-panel .roi-list li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .1rem .25rem; border-radius: 4px; }
+#roi-panel .roi-list li.current { background: color-mix(in srgb, #ff4fd8 22%, transparent); }
+#roi-panel .roi-num { min-width: 1.6rem; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; }
+#roi-panel .roi-urn { word-break: break-all; user-select: all; flex: 1 1 14rem; }
+#roi-panel .roi-btn { border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: .05rem .5rem; }
+#roi-panel .roi-btn:hover { border-color: var(--accent); }
+#roi-panel .roi-actions { display: flex; gap: .4rem; margin-top: .3rem; }
+#roi-panel .roi-hint { margin: .3rem 0 0; color: var(--muted); font-size: .8125rem; }
+</style>
 </head>
 <body>
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -116,17 +142,19 @@
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
       <button class="btn" id="fit" title="Fit page (0)">Fit</button>
     </span>
   </div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <p id="intro">Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.</p>
     <div id="viewer-note" hidden></div>
     <div id="viewer-error" role="alert" hidden></div>
     <div id="tip" hidden></div>
     <div id="copied" role="status" hidden></div>
   </div>
+  <div id="roi-panel" hidden></div>
 </section>
 
 <script>
@@ -1521,6 +1549,8 @@ class IiifViewer {
     /** Group for overlay shapes, in image pixel coordinates. */
     this.overlay = /** @type {SVGGElement} */ (document.createElementNS(SVG_NS, 'g'));
     this.svg.appendChild(this.overlay);
+    /** Further groups in image pixel coordinates that follow the transform and are not cleared when an image is opened. @type {SVGGElement[]} */
+    this.layers_ = [];
     root.append(this.canvas, this.svg);
     this.ctx = /** @type {CanvasRenderingContext2D} */ (this.canvas.getContext('2d'));
 
@@ -1528,6 +1558,14 @@ class IiifViewer {
     this.t = { sc: 1, tx: 0, ty: 0 };
     this.minScale = 0.01;
     this.gen = 0;
+    /**
+     * Called first for the pointer that starts a drag, when no other pointer is down; if it returns true the viewer
+     * does not pan.  For tools that draw on the image (see roi-tool.js).
+     * @type {((e: PointerEvent) => boolean) | null}
+     */
+    this.interceptPointer = null;
+    /** Called with the transform whenever the view changes.  @type {((t: {sc: number, tx: number, ty: number}) => void) | null} */
+    this.onViewChange = null;
     /** True while the pointer is being dragged to pan; hover handlers should ignore events then. */
     this.dragging = false;
     /** @type {Map<number, {x: number, y: number}>} */ this.pointers = new Map();
@@ -1544,6 +1582,19 @@ class IiifViewer {
     this.ro = new ResizeObserver(() => this.onResize());
     this.ro.observe(root);
     this.bind();
+  }
+
+  /**
+   * A group for shapes in image pixel coordinates, above the overlay; it follows the transform and is left alone when
+   * an image is opened or closed.
+   * @returns {SVGGElement}
+   */
+  addLayer() {
+    const g = /** @type {SVGGElement} */ (document.createElementNS(SVG_NS, 'g'));
+    g.setAttribute('transform', `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`);
+    this.svg.appendChild(g);
+    this.layers_.push(g);
+    return g;
   }
 
   /** Show an image, fitted to the view. */
@@ -1631,7 +1682,10 @@ class IiifViewer {
   set(/** @type {{sc: number, tx: number, ty: number}} */ t) {
     if (!this.image) { this.t = t; return; }
     this.t = clampTransform(t, this.size.w, this.size.h, this.image.width, this.image.height, this.minScale, MAX_SCALE);
-    this.overlay.setAttribute('transform', `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`);
+    const tf = `translate(${this.t.tx} ${this.t.ty}) scale(${this.t.sc})`;
+    this.overlay.setAttribute('transform', tf);
+    for (const g of this.layers_) g.setAttribute('transform', tf);
+    if (this.onViewChange) this.onViewChange(this.t);
     this.schedule();
   }
 
@@ -1720,6 +1774,7 @@ class IiifViewer {
 
     root.addEventListener('pointerdown', e => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
+      if (this.image && this.pointers.size === 0 && this.interceptPointer && this.interceptPointer(e)) return;
       root.setPointerCapture(e.pointerId);
       const p = local(e);
       this.pointers.set(e.pointerId, p);
@@ -1789,6 +1844,489 @@ class IiifViewer {
 
 </script>
 <script>
+// @ts-check
+/**
+ * Regions of interest on an image: rectangles kept as fractions of the whole image (0 to 1), so that they mean the
+ * same part of the image at any size or zoom, and written as an extension of the image's CITE2 URN,
+ * `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225` (`@x,y,w,h`).  Pure; the drawing and
+ * the list of regions are in roi-tool.js and roi-panel.js.  Parsing a written region is `parseRoi` in dse.js.
+ */
+
+/** @typedef {{x: number, y: number, w: number, h: number}} Roi  Fractions of the image width and height. */
+/** @typedef {{sc: number, tx: number, ty: number}} ViewTransform  Screen = image pixel * sc + (tx, ty); see pan-zoom.js. */
+/** @typedef {'nw' | 'ne' | 'sw' | 'se'} Handle */
+
+/** Smallest region kept, as a fraction of the width or height; smaller drags are ignored (they were clicks). */
+const MIN_ROI = 0.002;
+
+/** @param {number} v */
+const clamp01 = v => Math.min(1, Math.max(0, v));
+
+/**
+ * The point of the image, as fractions, under a point of the screen (relative to the viewer); clamped to the image.
+ * @param {ViewTransform} t
+ * @param {number} imgW
+ * @param {number} imgH
+ * @param {number} sx
+ * @param {number} sy
+ * @returns {{fx: number, fy: number}}
+ */
+function fractionAt(t, imgW, imgH, sx, sy) {
+  return { fx: clamp01((sx - t.tx) / t.sc / imgW), fy: clamp01((sy - t.ty) / t.sc / imgH) };
+}
+
+/**
+ * The rectangle between two corners, given in either order.
+ * @param {{fx: number, fy: number}} a
+ * @param {{fx: number, fy: number}} b
+ * @returns {Roi | null}  Null if it is too small to be a region.
+ */
+function roiFromCorners(a, b) {
+  const x = Math.min(a.fx, b.fx), y = Math.min(a.fy, b.fy);
+  const w = Math.abs(a.fx - b.fx), h = Math.abs(a.fy - b.fy);
+  return w < MIN_ROI || h < MIN_ROI ? null : { x, y, w, h };
+}
+
+/**
+ * Move a region by fractions of the image, keeping it inside the image.
+ * @param {Roi} r
+ * @param {number} dx
+ * @param {number} dy
+ * @returns {Roi}
+ */
+function moveRoi(r, dx, dy) {
+  return { ...r, x: Math.min(1 - r.w, Math.max(0, r.x + dx)), y: Math.min(1 - r.h, Math.max(0, r.y + dy)) };
+}
+
+/**
+ * Drag one corner of a region to a point; the opposite corner stays where it is (and the region may be turned inside out).
+ * @param {Roi} r
+ * @param {Handle} handle
+ * @param {number} fx
+ * @param {number} fy
+ * @returns {Roi}  The region unchanged if the result would be too small.
+ */
+function resizeRoi(r, handle, fx, fy) {
+  const fixed = { fx: handle.includes('w') ? r.x + r.w : r.x, fy: handle.includes('n') ? r.y + r.h : r.y };
+  return roiFromCorners(fixed, { fx: clamp01(fx), fy: clamp01(fy) }) ?? r;
+}
+
+/**
+ * `x,y,w,h` with four decimals (under half a pixel on a 4000-pixel image).
+ * @param {Roi} r
+ */
+function formatRoi(r) {
+  return [r.x, r.y, r.w, r.h].map(v => v.toFixed(4)).join(',');
+}
+
+/**
+ * The URN of a region: the image URN (without any region it already has) and `@x,y,w,h`.
+ * @param {string} imageUrn
+ * @param {Roi} r
+ */
+function roiUrn(imageUrn, r) {
+  return `${imageUrn.split('@')[0]}@${formatRoi(r)}`;
+}
+
+/**
+ * Two regions as written the same?
+ * @param {Roi} a
+ * @param {Roi} b
+ */
+function sameRoi(a, b) {
+  return formatRoi(a) === formatRoi(b);
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Drawing regions of interest on the image of an `IiifViewer` (image-viewer.js).  Shift-drag draws a rectangle at any
+ * time; with Select on (a button for touch screens), a plain drag draws, a region can be dragged to move it or by its
+ * corner handles to resize it, and clicking one makes it the current region.  Delete removes the current region;
+ * Escape leaves Select.
+ *
+ * A region is kept as fractions of the whole image (roi.js) and redrawn whenever the view changes, so it always
+ * bounds the same part of the image however it is panned or zoomed.  The rectangles are in a layer of the viewer
+ * that follows its transform (`viewer.addLayer()`); labels and handles are redrawn at a fixed size on screen.
+ */
+
+const ROI_SVG_NS = 'http://www.w3.org/2000/svg';
+const ROI_HANDLES = /** @type {const} */ (['nw', 'ne', 'sw', 'se']);
+const ROI_HANDLE_PX = 11;
+
+/**
+ * @param {string} tag
+ * @param {Record<string, string | number>} attrs
+ */
+function roiSvgEl(tag, attrs) {
+  const e = document.createElementNS(ROI_SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  return e;
+}
+
+class RoiTool {
+  /**
+   * @param {import('./image-viewer.js').IiifViewer} viewer
+   * @param {(rois: import('./roi.js').Roi[], current: number) => void} onChange  Called when the regions or the current one change.
+   */
+  constructor(viewer, onChange) {
+    this.viewer = viewer;
+    this.onChange = onChange;
+    /** @type {import('./roi.js').Roi[]} */ this.rois = [];
+    this.current = -1;
+    this.selecting = false;
+    this.shiftHeld = false;
+    this.drawing = false;
+    this.shiftDrawing = false;   // the drag in progress was started with Shift
+    /** Called when Select is turned on or off.  @type {((on: boolean) => void) | null} */
+    this.onSelecting = null;
+    this.layer = viewer.addLayer();
+    this.layer.classList.add('roi-layer');
+
+    viewer.interceptPointer = e => this.pointerDown(e);
+    const prev = viewer.onViewChange;
+    viewer.onViewChange = t => { if (prev) prev(t); this.render(); };
+    const root = viewer.root;
+    root.addEventListener('keydown', e => { if (this.handleKey(e)) { e.preventDefault(); e.stopPropagation(); } });
+    this.overViewer = false;
+    root.addEventListener('pointerenter', e => { this.overViewer = true; this.setShift(e.shiftKey); this.updateCursor(); });
+    root.addEventListener('pointerleave', () => { this.overViewer = false; this.updateCursor(); });
+    root.addEventListener('pointermove', e => this.setShift(e.shiftKey));
+    // Shift is noticed wherever the focus is, so the cursor is a crosshair as soon as Shift is down over the image
+    window.addEventListener('keydown', e => { if (e.key === 'Shift') this.setShift(true); });
+    window.addEventListener('keyup', e => { if (e.key === 'Shift') this.setShift(false); });
+    window.addEventListener('blur', () => this.setShift(false));
+  }
+
+  /** A copy of the regions. */
+  get list() { return this.rois.map(r => ({ ...r })); }
+
+  /**
+   * Replace all regions (on opening another image).
+   * @param {import('./roi.js').Roi[]} rois
+   * @param {boolean} [notify]
+   */
+  set(rois, notify = false) {
+    this.rois = rois.map(r => ({ ...r }));
+    this.current = this.rois.length ? this.rois.length - 1 : -1;
+    this.render();
+    if (notify) this.changed();
+  }
+
+  /** Add a region unless the same one is there; it becomes the current one. */
+  add(/** @type {import('./roi.js').Roi} */ r) {
+    const i = this.rois.findIndex(x => sameRoi(x, r));
+    if (i >= 0) this.current = i;
+    else { this.rois.push({ ...r }); this.current = this.rois.length - 1; }
+    this.render();
+    this.changed();
+  }
+
+  /** @param {boolean} on */
+  setSelecting(on) {
+    this.selecting = on;
+    this.layer.classList.toggle('selecting', on);
+    this.updateCursor();
+    this.render();
+    if (this.onSelecting) this.onSelecting(on);
+  }
+
+  /** @param {number} i */
+  select(i) { this.current = i; this.render(); this.changed(); }
+
+  /** @param {number} i */
+  remove(i) {
+    this.rois.splice(i, 1);
+    this.current = Math.min(this.current, this.rois.length - 1);
+    this.render();
+    this.changed();
+  }
+
+  clear() { this.rois = []; this.current = -1; this.render(); this.changed(); }
+
+  /**
+   * Delete or Backspace removes the current region; Escape leaves Select.
+   * @param {KeyboardEvent} e
+   * @returns {boolean} True if the key was used.
+   */
+  handleKey(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return false;
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.current >= 0) { this.remove(this.current); return true; }
+    if (e.key === 'Escape' && this.selecting) { this.setSelecting(false); return true; }
+    return false;
+  }
+
+  changed() { this.onChange(this.list, this.current); }
+
+  /** @param {boolean} on */
+  setShift(on) {
+    if (on === this.shiftHeld) return;
+    this.shiftHeld = on;
+    this.updateCursor();
+  }
+
+  updateCursor() {
+    const root = this.viewer.root;
+    root.classList.toggle('roi-draw', this.shiftHeld || this.drawing || this.selecting);
+    root.classList.toggle('roi-shift', (this.shiftHeld && this.overViewer) || this.shiftDrawing);
+  }
+
+  /** Draw the regions for the current view. */
+  render() {
+    const g = this.layer;
+    g.textContent = '';
+    const img = this.viewer.image;
+    if (!img) return;
+    const { sc } = this.viewer.t;
+    const hs = ROI_HANDLE_PX / sc;
+    this.rois.forEach((r, i) => {
+      const x = r.x * img.width, y = r.y * img.height, w = r.w * img.width, h = r.h * img.height;
+      const cur = i === this.current;
+      const box = roiSvgEl('rect', { x, y, width: w, height: h, class: `user-roi${cur ? ' current' : ''}` });
+      /** @type {SVGElement} */ (box).dataset.i = String(i);
+      g.appendChild(box);
+      const label = roiSvgEl('text', { x, y: y - 6 / sc, class: `user-roi-label${cur ? ' current' : ''}`, 'font-size': 15 / sc });
+      label.textContent = String(i + 1);
+      g.appendChild(label);
+      if (this.selecting && cur) {
+        for (const hd of ROI_HANDLES) {
+          const hx = hd.includes('w') ? x : x + w, hy = hd.includes('n') ? y : y + h;
+          const el = roiSvgEl('rect', { x: hx - hs / 2, y: hy - hs / 2, width: hs, height: hs, class: `user-roi-handle ${hd}` });
+          /** @type {SVGElement} */ (el).dataset.handle = hd;
+          /** @type {SVGElement} */ (el).dataset.i = String(i);
+          g.appendChild(el);
+        }
+      }
+    });
+  }
+
+  /** @param {{clientX: number, clientY: number}} e */
+  fraction(e) {
+    const img = /** @type {NonNullable<typeof this.viewer.image>} */ (this.viewer.image);
+    const r = this.viewer.root.getBoundingClientRect();
+    return fractionAt(this.viewer.t, img.width, img.height, e.clientX - r.left, e.clientY - r.top);
+  }
+
+  /**
+   * Start of a drag in the viewer.
+   * @param {PointerEvent} e
+   * @returns {boolean} True if the tool takes the drag (the viewer then does not pan).
+   */
+  pointerDown(e) {
+    if (!this.viewer.image || (e.pointerType === 'mouse' && e.button !== 0)) return false;
+    const t = /** @type {Element} */ (e.target);
+    const ds = /** @type {DOMStringMap} */ (t.closest ? (t.closest('[data-i]')?.dataset ?? {}) : {});
+    const shift = e.shiftKey;
+    const onHandle = !shift && this.selecting && !!ds.handle;
+    const onBox = !shift && this.selecting && !onHandle && ds.i !== undefined && t.classList.contains('user-roi');
+    if (!shift && !this.selecting) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    this.viewer.root.focus({ preventScroll: true });
+    this.drawing = true;
+    this.shiftDrawing = shift;
+    this.updateCursor();
+    const start = this.fraction(e);
+    const i = Number(ds.i ?? -1);
+    /** @type {(f: {fx: number, fy: number}) => void} */
+    let op;
+    if (onHandle) {
+      const base = this.rois[i], h = /** @type {'nw'|'ne'|'sw'|'se'} */ (ds.handle);
+      this.current = i;
+      op = f => { this.rois[i] = resizeRoi(base, h, f.fx, f.fy); };
+    } else if (onBox) {
+      const base = this.rois[i];
+      this.current = i;
+      op = f => { this.rois[i] = moveRoi(base, f.fx - start.fx, f.fy - start.fy); };
+    } else {
+      let idx = -1;
+      op = f => {
+        const r = roiFromCorners(start, f);
+        if (!r) return;
+        if (idx < 0) { this.rois.push(r); idx = this.rois.length - 1; this.current = idx; }
+        else this.rois[idx] = r;
+      };
+    }
+    let moved = false;
+    const move = (/** @type {PointerEvent} */ ev) => { moved = true; op(this.fraction(ev)); this.render(); };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      this.drawing = false;
+      this.shiftDrawing = false;
+      this.updateCursor();
+      // like a pan: let the click that ends the drag pass before hover and click handlers act again
+      this.viewer.dragging = true;
+      setTimeout(() => { this.viewer.dragging = false; }, 0);
+      if (!moved && (onBox || onHandle)) this.current = i;
+      this.render();
+      this.changed();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    this.render();
+    return true;
+  }
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * The regions of interest of the image in an `IiifViewer`: a Select button and a panel listing each region as a CITE2
+ * URN with its `@x,y,w,h` extension, each with a Copy button.  Wraps the drawing tool (roi-tool.js).  Regions are kept
+ * for each image while the page is open, so stepping away from an image and back finds them again.
+ *
+ * An app creates one `RoiUi` for its viewer, calls `open(imageUrn)` once the image is shown and `close()` when it is
+ * not; `open` may be given regions to start with (e.g. from the address).
+ */
+
+
+/**
+ * Copy text to the clipboard; resolves to whether it worked.
+ * @param {string} text
+ */
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) { /* fall through to the old way */ }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+/**
+ * @param {string} tag
+ * @param {string} [cls]
+ * @param {string} [text]
+ */
+function roiEl(tag, cls = '', text = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+class RoiUi {
+  /**
+   * @param {import('./image-viewer.js').IiifViewer} viewer
+   * @param {{button: HTMLButtonElement, panel: HTMLElement}} els  The Select button, and the (empty) element for the list.
+   */
+  constructor(viewer, els) {
+    this.button = els.button;
+    this.panel = els.panel;
+    this.urn = '';
+    /** @type {Map<string, import('./roi.js').Roi[]>} */ this.byImage = new Map();
+    this.tool = new RoiTool(viewer, () => this.changed());
+    this.tool.onSelecting = on => {
+      this.button.setAttribute('aria-pressed', String(on));
+      this.button.classList.toggle('on', on);
+      if (this.urn) this.show();   // the hint changes
+    };
+    this.button.type = 'button';
+    this.button.setAttribute('aria-pressed', 'false');
+    this.button.title = 'Mark regions of the image: drag to draw, or hold Shift and drag at any time';
+    this.button.addEventListener('click', () => { if (this.urn) { this.tool.setSelecting(!this.tool.selecting); viewer.root.focus({ preventScroll: true }); } });
+    this.close();
+  }
+
+  /**
+   * Start working on an image.
+   * @param {string} imageUrn  CITE2 URN of the image (a region on it is dropped from the URN).
+   * @param {import('./roi.js').Roi[]} [start]  Regions to add to those already marked on this image.
+   */
+  open(imageUrn, start = []) {
+    this.tool.setSelecting(false);
+    this.urn = imageUrn.split('@')[0];
+    this.button.disabled = false;
+    this.tool.set(this.byImage.get(this.urn) ?? []);
+    for (const r of start) this.tool.add(r);
+    this.show();
+  }
+
+  /** The image is no longer shown. */
+  close() {
+    this.tool.setSelecting(false);
+    this.urn = '';
+    this.button.disabled = true;
+    this.tool.set([]);
+    this.panel.hidden = true;
+    this.panel.textContent = '';
+  }
+
+  changed() {
+    if (this.urn) this.byImage.set(this.urn, this.tool.list);
+    this.show();
+  }
+
+  /** The URNs of the regions of the open image, in order. */
+  get urns() { return this.tool.list.map(r => roiUrn(this.urn, r)); }
+
+  show() {
+    const p = this.panel;
+    p.textContent = '';
+    const rois = this.tool.list;
+    p.hidden = !this.urn || rois.length === 0;
+    if (p.hidden) return;
+    const cur = this.tool.current;
+    p.appendChild(roiEl('h2', 'roi-head', `Regions of interest (${rois.length})`));
+    const ol = roiEl('ol', 'roi-list');
+    rois.forEach((r, i) => {
+      const urn = roiUrn(this.urn, r);
+      const li = roiEl('li', i === cur ? 'current' : '');
+      const num = /** @type {HTMLButtonElement} */ (roiEl('button', 'roi-num', String(i + 1)));
+      num.type = 'button'; num.title = 'Make this the current region';
+      num.addEventListener('click', () => this.tool.select(i));
+      const code = roiEl('code', 'roi-urn', urn);
+      code.title = `x,y,w,h = ${formatRoi(r)}, fractions of the image width and height`;
+      const del = /** @type {HTMLButtonElement} */ (roiEl('button', 'roi-btn', '×'));
+      del.type = 'button'; del.title = 'Remove this region'; del.setAttribute('aria-label', `Remove region ${i + 1}`);
+      del.addEventListener('click', () => this.tool.remove(i));
+      li.append(num, code, this.copyButton(urn, 'Copy this URN'), del);
+      ol.appendChild(li);
+    });
+    p.appendChild(ol);
+    const row = roiEl('div', 'roi-actions');
+    if (rois.length > 1) row.appendChild(this.copyButton(this.urns.join('\n'), 'Copy every URN, one per line', 'Copy all'));
+    const clear = /** @type {HTMLButtonElement} */ (roiEl('button', 'roi-btn', 'Clear all'));
+    clear.type = 'button'; clear.title = 'Remove every region on this image';
+    clear.addEventListener('click', () => this.tool.clear());
+    row.appendChild(clear);
+    p.appendChild(row);
+    p.appendChild(roiEl('p', 'roi-hint', this.tool.selecting
+      ? 'Select is on: drag a region to move it, drag a corner handle to resize it, click one to make it current; Delete removes it, Esc leaves Select.'
+      : 'To move or resize a region, press Select, then drag it or its corner handles.'));
+  }
+
+  /**
+   * @param {string} text
+   * @param {string} title
+   * @param {string} [label]
+   */
+  copyButton(text, title, label = 'Copy') {
+    const b = /** @type {HTMLButtonElement} */ (roiEl('button', 'roi-btn roi-copy', label));
+    b.type = 'button'; b.title = title;
+    b.addEventListener('click', async () => {
+      const ok = await copyToClipboard(text);
+      b.textContent = ok ? 'Copied' : 'Copy failed';
+      setTimeout(() => { b.textContent = label; }, 1800);
+    });
+    return b;
+  }
+}
+
+</script>
+<script>
 // Browser UI for the codices app: choose a codex, then a page; the page image
 // of the DSE records is shown with a rectangle over each indexed text passage,
 // hovering a rectangle shows the diplomatic text, and clicking it copies the
@@ -1816,6 +2354,7 @@ class IiifViewer {
   /** @type {Set<string>} */ let catalogImages = new Set();
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
+  /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
   let current = -1;            // index of the page in `book.pages`
   let openToken = 0;
   let lastTipKey = '';
@@ -1904,7 +2443,7 @@ class IiifViewer {
 
   function clear() {
     openToken++;
-    if (viewer) viewer.close();
+    if (viewer) { viewer.close(); roiUi.close(); }
     current = -1;
     hideTip();
     $('intro').hidden = false;
@@ -1943,8 +2482,9 @@ class IiifViewer {
     hideTip();
     document.title = `${page.label || page.id} – Codices`;
     const view = pageView(page, regionsOn(page), catalogImages);
-    if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); }
+    if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
     viewer.close();
+    roiUi.close();
     const note = $('viewer-note');
     note.hidden = false;
     note.textContent = page.label || page.id;
@@ -1959,6 +2499,7 @@ class IiifViewer {
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
       drawRegions(view.regions, width, height);
+      roiUi.open(view.image);
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
@@ -2128,7 +2669,7 @@ class IiifViewer {
     const urn = e.target.value;
     chooseCodex(urn);
     current = -1;
-    if (urn) { openToken++; if (viewer) viewer.close(); syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
+    if (urn) { openToken++; if (viewer) { viewer.close(); roiUi.close(); } syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
     else { setQuery({}, false); clear(); }
     $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
     if (urn) setQuery({}, true);
