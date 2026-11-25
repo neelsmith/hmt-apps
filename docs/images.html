@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.3.0">
+<meta name="app-version" content="0.3.1">
 <title>Images</title>
 <style>
   :root {
@@ -50,6 +50,7 @@
           gap: .75rem; padding: 1rem; }
   .cell { display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
           border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
+  .roi-hl { fill: #ffd400; fill-opacity: .3; stroke: #ffd400; stroke-width: 2.5px; vector-effect: non-scaling-stroke; pointer-events: none; }
   .cell:hover { border-color: var(--accent); }
   .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
   .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -85,7 +86,7 @@
 <header>
   <h1>Images</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/images/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -1223,14 +1224,20 @@ function resolvePage(loc, p) {
 }
 
 /**
- * The image to open for the parameters of an address: `image` first (as it is; the caller checks it), then `page`,
- * then `text`.
+ * The image to open for the parameters of an address: `image` first (the caller checks it), then `page`,
+ * then `text`.  An `image` may carry a region of interest, `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.214,0.5184,0.171,0.0225`;
+ * the image is then the URN without it, and `roi` the region (null if it is not a usable one) with `roiText` as written.
  * @param {Locator} loc
  * @param {LocationParams} p
- * @returns {{image: string} | {error: string} | null}  Null if no parameter is given.
+ * @returns {{image: string, roi?: import('./dse.js').Roi | null, roiText?: string} | {error: string} | null}  Null if no parameter is given.
  */
 function resolveImage(loc, p) {
-  if (p.image) return { image: p.image };
+  if (p.image) {
+    const at = p.image.indexOf('@');
+    if (at < 0) return { image: p.image };
+    const roiText = p.image.slice(at + 1).trim();
+    return { image: p.image.slice(0, at).trim(), roi: parseRoi(roiText), roiText };
+  }
   const fromPage = p.page ? loc.imageOfPage(p.page) : '';
   if (fromPage) return { image: fromPage };
   const fromText = p.text ? loc.imagesOfPassage(p.text)[0] : '';
@@ -1684,7 +1691,7 @@ class IiifViewer {
 // file (see index.html).
 //
 // Address (no `#`): `?image=<collection URN>` is the light box of a collection,
-// `?image=<image URN>` an image; `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
+// `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` highlights a region of it); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
 (function () {
   const $ = id => document.getElementById(id);
@@ -1696,6 +1703,7 @@ class IiifViewer {
   /** @type {any} */ let locator = null;
   /** @type {ImageCollection | null} */ let gridOf = null;   // the collection whose thumbnails are in the grid
   let current = -1;           // index of the open image in `coll.items`, or -1
+  let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
@@ -1757,7 +1765,8 @@ class IiifViewer {
   function route() {
     const r = resolveImage(locator, readParams(location.search));
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
-    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}`) setQuery({ image: r.image }, true);   // the canonical address
+    const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
+    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}${roiText ? '@' + roiText : ''}`) setQuery({ image: r.image + (roiText ? '@' + roiText : '') }, true);   // the canonical address
     const h = r ? { urn: r.image } : null;
     if (!h) { selectCollection(null); showTable(); return; }
     const cu = collectionOfObject(h.urn);
@@ -1767,7 +1776,7 @@ class IiifViewer {
     const idx = c.items.findIndex(i => i.urn === h.urn);
     if (idx < 0) { selectCollection(c); showTable(`${h.urn} is not in this release.`); return; }
     selectCollection(c);
-    showViewer(idx);
+    showViewer(idx, r && 'roi' in r ? r.roi : null, roiText);
   }
 
   function selectCollection(c) {
@@ -1874,8 +1883,15 @@ class IiifViewer {
     return p;
   }
 
-  async function showViewer(idx) {
-    if (idx === current && !$('viewer-view').hidden) return;
+  /**
+   * Open an image, highlighting a region of it if one is given.
+   * @param {number} idx  Index in `coll.items`.
+   * @param {{x: number, y: number, w: number, h: number} | null} [roi]  Fractions of the image size.
+   * @param {string} [roiText]  The region as written in the address.
+   */
+  async function showViewer(idx, roi = null, roiText = '') {
+    if (idx === current && roiText === currentRoi && !$('viewer-view').hidden) return;
+    currentRoi = roiText;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     const item = coll.items[idx];
@@ -1886,7 +1902,7 @@ class IiifViewer {
     viewer.close();
     $('viewer-title').textContent = item.label;
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
-    $('viewer-note').textContent = item.caption || item.id;
+    $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
     $('rights').textContent = item.rights || 'No rights statement in the release.';
     $('viewer-error').hidden = true;
     $('prev').disabled = idx === 0;
@@ -1903,12 +1919,27 @@ class IiifViewer {
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
+      if (roi) highlight(roi, width, height);
       viewer.root.focus({ preventScroll: true });
     } catch (e) {
       if (token !== openToken) return;
       $('viewer-error').textContent = `Could not load this image (${e.message || e}).`;
       $('viewer-error').hidden = false;
     }
+  }
+
+  /** Mark a region of the open image and bring it into view (zoomed to it, but never past full resolution). */
+  function highlight(roi, width, height) {
+    const r = roiToRect(roi, width, height);
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    for (const [k, v] of [['x', r.x], ['y', r.y], ['width', r.w], ['height', r.h]]) rect.setAttribute(k, String(v));
+    rect.setAttribute('class', 'roi-hl');
+    viewer.overlay.textContent = '';
+    viewer.overlay.appendChild(rect);
+    const { w: vw, h: vh } = viewer.size;
+    if (!vw || !vh) return;
+    const sc = Math.max(viewer.minScale, Math.min(0.5 * vw / r.w, 0.5 * vh / r.h, 1));
+    viewer.set({ sc, tx: vw / 2 - (r.x + r.w / 2) * sc, ty: vh / 2 - (r.y + r.h / 2) * sc });
   }
 
   function step(delta) {

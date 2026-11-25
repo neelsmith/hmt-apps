@@ -37,6 +37,11 @@
   th, td { padding: .3rem .6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
   td.pages { text-align: left; white-space: normal; min-width: 8rem; max-width: 28rem; }
+  .popover { position: absolute; z-index: 10; max-width: min(36rem, calc(100vw - 16px)); max-height: 60vh; overflow: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.25); padding: .4rem .7rem; font-size: .9375rem; pointer-events: none; }
+  .popover p { margin: .15rem 0; }
+  .popover .ex { display: inline-block; margin-right: .5rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; }
+  .chip[tabindex] { cursor: copy; }
+  .popover .copied { color: var(--accent); font-size: .8125rem; border-top: 1px solid var(--line); padding-top: .25rem; }
   .note { color: var(--muted); font-size: .875rem; margin: 0 0 .25rem; }
   td.bad { color: var(--err); font-weight: 600; }
   section.group { margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
@@ -1100,7 +1105,8 @@ function pageNeighbours(list) {
  * @property {number} passages    Passages in the text (0 if no text).
  * @property {number} records     DSE records naming a passage of this version.
  * @property {number} indexed     Passages of the text that at least one DSE record names.
- * @property {{ref: string, text: string}[]} missing      Text passages no DSE record names, in text order.
+ * @property {{ref: string, text: string, texts: {exemplar: string, text: string}[]}[]} missing
+ *     Text passages no DSE record names, in text order; `text` is the one shown first, `texts` every exemplar's text (`exemplar` is e.g. `diplomatic`, or "").
  * @property {(DseRecord & {ref: string})[]} unknown      DSE records for passages not in the text.
  */
 
@@ -1157,6 +1163,7 @@ function pageNeighbours(list) {
  * @property {number} records   DSE records for lines of this book that are not in the text.
  * @property {number} pages     Distinct pages those records name.
  * @property {string} text      The pages in codex order with consecutive pages joined, e.g. `12r–13v, 20r`; "" if none.
+ * @property {{from: {id: string, urn: string}, to: {id: string, urn: string}}[]} parts  The same, one entry for each page or range (`to` is `from` for a single page).
  */
 
 /**
@@ -1198,6 +1205,8 @@ function checkDse(release) {
   const textOf = new Map();
   /** @type {Map<string, string>} the exemplar whose text is kept for display, by version */
   const shownExemplar = new Map();
+  /** @type {Map<string, Map<string, Map<string, string>>>} ref -> exemplar -> text, by version, all exemplars */
+  const allTexts = new Map();
 
   const versionFor = (/** @type {string} */ urn) => {
     let v = versions.get(urn);
@@ -1222,6 +1231,15 @@ function checkDse(release) {
     if (!refs) { refs = new Set(); textRefs.set(version, refs); textOf.set(version, new Map()); }
     refs.add(ref);                                    // a passage is in the text if any exemplar has it
     const exemplar = m[1];
+    {   // every exemplar's text, for display
+      const work = exemplar.split(':')[3] ?? '', own = version.split(':')[3] ?? '';
+      const name = work.length > own.length ? work.slice(own.length + 1) : '';
+      let byRef = allTexts.get(version);
+      if (!byRef) { byRef = new Map(); allTexts.set(version, byRef); }
+      let byEx = byRef.get(ref);
+      if (!byEx) { byEx = new Map(); byRef.set(ref, byEx); }
+      byEx.set(name, byEx.has(name) ? `${byEx.get(name)} ${text}` : text);
+    }
     if (!shownExemplar.has(version)) shownExemplar.set(version, exemplar);
     if (shownExemplar.get(version) === exemplar) {   // display text: one exemplar; lemma and comment read as one
       const t = /** @type {Map<string, string>} */ (textOf.get(version));
@@ -1289,7 +1307,7 @@ function checkDse(release) {
     if (refs) {
       const shown = textOf.get(version);
       for (const ref of refs) {
-        if (n.has(ref)) v.indexed++; else v.missing.push({ ref, text: shown?.get(ref) ?? '' });
+        if (n.has(ref)) v.indexed++; else v.missing.push({ ref, text: shown?.get(ref) ?? '', texts: [...(allTexts.get(version)?.get(ref) ?? [])].map(([exemplar, text]) => ({ exemplar, text })) });
       }
     }
   }
@@ -1336,7 +1354,7 @@ function iliadProblemPages(release, versions) {
     }
     const byBook = Array.from({ length: ILIAD_BOOKS }, (_, i) => {
       const b = books.get(i + 1);
-      return b ? { records: b.records, pages: b.pages.size, text: joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '' };
+      return b ? { records: b.records, pages: b.pages.size, ...joinPages([...b.pages], info) } : { records: 0, pages: 0, text: '', parts: [] };
     });
     out.push({ version: v.version, label: v.label, byBook, records: v.unknown.length, other });
   }
@@ -1350,22 +1368,28 @@ const ILIAD_BOOKS = 24;
  * Page URNs as text: pages of a codex in codex order, runs of consecutive pages as `12r–13v`; others last, in URN order.
  * @param {string[]} urns
  * @param {Map<string, {id: string, order: number, coll: string}>} info
+ * @returns {{text: string, parts: BookProblemPages['parts']}}
  */
 function joinPages(urns, info) {
   const known = urns.filter(u => info.has(u)).sort((a, b) => {
     const x = /** @type {any} */ (info.get(a)), y = /** @type {any} */ (info.get(b));
     return x.coll === y.coll ? x.order - y.order : x.coll.localeCompare(y.coll);
   });
+  /** @type {BookProblemPages['parts']} */
   const parts = [];
   for (let i = 0; i < known.length;) {
     let j = i;
     const at = (/** @type {number} */ k) => /** @type {any} */ (info.get(known[k]));
     while (j + 1 < known.length && at(j + 1).coll === at(i).coll && at(j + 1).order === at(j).order + 1) j++;
-    parts.push(i === j ? at(i).id : `${at(i).id}–${at(j).id}`);
+    parts.push({ from: { id: at(i).id, urn: known[i] }, to: { id: at(j).id, urn: known[j] } });
     i = j + 1;
   }
-  for (const u of urns.filter(u => !info.has(u)).sort()) parts.push(u.slice(u.lastIndexOf(':') + 1) || u);
-  return parts.join(', ');
+  for (const u of urns.filter(u => !info.has(u)).sort()) {
+    const x = { id: u.slice(u.lastIndexOf(':') + 1) || u, urn: u };
+    parts.push({ from: x, to: x });
+  }
+  const text = parts.map(p => p.from.urn === p.to.urn ? p.from.id : `${p.from.id}–${p.to.id}`).join(', ');
+  return { text, parts };
 }
 
 /**
@@ -1459,6 +1483,89 @@ function reportCsv(check) {
     return e;
   }
 
+  /** Address of the codices app on GitHub Pages. */
+  /** Address of the images app on GitHub Pages. */
+  const IMAGES_APP = 'https://neelsmith.github.io/hmt-apps/images.html';
+  const CODICES_APP = 'https://neelsmith.github.io/hmt-apps/codices.html';
+
+  /** Passage of each chip with text, for the popover. @type {WeakMap<Element, {ref: string, texts: {exemplar: string, text: string}[]}>} */
+  const chipTexts = new WeakMap();
+  const pop = el('div', 'popover');
+  pop.id = 'popover';
+  pop.setAttribute('role', 'tooltip');
+  pop.hidden = true;
+  document.body.appendChild(pop);
+
+  /** Show the text of a passage beside its chip. */
+  function showPop(chip) {
+    const m = chipTexts.get(chip);
+    if (!m) return;
+    pop.textContent = '';
+    for (const t of m.texts) {
+      if (!t.text.trim()) continue;
+      const p = el('p');
+      if (m.texts.length > 1) p.appendChild(el('span', 'ex', t.exemplar || 'text'));
+      p.appendChild(document.createTextNode(t.text.trim()));
+      pop.appendChild(p);
+    }
+    pop.hidden = false;
+    const r = chip.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    const top = r.bottom + 6 + h > window.innerHeight && r.top - 6 - h > 0 ? r.top - 6 - h : r.bottom + 6;
+    pop.style.left = `${left + window.scrollX}px`;
+    pop.style.top = `${top + window.scrollY}px`;
+    chip.setAttribute('aria-describedby', 'popover');
+  }
+  /** The diplomatic text of a passage; if it has none, the first exemplar's. */
+  function diplomaticText(m) {
+    const t = m.texts.find(x => x.exemplar === 'diplomatic' && x.text.trim()) ?? m.texts.find(x => x.text.trim());
+    return t ? t.text.trim() : '';
+  }
+
+  /** Copy text to the clipboard; resolves to whether it worked. */
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* fall through to the old way */ }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  /** Copy a chip's diplomatic text and say so in the popover and the status line. */
+  async function copyChip(chip) {
+    const m = chipTexts.get(chip);
+    if (!m) return;
+    const ok = await copyText(diplomaticText(m));
+    showPop(chip);
+    const note = el('p', 'copied', ok ? 'Diplomatic text copied to the clipboard' : 'Could not copy to the clipboard');
+    pop.appendChild(note);
+    setStatus(ok ? `Copied the diplomatic text of ${m.ref}` : `Could not copy ${m.ref} to the clipboard`);
+  }
+
+  function hidePop() {
+    pop.hidden = true;
+    document.querySelectorAll('[aria-describedby=popover]').forEach(x => x.removeAttribute('aria-describedby'));
+  }
+  const chipOf = e => e.target instanceof Element ? e.target.closest('.chip') : null;
+  document.addEventListener('mouseover', e => { const c = chipOf(e); if (c) showPop(c); });
+  document.addEventListener('mouseout', e => { if (chipOf(e)) hidePop(); });
+  document.addEventListener('focusin', e => { const c = chipOf(e); if (c) showPop(c); });
+  document.addEventListener('focusout', e => { if (chipOf(e)) hidePop(); });
+  document.addEventListener('click', e => { const c = chipOf(e); if (c) copyChip(c); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hidePop();
+    const c = chipOf(e);
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); copyChip(c); }
+  });
+
   function setStatus(msg) { $('status').textContent = msg; }
 
   /** Append `items` to `parent` in steps of LIMIT, with a "show more" button. */
@@ -1520,6 +1627,12 @@ function reportCsv(check) {
       ctable.appendChild(tr);
     }
     // pages with problems, by book of the Iliad
+    const pageLink = pg => {
+      const a = el('a', '', pg.id);
+      a.href = CODICES_APP + formatPageQuery(pg.urn);
+      a.title = pg.urn;
+      return a;
+    };
     const msName = v => v.label.split(' — ').pop().replace(/\s*\(.*\)$/, '');
     const ip = c.iliadPages;
     const itable = $('iliad-pages');
@@ -1537,7 +1650,12 @@ function reportCsv(check) {
         tr.appendChild(el('td', '', String(i + 1)));
         for (const v of ip) {
           const b = v.byBook[i];
-          const td = el('td', 'pages', b.records ? b.text : '—');
+          const td = el('td', 'pages', b.records ? '' : '—');
+          b.parts.forEach((part, k) => {
+            if (k) td.appendChild(document.createTextNode(', '));
+            td.appendChild(pageLink(part.from));
+            if (part.to.urn !== part.from.urn) { td.appendChild(document.createTextNode('–')); td.appendChild(pageLink(part.to)); }
+          });
           if (b.records) td.title = `${plural(b.records, 'record', 'records')} on ${plural(b.pages, 'page', 'pages')}`;
           tr.appendChild(td);
         }
@@ -1564,7 +1682,7 @@ function reportCsv(check) {
         built = true;
         const chips = el('div', 'chips');
         d.appendChild(chips);
-        renderLimited(chips, v.missing, m => { const x = el('span', 'chip', m.ref); if (m.text) x.title = m.text; return x; });
+        renderLimited(chips, v.missing, m => { const x = el('span', 'chip', m.ref); if (m.texts.some(t => t.text.trim())) { x.tabIndex = 0; x.setAttribute('role', 'button'); x.dataset.ref = m.ref; chipTexts.set(x, m); } return x; });
       });
       g1.appendChild(d);
     }
@@ -1575,10 +1693,17 @@ function reportCsv(check) {
     const g2 = group('DSE record for text passage not in textual editions',
       'DSE records whose text passage is absent from the release’s editions.',
       unk.reduce((s, v) => s + v.unknown.length, 0) + c.badPassages.length, ['record', 'records']);
-    const recLine = (r, text) => {
+    const recLine = (r, text, linkImage) => {
       const p = el('div', 'rec');
       p.appendChild(el('span', 'row', `row ${r.row}  `));
-      p.appendChild(document.createTextNode(`${text}  ${r.imageroi}  ${r.surface}`));
+      p.appendChild(document.createTextNode(`${text}  `));
+      if (linkImage && /^urn:cite2:/.test(r.imageroi)) {
+        const a = el('a', '', r.imageroi);
+        a.href = IMAGES_APP + formatQuery({ image: r.imageroi });   // with its region, which the images app highlights
+        a.title = 'Open this image in the images app';
+        p.appendChild(a);
+      } else p.appendChild(document.createTextNode(r.imageroi));
+      p.appendChild(document.createTextNode(`  ${r.surface}`));
       return p;
     };
     for (const v of unk) {
@@ -1593,7 +1718,7 @@ function reportCsv(check) {
         built = true;
         const box = el('div');
         d.appendChild(box);
-        renderLimited(box, v.unknown, r => recLine(r, r.ref));
+        renderLimited(box, v.unknown, r => recLine(r, r.ref, true));
       });
       g2.appendChild(d);
     }
@@ -1604,7 +1729,7 @@ function reportCsv(check) {
       d.appendChild(sum);
       const box = el('div');
       d.appendChild(box);
-      renderLimited(box, c.badPassages, r => recLine(r, r.passage));
+      renderLimited(box, c.badPassages, r => recLine(r, r.passage, true));
       g2.appendChild(d);
     }
     root.appendChild(g2);
