@@ -25,6 +25,7 @@
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
   let current = -1;
+  let currentText = null;     // the `text` parameter whose region is marked on the open page
   let openToken = 0;
   let tableScroll = 0;
   let lastTipKey = '';
@@ -169,9 +170,11 @@
 
   // --- navigation (address of the page) -----------------------------------
   //
-  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` and
-  // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
-  // (the app then shows it as `?page=…`).  There is no `#`.
+  // `?page=<page URN>` opens a page, as in `?page=urn:cite2:hmt:msA.v1:12r`; `?image=<image URN>` opens the page that
+  // has that image (and then `page` is ignored); `?text=<CTS passage URN>` (for a range, its first passage) opens the
+  // page that has that passage when neither is given.  Whichever page is opened, the region of the `text` passage on
+  // its image is marked like a region just drawn by Shift-drag.  A `text` stays in the address (`?page=…&text=…`);
+  // the page buttons drop it.  There is no `#`.
 
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
@@ -179,6 +182,7 @@
     notice = '';
     const p = readParams(location.search);
     for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
+    if (p.image) p.page = null;                                                       // an image decides alone
     const r = resolvePage(locator, p);
     if (!r) { showTable(); updateStatus(); return; }
     if ('error' in r) { notice = r.error; setQuery({}, true); showTable(); updateStatus(); return; }
@@ -187,8 +191,9 @@
       notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
       setQuery({}, true); showTable(); updateStatus(); return;
     }
-    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
-    showViewer(idx);
+    const canonical = decodeURIComponent(formatQuery(p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text }));
+    if (decodeURIComponent(location.search) !== canonical) setQuery(p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text }, true);
+    showViewer(idx, p.text);
     updateStatus();
   }
 
@@ -219,8 +224,9 @@
 
   function kind() { return document.querySelector('input[name=kind]:checked').value; }
 
-  async function showViewer(idx) {
-    if (idx === current && !$('viewer-view').hidden) return;
+  async function showViewer(idx, text = null) {
+    if (idx === current && text === currentText && !$('viewer-view').hidden) return;
+    currentText = text;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     const token = ++openToken;
@@ -255,7 +261,9 @@
       placeholders: [url(c, 'full', `${THUMB_W},`)],
     });
     renderRegions();
-    roiUi.open(c.imageUrn);
+    const marked = text ? locator.regionsOfText(text, c.imageUrn) : [];   // the passage of `text`, marked as if just drawn
+    roiUi.open(c.imageUrn, marked);
+    if (text && !marked.length) $('viewer-note').textContent += ` · no region of ${text} on this image`;
     viewer.root.focus({ preventScroll: true });
   }
 

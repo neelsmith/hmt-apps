@@ -16,9 +16,10 @@ A light table of the pages of the Venetus A manuscript and a zoomable viewer sho
 Query-string parameters (`?name=value`), never `#` tags. The app writes `?page=…` itself as you move, so the address is a bookmark and Back and Forward work.
 
 - `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
-- `image` — an image URN (a region `@x,y,w,h` is ignored): opens the page that has that image.
-- `text` — a passage URN with a DSE record on a Venetus A page: opens that page. For a range (`…msA:1.1-3.10`) only the first passage is used; the viewer shows one page at a time, so move on with the page buttons.
-- If several are given, `page` wins, then `image`, then `text`; the address is rewritten as `?page=…`. A URN that does not lead to a page of the Venetus A with an image puts a notice in the status line and shows the light table.
+- `image` — an image URN (a region `@x,y,w,h` is ignored): opens the page that has that image. An `image` decides alone: a `page` given with it is ignored.
+- `text` — a passage URN with a DSE record on a Venetus A page: opens that page (when there is no `image` or `page`). For a range (`…msA:1.1-3.10`) only the first passage is used; the viewer shows one page at a time, so move on with the page buttons.
+- Priority: `image`, then `page`, then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
+- The address stays as given (`?image=…`, or `?page=…`, with the `text` if any); a `text` alone is rewritten as `?page=…&text=…`. The page buttons drop the `text`. A URN that does not lead to a page of the Venetus A with an image puts a notice in the status line and shows the light table.
 
 ## Output options
 

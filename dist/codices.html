@@ -1285,6 +1285,7 @@ function pageNeighbours(list) {
  * @property {(text: string) => string[]} imagesOfPassage  Images the DSE puts it on.
  * @property {(page: string) => string[]} passagesOnPage   Passages (DSE keys) on a page, in index order.
  * @property {(image: string) => string[]} passagesOnImage Passages (DSE keys) on an image, in index order.
+ * @property {(text: string, image: string) => import('./dse.js').Roi[]} regionsOfText  The regions the DSE gives a passage (or the start of a range) on an image.
  */
 
 /**
@@ -1300,12 +1301,15 @@ function createLocator(release) {
   /** @type {Map<string, string[]>} */ const passagesOnPage = new Map();
   /** @type {Map<string, string[]>} */ const passagesOnImage = new Map();
   /** @type {Map<string, string[]>} */ const pagesOfImage = new Map();
+  /** @type {Map<string, {image: string, roi: import('./dse.js').Roi}[]>} */ const regionsOfPassage = new Map();
   const set = release.relationSets().find(r => r.urn === DSE_URN);
   for (const row of set?.rows ?? []) {
     const key = dseKey(row.passage ?? '');
     const surface = (row.surface ?? '').trim();
-    const image = parseImageRoi(row.imageroi ?? '')?.image ?? '';
+    const placed = parseImageRoi(row.imageroi ?? '');
+    const image = placed?.image ?? '';
     if (!key) continue;
+    if (placed) { const l = regionsOfPassage.get(key) ?? []; l.push({ image, roi: placed.roi }); regionsOfPassage.set(key, l); }
     if (surface) { add(pagesOfPassage, key, surface); add(passagesOnPage, surface, key); }
     if (image) { add(imagesOfPassage, key, image); add(passagesOnImage, image, key); }
     if (surface && image) add(pagesOfImage, image, surface);
@@ -1332,25 +1336,31 @@ function createLocator(release) {
     imagesOfPassage: text => { const k = firstPassageKey(text); return (k && imagesOfPassage.get(k)) || []; },
     passagesOnPage: page => passagesOnPage.get(page) ?? [],
     passagesOnImage: image => passagesOnImage.get(image) ?? [],
+    regionsOfText: (text, image) => { const k = firstPassageKey(text); return ((k && regionsOfPassage.get(k)) || []).filter(r => r.image === image).map(r => r.roi); },
   };
 }
 
 /** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
 
 /**
- * The page to open for the parameters of an address: `page` first, then `image`, then `text`
- * (the first of these that gives a page of the release wins).
+ * The page to open for the parameters of an address.  An `image` decides alone: `page` is then ignored, and the page
+ * is the page with that image (among several, one the `text` is on, else the first).  Without an `image`, `page`
+ * comes first, then `text` (the first of these that gives a page of the release wins).
  * @param {Locator} loc
  * @param {LocationParams} p
  * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
  */
 function resolvePage(loc, p) {
+  if (p.image) {
+    const pages = loc.pagesOfImage(p.image);
+    const onText = p.text ? loc.pagesOfPassage(p.text) : [];
+    const page = pages.find(x => onText.includes(x)) ?? pages[0];
+    return page ? { page } : { error: `No page of a codex in this release goes with ${p.image}.` };
+  }
   if (p.page && loc.isPage(p.page)) return { page: p.page };
-  const fromImage = p.image ? loc.pagesOfImage(p.image)[0] : '';
-  if (fromImage) return { page: fromImage };
   const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
   if (fromText) return { page: fromText };
-  const given = p.page || p.image || p.text;
+  const given = p.page || p.text;
   if (!given) return null;
   return { error: `No page of a codex in this release goes with ${given}.` };
 }
@@ -2433,12 +2443,20 @@ class RoiUi {
     showPage(urn);
   }
 
+  /**
+   * Show what the address asks for.  An `image` opens the page that has it (and `page` is then ignored); without one,
+   * `page`, then `text`.  The region of the `text` passage on the shown image is marked like a region just drawn by
+   * Shift-drag, and `text` stays in the address (`?page=…&text=…`); the page buttons drop it.
+   */
   function route() {
-    const r = resolvePage(locator, readParams(location.search));
+    const p = readParams(location.search);
+    if (p.image) { p.image = p.image.split('@')[0].trim(); p.page = null; }   // an image decides alone; its region is ignored
+    const r = resolvePage(locator, p);
     if (!r) { clear(); return; }
     if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
-    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
-    showPage(r.page);
+    const params = p.image ? { image: p.image, text: p.text } : { page: r.page, text: p.text };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(params))) setQuery(params, true);   // the canonical address
+    showPage(r.page, p.text, p.image);
   }
 
   function clear() {
@@ -2468,7 +2486,12 @@ class RoiUi {
     return p;
   }
 
-  async function showPage(urn) {
+  /**
+   * @param {string} urn  The page.
+   * @param {string | null} [text]  A passage whose region on the image is marked.
+   * @param {string | null} [image]  The image asked for, when the page has more than one (a page the DSE puts on another image).
+   */
+  async function showPage(urn, text = null, image = null) {
     const owner = books.find(c => c.urn === (collectionOfObject(urn) ?? ''));
     const idx = owner ? owner.pages.findIndex(p => p.urn === urn) : -1;
     if (idx < 0) { clear(); setStatus(`${release.library.name}: no page ${urn} in this release`); return; }
@@ -2481,7 +2504,11 @@ class RoiUi {
     $('viewer-error').hidden = true;
     hideTip();
     document.title = `${page.label || page.id} – Codices`;
-    const view = pageView(page, regionsOn(page), catalogImages);
+    let view = pageView(page, regionsOn(page), catalogImages);
+    if (image && image !== view.image && catalogImages.has(image) && locator.pagesOfImage(image).includes(urn)) {   // the image asked for
+      const regions = regionsOn(page);
+      view = { image, regions: regions.filter(r => r.image === image), elsewhere: regions.filter(r => r.image !== image).length, source: 'dse' };
+    }
     if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
     viewer.close();
     roiUi.close();
@@ -2499,12 +2526,14 @@ class RoiUi {
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
       drawRegions(view.regions, width, height);
-      roiUi.open(view.image);
+      const marked = text ? locator.regionsOfText(text, view.image) : [];   // the passage of `text`, marked as if just drawn
+      roiUi.open(view.image, marked);
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
       else bits.push(release && view.source !== 'none' ? 'no indexed text on this page' : '');
       if (view.elsewhere) bits.push(`${plural(view.elsewhere, 'region', 'regions')} on another image not shown`);
+      if (text && !marked.length) bits.push(`no region of ${text} on this image`);
       note.textContent = bits.filter(Boolean).join(' · ');
     } catch (e) {
       if (token !== openToken) return;

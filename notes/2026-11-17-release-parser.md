@@ -450,3 +450,11 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## stringcounter.html: foldable bar chart
 
 - `#fold` button in `.charthead` (`aria-expanded`, `aria-controls="chart"`) toggles class `folded` on `#chartbox` (`setFolded` in `src/apps/stringcounter/app.js`). CSS hides `#chart`, `#tbl`, `#chartnote`, the sort group and `#csv` when folded; `#foldnote` (`updateFoldNote`, called from `markBar`) shows the chosen form and count. Selection and hash are untouched; the folded state is per page view and not in the hash. Checked in `ui-test-fold.js` (scratchpad): the chart box shrinks and `#main` grows.
+
+## `image` first, and the `text` region marked (2026-11-25): va-facsimile, codices, images
+
+- `resolvePage` (`src/locate.js`): an `image` now decides alone (a `page` given with it is ignored, and a bad image is an error, not a fall back); among several pages with that image (a bifolio) the one the `text` is on is chosen. `resolveImage` already put `image` first. New `locator.regionsOfText(text, image)`: the DSE regions of a passage (or the start of a range) on an image.
+- In the three apps the region of the `text` passage on the shown image is added to the image's regions of interest exactly as a Shift-drag would (`roiUi.open(image, regions)`): pink outline, number, row in the Regions of interest panel, kept in the page's memory. It is separate from the Iliad/Scholia/Other rectangles, so their checkboxes do not hide it. No zoom (images.html still zooms for an `@region` on `image`). If the passage has no region on the image, the note under the image says so.
+- The address keeps the `text` (`?image=…&text=…` or `?page=…&text=…`; a text-only address is rewritten to the page/image plus the text); stepping with the buttons drops it; Back/Forward re-marks it.
+- codices: an `image` that is not the one the DSE would show for its page (the catalog's other image) is shown as asked.
+- Tests: `test/locate.test.js` (155 pass). Browser (Chromium, synthetic release, stubbed image server, 3 apps × 12 checks): text only, image beats page, image+text+page, text not on the image, `@region` plus text (images), layer checkboxes, next drops text, popstate re-marks, no errors. Not run against the real release. Nothing committed.

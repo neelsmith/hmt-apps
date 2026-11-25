@@ -16,6 +16,7 @@
   /** @type {any} */ let locator = null;
   /** @type {ImageCollection | null} */ let gridOf = null;   // the collection whose thumbnails are in the grid
   let current = -1;           // index of the open image in `coll.items`, or -1
+  let currentText = null;     // the `text` parameter whose region is marked in the open image
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
   /** @type {any} */ let viewer = null;
@@ -81,11 +82,19 @@
     route();
   }
 
+  /**
+   * Show what the address asks for.  An `image` (which may carry a region, `…@x,y,w,h`) opens that image and `page` is
+   * ignored; without one, `page`, then `text`, lead to an image.  The region of the `text` passage on the open image is
+   * marked like a region just drawn by Shift-drag; `text` stays in the address, and stepping to another image drops it.
+   */
   function route() {
-    const r = resolveImage(locator, readParams(location.search));
+    const p = readParams(location.search);
+    const r = resolveImage(locator, p);
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
     const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
-    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}${roiText ? '@' + roiText : ''}`) setQuery({ image: r.image + (roiText ? '@' + roiText : '') }, true);   // the canonical address
+    const text = r && !isCollectionUrn(r.image) ? p.text : null;
+    const wanted = { image: r ? r.image + (roiText ? '@' + roiText : '') : '', text };
+    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(wanted))) setQuery(wanted, true);   // the canonical address
     const h = r ? { urn: r.image } : null;
     if (!h) { selectCollection(null); showTable(); return; }
     const cu = collectionOfObject(h.urn);
@@ -95,7 +104,7 @@
     const idx = c.items.findIndex(i => i.urn === h.urn);
     if (idx < 0) { selectCollection(c); showTable(`${h.urn} is not in this release.`); return; }
     selectCollection(c);
-    showViewer(idx, r && 'roi' in r ? r.roi : null, roiText);
+    showViewer(idx, r && 'roi' in r ? r.roi : null, roiText, text);
   }
 
   function selectCollection(c) {
@@ -209,10 +218,12 @@
    * @param {number} idx  Index in `coll.items`.
    * @param {{x: number, y: number, w: number, h: number} | null} [roi]  Fractions of the image size.
    * @param {string} [roiText]  The region as written in the address.
+   * @param {string | null} [text]  A passage whose region on the image is marked too.
    */
-  async function showViewer(idx, roi = null, roiText = '') {
-    if (idx === current && roiText === currentRoi && !$('viewer-view').hidden) return;
+  async function showViewer(idx, roi = null, roiText = '', text = null) {
+    if (idx === current && roiText === currentRoi && text === currentText && !$('viewer-view').hidden) return;
     currentRoi = roiText;
+    currentText = text;
     if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     const item = coll.items[idx];
@@ -253,7 +264,9 @@
       });
       const nText = textRegions.show(item.urn, width, height);
       if (nText) $('viewer-note').textContent += ` · ${plural(nText, 'indexed passage', 'indexed passages')}`;
-      roiUi.open(item.urn, roi ? [roi] : []);
+      const marked = text ? locator.regionsOfText(text, item.urn) : [];   // the passage of `text`, marked as if just drawn
+      if (text && !marked.length) $('viewer-note').textContent += ` · no region of ${text} on this image`;
+      roiUi.open(item.urn, [...(roi ? [roi] : []), ...marked]);
       if (roi) zoomToRegion(roi, width, height);
       viewer.root.focus({ preventScroll: true });
     } catch (e) {

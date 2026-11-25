@@ -15,9 +15,10 @@ Page images of every codex in the release, with a rectangle over each text passa
 Query-string parameters (`?name=value`), never `#` tags.
 
 - `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
-- `image` — an image URN: opens the page the DSE (or the catalog) gives that image.
-- `text` — a passage URN: opens the page the DSE puts it on. For a range only the first passage is used (one page is shown at a time; move on with the page buttons).
-- If several are given, `page` wins, then `image`, then `text`; the first that gives a page is used. The address is rewritten as `?page=…` and then follows the page shown, so bookmarks, links and Back and Forward work. A value that matches no page gives a message in the status line.
+- `image` — an image URN: opens the page the DSE (or the catalog) gives that image, showing that image. An `image` decides alone: a `page` given with it is ignored. If the image is on several pages (a bifolio), the page the `text` is on is chosen, else the first.
+- `text` — a passage URN: opens the page the DSE puts it on (when there is no `image` or `page`). For a range only the first passage is used (one page is shown at a time; move on with the page buttons).
+- Priority: `image`, then `page`, then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
+- The address follows what is shown, with the `text` if any (`?image=…&text=…`, or `?page=…&text=…`); the page buttons drop the `text`. Bookmarks, links and Back and Forward work. A value that matches no page gives a message in the status line.
 
 ## Output options
 

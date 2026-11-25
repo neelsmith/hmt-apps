@@ -1,5 +1,7 @@
 # Using `va-facsimile.html`: optional parameters
 
+> **Out of date** (2026-11-25): this describes the first, `#`-based version. The parameters are now query-string parameters (`?page=`, `?image=`, `?text=`); see `notes/app-docs/va-facsimile.md`.
+
 Written 2026-11-23; `text` and `image` added the same day. Source: `src/apps/va-facsimile/app.js` (navigation section).
 
 ## Optional parameters
