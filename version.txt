@@ -1,20 +1,20 @@
-// facsiiles
-va-facsimile.html   0.5.1
+// facsimiles
+va-facsimile.html   0.5.2
 
 // text browsing
-iliad-scholia.html  0.3.0
-editorial.html  0.2.0
-all-scholia.html    0.3.0
+iliad-scholia.html  0.4.0
+editorial.html  0.3.0
+all-scholia.html    0.4.0
 
 // text searching
-propernames.html    0.2.0
-stringsearch.html   0.2.1
-stringcounter.html   0.2.0
-lemmatizedsearch.html   0.2.0
+propernames.html    0.3.0
+stringsearch.html   0.3.0
+stringcounter.html   0.3.0
+lemmatizedsearch.html   0.3.0
 
 // images and pages
-images.html  0.5.0
-codices.html    0.3.0
+images.html  0.5.1
+codices.html    0.3.1
 
 // editorial status
 dse-check.html  0.2.0

@@ -12,6 +12,9 @@ title: Work with published releases of data from the  Homer Multitext project
 - throughout all apps, display of text passages organizes edited content by manuscript page
 - text displays have uniform previous/next navigation by manuscript page
 - image displays support interactive definition of regions of interest citable with CITE2 URNs.
+- URN references apps are linked to other apps
+
+
 
 ## More info
 

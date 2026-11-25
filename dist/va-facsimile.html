@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.5.1">
+<meta name="app-version" content="0.5.2">
 <title>Venetus A facsimile</title>
 <style>
   :root {
@@ -76,6 +76,7 @@
   .roi.hot { fill-opacity: .38; stroke-width: 3px; }
   #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
   #rois.hide-all .roi { display: none; }
+  .roi.target { fill-opacity: .3; stroke-width: 3px; display: inline !important; }
   #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: #1f6b3a; color: #fff; padding: .2rem .6rem;
            border-radius: 4px; font-size: .8125rem; pointer-events: none; }
   #copied.bad { background: #a3201a; }
@@ -128,7 +129,7 @@
 <header>
   <h1>Venetus A facsimile</h1>
   <span id="status" role="status">Loading the Venetus A from the HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.5.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.5.2</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/va-facsimile/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -1309,6 +1310,7 @@ function pageNeighbours(list) {
  * @property {(text: string) => string[]} imagesOfPassage  Images the DSE puts it on.
  * @property {(page: string) => string[]} passagesOnPage   Passages (DSE keys) on a page, in index order.
  * @property {(image: string) => string[]} passagesOnImage Passages (DSE keys) on an image, in index order.
+ * @property {(text: string, image: string) => import('./dse.js').Roi[]} regionsOfText  The regions the DSE gives a passage (or the start of a range) on an image.
  */
 
 /**
@@ -1324,12 +1326,15 @@ function createLocator(release) {
   /** @type {Map<string, string[]>} */ const passagesOnPage = new Map();
   /** @type {Map<string, string[]>} */ const passagesOnImage = new Map();
   /** @type {Map<string, string[]>} */ const pagesOfImage = new Map();
+  /** @type {Map<string, {image: string, roi: import('./dse.js').Roi}[]>} */ const regionsOfPassage = new Map();
   const set = release.relationSets().find(r => r.urn === DSE_URN);
   for (const row of set?.rows ?? []) {
     const key = dseKey(row.passage ?? '');
     const surface = (row.surface ?? '').trim();
-    const image = parseImageRoi(row.imageroi ?? '')?.image ?? '';
+    const placed = parseImageRoi(row.imageroi ?? '');
+    const image = placed?.image ?? '';
     if (!key) continue;
+    if (placed) { const l = regionsOfPassage.get(key) ?? []; l.push({ image, roi: placed.roi }); regionsOfPassage.set(key, l); }
     if (surface) { add(pagesOfPassage, key, surface); add(passagesOnPage, surface, key); }
     if (image) { add(imagesOfPassage, key, image); add(passagesOnImage, image, key); }
     if (surface && image) add(pagesOfImage, image, surface);
@@ -1356,25 +1361,31 @@ function createLocator(release) {
     imagesOfPassage: text => { const k = firstPassageKey(text); return (k && imagesOfPassage.get(k)) || []; },
     passagesOnPage: page => passagesOnPage.get(page) ?? [],
     passagesOnImage: image => passagesOnImage.get(image) ?? [],
+    regionsOfText: (text, image) => { const k = firstPassageKey(text); return ((k && regionsOfPassage.get(k)) || []).filter(r => r.image === image).map(r => r.roi); },
   };
 }
 
 /** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
 
 /**
- * The page to open for the parameters of an address: `page` first, then `image`, then `text`
- * (the first of these that gives a page of the release wins).
+ * The page to open for the parameters of an address.  An `image` decides alone: `page` is then ignored, and the page
+ * is the page with that image (among several, one the `text` is on, else the first).  Without an `image`, `page`
+ * comes first, then `text` (the first of these that gives a page of the release wins).
  * @param {Locator} loc
  * @param {LocationParams} p
  * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
  */
 function resolvePage(loc, p) {
+  if (p.image) {
+    const pages = loc.pagesOfImage(p.image);
+    const onText = p.text ? loc.pagesOfPassage(p.text) : [];
+    const page = pages.find(x => onText.includes(x)) ?? pages[0];
+    return page ? { page } : { error: `No page of a codex in this release goes with ${p.image}.` };
+  }
   if (p.page && loc.isPage(p.page)) return { page: p.page };
-  const fromImage = p.image ? loc.pagesOfImage(p.image)[0] : '';
-  if (fromImage) return { page: fromImage };
   const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
   if (fromText) return { page: fromText };
-  const given = p.page || p.image || p.text;
+  const given = p.page || p.text;
   if (!given) return null;
   return { error: `No page of a codex in this release goes with ${given}.` };
 }
@@ -2526,11 +2537,20 @@ class RoiUi {
   // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
   // (the app then shows it as `?page=…`).  There is no `#`.
 
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
+
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
     if (!release) return;
     notice = '';
     const p = readParams(location.search);
+    setFocus(p.text);
     for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
     const r = resolvePage(locator, p);
     if (!r) { showTable(); updateStatus(); return; }
@@ -2540,7 +2560,8 @@ class RoiUi {
       notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
       setQuery({}, true); showTable(); updateStatus(); return;
     }
-    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    const canon = { page: r.page, text: focusKey ? p.text : null };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     showViewer(idx);
     updateStatus();
   }
@@ -2558,6 +2579,7 @@ class RoiUi {
 
   /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
+    focusKey = '';
     setQuery({ page: canvases[idx].urn }, replace);
     showViewer(idx);
   }
@@ -2628,7 +2650,7 @@ class RoiUi {
       const p = roiToRect(r.roi, c.width, c.height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${k}`);
+      rect.setAttribute('class', `roi ${k}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
       frag.appendChild(rect);
     }

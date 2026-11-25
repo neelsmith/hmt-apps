@@ -173,11 +173,20 @@
   // `?text=<CTS passage URN>` (for a range, its first passage) open the page that has that image or passage
   // (the app then shows it as `?page=…`).  There is no `#`.
 
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
+
   /** Show what the address asks for: a page, the page of an image or a passage, or the light table. */
   function showFromLocation() {
     if (!release) return;
     notice = '';
     const p = readParams(location.search);
+    setFocus(p.text);
     for (const k of ['page', 'image']) if (p[k]) p[k] = p[k].split('@')[0].trim();   // a region of an image is ignored
     const r = resolvePage(locator, p);
     if (!r) { showTable(); updateStatus(); return; }
@@ -187,7 +196,8 @@
       notice = `${r.page} is not a page of the Venetus A (${VA_CODEX}) with an image`;
       setQuery({}, true); showTable(); updateStatus(); return;
     }
-    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    const canon = { page: r.page, text: focusKey ? p.text : null };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     showViewer(idx);
     updateStatus();
   }
@@ -205,6 +215,7 @@
 
   /** Go to a page: put it in the address and show it. */
   function goTo(idx, replace) {
+    focusKey = '';
     setQuery({ page: canvases[idx].urn }, replace);
     showViewer(idx);
   }
@@ -275,7 +286,7 @@
       const p = roiToRect(r.roi, c.width, c.height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${k}`);
+      rect.setAttribute('class', `roi ${k}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
       frag.appendChild(rect);
     }

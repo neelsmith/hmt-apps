@@ -81,11 +81,22 @@
     route();
   }
 
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
+
   function route() {
-    const r = resolveImage(locator, readParams(location.search));
+    const params = readParams(location.search);
+    setFocus(params.text);
+    const r = resolveImage(locator, params);
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
     const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
-    if (r && !isCollectionUrn(r.image) && decodeURIComponent(location.search) !== `?image=${r.image}${roiText ? '@' + roiText : ''}`) setQuery({ image: r.image + (roiText ? '@' + roiText : '') }, true);   // the canonical address
+    const canon = { image: r && !isCollectionUrn(r.image) ? r.image + (roiText ? '@' + roiText : '') : '', text: focusKey ? params.text : null };
+    if (canon.image && decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     const h = r ? { urn: r.image } : null;
     if (!h) { selectCollection(null); showTable(); return; }
     const cu = collectionOfObject(h.urn);
@@ -251,7 +262,7 @@
         urlFor: (region, size) => urlFor(service, region, size),
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
-      const nText = textRegions.show(item.urn, width, height);
+      const nText = textRegions.show(item.urn, width, height, focusKey);
       if (nText) $('viewer-note').textContent += ` · ${plural(nText, 'indexed passage', 'indexed passages')}`;
       roiUi.open(item.urn, roi ? [roi] : []);
       if (roi) zoomToRegion(roi, width, height);

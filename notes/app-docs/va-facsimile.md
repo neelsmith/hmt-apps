@@ -16,9 +16,10 @@ A light table of the pages of the Venetus A manuscript and a zoomable viewer sho
 Query-string parameters (`?name=value`), never `#` tags. The app writes `?page=…` itself as you move, so the address is a bookmark and Back and Forward work.
 
 - `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
-- `image` — an image URN (a region `@x,y,w,h` is ignored): opens the page that has that image.
-- `text` — a passage URN with a DSE record on a Venetus A page: opens that page. For a range (`…msA:1.1-3.10`) only the first passage is used; the viewer shows one page at a time, so move on with the page buttons.
-- If several are given, `page` wins, then `image`, then `text`; the address is rewritten as `?page=…`. A URN that does not lead to a page of the Venetus A with an image puts a notice in the status line and shows the light table.
+- `image` — an image URN (a region `@x,y,w,h` is ignored): opens the page that has that image. An `image` decides alone: a `page` given with it is ignored.
+- `text` — a passage URN with a DSE record on a Venetus A page: opens that page (when there is no `image` or `page`). For a range (`…msA:1.1-3.10`) only the first passage is used; the viewer shows one page at a time, so move on with the page buttons.
+- Priority: `image`, then `page`, then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
+- The address stays as given (`?image=…`, or `?page=…`, with the `text` if any); a `text` alone is rewritten as `?page=…&text=…`. The page buttons drop the `text`. A URN that does not lead to a page of the Venetus A with an image puts a notice in the status line and shows the light table.
 
 ## Output options
 
@@ -37,3 +38,5 @@ None.
 On the open image you can mark rectangular regions and cite them. Hold **Shift** and drag to draw one at any time (over the indexed rectangles too: it draws and copies no text), or press **Select** and drag (the way on a touch screen). With Select on, drag a region to move it, drag a corner handle to resize it, or click a region to make it current; Delete removes the current region and Esc leaves Select. A region is kept as fractions of the whole image, so it bounds the same part of the image however you pan or zoom.
 
 The **Regions of interest** panel under the image lists each region as the CITE2 URN of the page's image plus `@x,y,w,h` (four decimals, each from 0 to 1), e.g. `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225`. **Copy** puts one URN on the clipboard, **Copy all** puts them all, one per line. Regions are kept for each image while the page stays open; they are not saved or written to the address.
+
+**`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.

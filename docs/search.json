@@ -42,284 +42,112 @@
     "text": "Editorial status of the release\n\nSee summaries of editorial work in each manuscript.\nFind referential inconsistencies in editorial indexing.\nFind referential inconsistencies in indexing of scholia to Iliad"
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Work with published releases of data from the Homer Multitext project",
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About hmt-apps",
     "section": "",
-    "text": "a personal collection of interconnected “two-coffee” web apps\nall apps can be run from a web server or from a single local HTML file\napps dynamically load the HMT project’s latest published release\nbrowse and search HMT datasets starting from text passages, physical artifact, or documentary image\nbrowsing apps support uniform bookmarking with URNs for text, image, or page\nthroughout all apps, display of text passages organizes edited content by manuscript page\ntext displays have uniform previous/next navigation by manuscript page\nimage displays support interactive definition of regions of interest citable with CITE2 URNs."
+    "text": "Throughout the first quarter of the twenty-first century, the Homer Multitext project’s (HMT) work on Homeric manuscripts intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. Major components of the archive include (among other things):\n\ncollections of digital images of Homeric manuscripts\ncataloged data about manuscripts of the Iliad\neditions of texts of the Iliad and scholia\nindexes associating texts, manuscript pages, and images\nother indexes including proper nouns and adjectives\n\nThis fundamental decision about how to distribute its work is epitomized in the publication of the HMT archive in a single plain-text file, that is always available in its most recent release on github, here."
   },
   {
-    "objectID": "index.html#overview",
-    "href": "index.html#overview",
-    "title": "Work with published releases of data from the Homer Multitext project",
+    "objectID": "about.html#the-hmt-archive",
+    "href": "about.html#the-hmt-archive",
+    "title": "About hmt-apps",
     "section": "",
-    "text": "a personal collection of interconnected “two-coffee” web apps\nall apps can be run from a web server or from a single local HTML file\napps dynamically load the HMT project’s latest published release\nbrowse and search HMT datasets starting from text passages, physical artifact, or documentary image\nbrowsing apps support uniform bookmarking with URNs for text, image, or page\nthroughout all apps, display of text passages organizes edited content by manuscript page\ntext displays have uniform previous/next navigation by manuscript page\nimage displays support interactive definition of regions of interest citable with CITE2 URNs."
+    "text": "Throughout the first quarter of the twenty-first century, the Homer Multitext project’s (HMT) work on Homeric manuscripts intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. Major components of the archive include (among other things):\n\ncollections of digital images of Homeric manuscripts\ncataloged data about manuscripts of the Iliad\neditions of texts of the Iliad and scholia\nindexes associating texts, manuscript pages, and images\nother indexes including proper nouns and adjectives\n\nThis fundamental decision about how to distribute its work is epitomized in the publication of the HMT archive in a single plain-text file, that is always available in its most recent release on github, here."
   },
   {
-    "objectID": "index.html#more-info",
-    "href": "index.html#more-info",
-    "title": "Work with published releases of data from the Homer Multitext project",
-    "section": "More info",
-    "text": "More info\n\nWhat is a “two-coffee app”? More about the contents of this repository.\nWhere should I start? Get started exploring HMT archival data.\nWhere can I find running versions of all the apps? Find links to all of the apps hosted here.\nCountdown to 1.0.0: See a github milestone with remaining issues for a 1.0 release of this repository."
+    "objectID": "about.html#two-coffee-apps",
+    "href": "about.html#two-coffee-apps",
+    "title": "About hmt-apps",
+    "section": "“Two-coffee apps”",
+    "text": "“Two-coffee apps”\nThis repository is a personal project inspired by the potential of coding agents like Claude. Working with the HMT project’s data releases constantly inspires new ideas for apps to explore the complex interrelationships in the HMT data. With an agentic assistant, it’s now remarkably straightforward to draft working versions of these ideas very quickly. I developed each of the apps linked here to a point where I was comfortable releasing it on github in less time than it took me to finish two cups of coffee. The initial investment in both time and coffee is small enough that if an idea doesn’t work out, I can throw it away without hesitation. This dramatically accelerated release cycle gives new meaning to Eric Raymond’s famous aphorism, “Release early, release often.” By reducing the effort to build an app, coding agents can be a boon to scholars with expertise in particular subject matter, rather than in software engineering.\nAll of the apps in this repository start by downloading the HMT project’s latest data release. Apps quickly developed by agents like Claude amplify the value of the data, and offer a powerful new justification for the HMT project’s decision to favor developing datasets over software."
   },
   {
-    "objectID": "docs/coverage/index.html",
-    "href": "docs/coverage/index.html",
-    "title": "coverage",
-    "section": "",
-    "text": "App-specific docs not yet available",
-    "crumbs": [
-      "Docs",
-      "`coverage`"
-    ]
-  },
-  {
-    "objectID": "docs/propernames/index.html",
-    "href": "docs/propernames/index.html",
-    "title": "propernames",
+    "objectID": "docs/codices/index.html",
+    "href": "docs/codices/index.html",
+    "title": "codices",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`propernames`"
+      "`codices`"
     ]
   },
   {
-    "objectID": "docs/iliad-scholia/index.html",
-    "href": "docs/iliad-scholia/index.html",
-    "title": "Iliad + scholia reader",
-    "section": "",
-    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/iliad-scholia/index.html#overview",
-    "href": "docs/iliad-scholia/index.html#overview",
-    "title": "Iliad + scholia reader",
-    "section": "",
-    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/iliad-scholia/index.html#user-options-and-display",
-    "href": "docs/iliad-scholia/index.html#user-options-and-display",
-    "title": "Iliad + scholia reader",
-    "section": "User options and display",
-    "text": "User options and display\n\nVersion of the Iliad: choose a manuscript.\nText: display diplomatic or normalized Iliad edition.\nPassage: a line (1.5), a range (1.1-1.10) or a whole book (1)\nShow: displays requested passage highlighted, along with all other text on the same manuscript page.\nScholia count: appears next to a line commented on by scholia. Click the button to show scholia refernces; selecting a scholion displays its text.\nUnfold/fold all scholia unfolds or folds up all scholia on a page.\n‹ Previous page and Next page ›: display a single preceding or following page.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/iliad-scholia/index.html#optional-parameters",
-    "href": "docs/iliad-scholia/index.html#optional-parameters",
-    "title": "Iliad + scholia reader",
-    "section": "Optional parameters",
-    "text": "Optional parameters\n\ntext — a CTS URN, shows all text indexed to that page, highlighting the requested passage. Example: ?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10.\npage — a page URN. Shows text indexed to that page.\nimage — an image URN. Shows the text indexed to that image.\n\nIf multiple parameters are given, text takes priority, then page, then image.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/iliad-scholia/index.html#data-sources",
-    "href": "docs/iliad-scholia/index.html#data-sources",
-    "title": "Iliad + scholia reader",
-    "section": "Data sources",
-    "text": "Data sources\nFrom the HMT release\n\n#!ctscatalog and #!ctsdata: the texts.\n#!citerelationset: DSE records\n#!datamodels, #!citecollections and #!citedata: the codices and their pages\n\nA saved copy of a release can be dropped on the page or chosen with the file picker.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/iliad-scholia/index.html#output-options",
-    "href": "docs/iliad-scholia/index.html#output-options",
-    "title": "Iliad + scholia reader",
-    "section": "Output options",
-    "text": "Output options\nNone.",
-    "crumbs": [
-      "Docs",
-      "*Iliad* + *scholia* reader"
-    ]
-  },
-  {
-    "objectID": "docs/lemmatizedsearch/index.html",
-    "href": "docs/lemmatizedsearch/index.html",
-    "title": "lemmatizedsearch",
+    "objectID": "docs/dse-check/index.html",
+    "href": "docs/dse-check/index.html",
+    "title": "dse-check",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`lemmatizedsearch`"
+      "`dse-check`"
     ]
   },
   {
-    "objectID": "docs/stringsearch/index.html",
-    "href": "docs/stringsearch/index.html",
-    "title": "Simple text search",
-    "section": "",
-    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/stringsearch/index.html#summary",
-    "href": "docs/stringsearch/index.html#summary",
-    "title": "Simple text search",
-    "section": "",
-    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/stringsearch/index.html#user-options-and-display",
-    "href": "docs/stringsearch/index.html#user-options-and-display",
-    "title": "Simple text search",
-    "section": "User options and display",
-    "text": "User options and display\n\nType a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter). Press Search; typing also searches after a short pause.\nChoose where to search: all texts, Iliad or scholia; and the text searched and shown: diplomatic or normalized.\nMatching passages are listed under the word forms that contain the string, by version (60 at a time, with a “show more” button). Choosing one shows its manuscript page: the Iliad lines and scholia on it, every match marked, the scholia panels with a match unfolded.\nEvery manuscript page in the page view has ‹ Previous page and Next page › buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/stringsearch/index.html#optional-url-parameters",
-    "href": "docs/stringsearch/index.html#optional-url-parameters",
-    "title": "Simple text search",
-    "section": "Optional URL parameters",
-    "text": "Optional URL parameters\nUnlike the browsing apps, this app still keeps its state in a # hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.\n\n#q=&lt;string&gt;&s=&lt;all|iliad|scholia&gt;&t=&lt;diplomatic|normalized&gt;[&p=&lt;passage&gt;] — the string; where to search (s, default all); the text searched and shown (t, default diplomatic); and the passage chosen (p).",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/stringsearch/index.html#data-sources",
-    "href": "docs/stringsearch/index.html#data-sources",
-    "title": "Simple text search",
-    "section": "Data sources",
-    "text": "Data sources\n\n#!ctscatalog and #!ctsdata: the texts searched.\nFor the page view of a chosen passage: #!citerelationset (the DSE urn:cite2:hmt:hmtdse.v1:all and the commentary index urn:cite2:hmt:commentary.v1:all, found through #!datamodels), #!datamodels, #!citecollections and #!citedata (codex pages and their labels); #!citelibrary (release name in the status line).\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/stringsearch/index.html#output-options",
-    "href": "docs/stringsearch/index.html#output-options",
-    "title": "Simple text search",
-    "section": "Output options",
-    "text": "Output options\nNone.",
-    "crumbs": [
-      "Docs",
-      "Simple text search"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html",
-    "href": "docs/images/index.html",
-    "title": "Browse images",
-    "section": "",
-    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html#summary",
-    "href": "docs/images/index.html#summary",
-    "title": "Browse images",
-    "section": "",
-    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html#user-options-and-display",
-    "href": "docs/images/index.html#user-options-and-display",
-    "title": "Browse images",
-    "section": "User options and display",
-    "text": "User options and display\nIn light-table view:\n\nCollection menu: choose an image collection.\nFind: search caption of images.\nSize slider: adjust width of the thumbnails.\nSelect an image to open it in single-image view.\n\nIn single-image view:\n\n‹ › (or [ and ]): move to previous or next image of the collection.\nRights: shows/hide rights statement.\n← Images (or Esc): return to light box view.\nNavigation: drag to pan; scroll or pinch to zoom; +, − and Fit (or the +, - and 0 keys).\n\nIf the image server cannot be reached, the thumbnails show “no image”.",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html#optional-url-parameters",
-    "href": "docs/images/index.html#optional-url-parameters",
-    "title": "Browse images",
-    "section": "Optional URL parameters",
-    "text": "Optional URL parameters\n\nimage — an image URN. Collection-level URN opens in lightbox view, e.g. ?image=urn:cite2:hmt:vaimg.2017a:. Object-level URN opens in single image view, e.g. urn:cite2:hmt:vaimg.2017a:VA091RN_0092\npage — a page URN, e.g. urn:cite2:hmt:msA.v1:12r: opens the reference image for that page.\ntext — a CTS URN. Opens the image the passage is indexed to.\n\nIf multiple parameters are given, image takes priority, then page, then text",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html#data-sources",
-    "href": "docs/images/index.html#data-sources",
-    "title": "Browse images",
-    "section": "Data sources",
-    "text": "Data sources\nFrom the HMT release:\n\n#!datamodels (image model urn:cite2:cite:datamodels.v1:imagemodel), #!citecollections and #!citedata: the image collections and their items (URN, caption, rights).\nOnly for the page and text parameters: the codex pages (#!datamodels codex model, #!citedata) and the DSE (#!citerelationset, urn:cite2:hmt:hmtdse.v1:all).\n#!citelibrary: the release name in the status line.\nThe pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture’s pixel size is read from its IIIF info.json when it is opened.\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/images/index.html#output-options",
-    "href": "docs/images/index.html#output-options",
-    "title": "Browse images",
-    "section": "Output options",
-    "text": "Output options\nNone.",
-    "crumbs": [
-      "Docs",
-      "Browse images"
-    ]
-  },
-  {
-    "objectID": "docs/editorial/index.html",
-    "href": "docs/editorial/index.html",
-    "title": "editorial",
+    "objectID": "docs/all-scholia/index.html",
+    "href": "docs/all-scholia/index.html",
+    "title": "all-scholia",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`editorial`"
+      "`all-scholia`"
     ]
   },
   {
-    "objectID": "archive/index.html",
-    "href": "archive/index.html",
-    "title": "Where should I start?",
-    "section": "",
-    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\nif you want to browse the HMT project’s collection of manuscripts images: try images.html"
-  },
-  {
-    "objectID": "docs/commentary-check/index.html",
-    "href": "docs/commentary-check/index.html",
-    "title": "commentary-check",
+    "objectID": "docs/stringcounter/index.html",
+    "href": "docs/stringcounter/index.html",
+    "title": "stringcounter",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`commentary-check`"
+      "`stringcounter`"
+    ]
+  },
+  {
+    "objectID": "docs/index.html",
+    "href": "docs/index.html",
+    "title": "Documentation for individual apps",
+    "section": "",
+    "text": "TipMore info\n\n\n\nFurther documentation is available for apps with full titles in the adjacent side bar (e.g., “Venetus A facsimile”); documentation for apps listed by file name (e.g., dse-check) is in progress but not yet available.",
+    "crumbs": [
+      "Docs",
+      "Documentation for individual apps"
+    ]
+  },
+  {
+    "objectID": "docs/index.html#links-and-info",
+    "href": "docs/index.html#links-and-info",
+    "title": "Documentation for individual apps",
+    "section": "Links and info",
+    "text": "Links and info\nAll apps have a uniform header or menu line with a link to the hmt-apps home page on the left, and on the right, a version identifier for the specific app plus a link to documentation for the specific app. Immediately below this header line is the title of the app.\nHere is an example showing the header line for the Venetus A facsimile app, in version 0.3.0.\n\n\n\n\nExample of a uniform header line (from the Venetus A facsimile app, version 0.3.0)",
+    "crumbs": [
+      "Docs",
+      "Documentation for individual apps"
+    ]
+  },
+  {
+    "objectID": "docs/index.html#citable-connections-across-hmt-data",
+    "href": "docs/index.html#citable-connections-across-hmt-data",
+    "title": "Documentation for individual apps",
+    "section": "Citable connections across HMT data",
+    "text": "Citable connections across HMT data\nThroughout the HMT archive, texts are related to physical artifacts documented by citable images. All apps for browsing texts, manuscript pages or images can be bookmarked by a URN for manuscript page (page), textual passage (text) or image (image).",
+    "crumbs": [
+      "Docs",
+      "Documentation for individual apps"
+    ]
+  },
+  {
+    "objectID": "docs/index.html#text-formatting-and-navigation",
+    "href": "docs/index.html#text-formatting-and-navigation",
+    "title": "Documentation for individual apps",
+    "section": "Text formatting and navigation",
+    "text": "Text formatting and navigation\nAll textual displays organize the display of passages by physical page, and support previous/next navigation.",
+    "crumbs": [
+      "Docs",
+      "Documentation for individual apps"
     ]
   },
   {
@@ -389,112 +217,305 @@
     ]
   },
   {
-    "objectID": "docs/index.html",
-    "href": "docs/index.html",
-    "title": "Documentation for individual apps",
-    "section": "",
-    "text": "TipMore info\n\n\n\nFurther documentation is available for apps with full titles in the adjacent side bar (e.g., “Venetus A facsimile”); documentation for apps listed by file name (e.g., dse-check) is in progress but not yet available.",
-    "crumbs": [
-      "Docs",
-      "Documentation for individual apps"
-    ]
-  },
-  {
-    "objectID": "docs/index.html#links-and-info",
-    "href": "docs/index.html#links-and-info",
-    "title": "Documentation for individual apps",
-    "section": "Links and info",
-    "text": "Links and info\nAll apps have a uniform header or menu line with a link to the hmt-apps home page on the left, and on the right, a version identifier for the specific app plus a link to documentation for the specific app. Immediately below this header line is the title of the app.\nHere is an example showing the header line for the Venetus A facsimile app, in version 0.3.0.\n\n\n\n\nExample of a uniform header line (from the Venetus A facsimile app, version 0.3.0)",
-    "crumbs": [
-      "Docs",
-      "Documentation for individual apps"
-    ]
-  },
-  {
-    "objectID": "docs/index.html#citable-connections-across-hmt-data",
-    "href": "docs/index.html#citable-connections-across-hmt-data",
-    "title": "Documentation for individual apps",
-    "section": "Citable connections across HMT data",
-    "text": "Citable connections across HMT data\nThroughout the HMT archive, texts are related to physical artifacts documented by citable images. All apps for browsing texts, manuscript pages or images can be bookmarked by a URN for manuscript page (page), textual passage (text) or image (image).",
-    "crumbs": [
-      "Docs",
-      "Documentation for individual apps"
-    ]
-  },
-  {
-    "objectID": "docs/index.html#text-formatting-and-navigation",
-    "href": "docs/index.html#text-formatting-and-navigation",
-    "title": "Documentation for individual apps",
-    "section": "Text formatting and navigation",
-    "text": "Text formatting and navigation\nAll textual displays organize the display of passages by physical page, and support previous/next navigation.",
-    "crumbs": [
-      "Docs",
-      "Documentation for individual apps"
-    ]
-  },
-  {
-    "objectID": "docs/stringcounter/index.html",
-    "href": "docs/stringcounter/index.html",
-    "title": "stringcounter",
+    "objectID": "docs/commentary-check/index.html",
+    "href": "docs/commentary-check/index.html",
+    "title": "commentary-check",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`stringcounter`"
+      "`commentary-check`"
     ]
   },
   {
-    "objectID": "docs/all-scholia/index.html",
-    "href": "docs/all-scholia/index.html",
-    "title": "all-scholia",
+    "objectID": "archive/index.html",
+    "href": "archive/index.html",
+    "title": "Where should I start?",
+    "section": "",
+    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\nif you want to browse the HMT project’s collection of manuscripts images: try images.html"
+  },
+  {
+    "objectID": "docs/editorial/index.html",
+    "href": "docs/editorial/index.html",
+    "title": "editorial",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`all-scholia`"
+      "`editorial`"
     ]
   },
   {
-    "objectID": "docs/dse-check/index.html",
-    "href": "docs/dse-check/index.html",
-    "title": "dse-check",
+    "objectID": "docs/images/index.html",
+    "href": "docs/images/index.html",
+    "title": "Browse images",
+    "section": "",
+    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#summary",
+    "href": "docs/images/index.html#summary",
+    "title": "Browse images",
+    "section": "",
+    "text": "images.html: a light box of HMT image collections, with pannable, zoomable views of individual images.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#user-options-and-display",
+    "href": "docs/images/index.html#user-options-and-display",
+    "title": "Browse images",
+    "section": "User options and display",
+    "text": "User options and display\nIn light-table view:\n\nCollection menu: choose an image collection.\nFind: search caption of images.\nSize slider: adjust width of the thumbnails.\nSelect an image to open it in single-image view.\n\nIn single-image view:\n\n‹ › (or [ and ]): move to previous or next image of the collection.\nRights: shows/hide rights statement.\n← Images (or Esc): return to light box view.\nNavigation: drag to pan; scroll or pinch to zoom; +, − and Fit (or the +, - and 0 keys).\n\nIf the image server cannot be reached, the thumbnails show “no image”.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#optional-url-parameters",
+    "href": "docs/images/index.html#optional-url-parameters",
+    "title": "Browse images",
+    "section": "Optional URL parameters",
+    "text": "Optional URL parameters\n\nimage — an image URN. Collection-level URN opens in lightbox view, e.g. ?image=urn:cite2:hmt:vaimg.2017a:. Object-level URN opens in single image view, e.g. urn:cite2:hmt:vaimg.2017a:VA091RN_0092\npage — a page URN, e.g. urn:cite2:hmt:msA.v1:12r: opens the reference image for that page.\ntext — a CTS URN. Opens the image the passage is indexed to.\n\nIf multiple parameters are given, image takes priority, then page, then text",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#data-sources",
+    "href": "docs/images/index.html#data-sources",
+    "title": "Browse images",
+    "section": "Data sources",
+    "text": "Data sources\nFrom the HMT release:\n\n#!datamodels (image model urn:cite2:cite:datamodels.v1:imagemodel), #!citecollections and #!citedata: the image collections and their items (URN, caption, rights).\nOnly for the page and text parameters: the codex pages (#!datamodels codex model, #!citedata) and the DSE (#!citerelationset, urn:cite2:hmt:hmtdse.v1:all).\n#!citelibrary: the release name in the status line.\nThe pictures are not in the release: they are fetched from the HMT IIIF image server, at an address worked out from each image URN. A picture’s pixel size is read from its IIIF info.json when it is opened.\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/images/index.html#output-options",
+    "href": "docs/images/index.html#output-options",
+    "title": "Browse images",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html",
+    "href": "docs/stringsearch/index.html",
+    "title": "Simple text search",
+    "section": "",
+    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#summary",
+    "href": "docs/stringsearch/index.html#summary",
+    "title": "Simple text search",
+    "section": "",
+    "text": "stringsearch : Find passages containing a Greek string, and read passage in the context of their manuscript page.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#user-options-and-display",
+    "href": "docs/stringsearch/index.html#user-options-and-display",
+    "title": "Simple text search",
+    "section": "User options and display",
+    "text": "User options and display\n\nType a Greek string (at least two letters; accents, breathings, capitals and punctuation do not matter). Press Search; typing also searches after a short pause.\nChoose where to search: all texts, Iliad or scholia; and the text searched and shown: diplomatic or normalized.\nMatching passages are listed under the word forms that contain the string, by version (60 at a time, with a “show more” button). Choosing one shows its manuscript page: the Iliad lines and scholia on it, every match marked, the scholia panels with a match unfolded.\nEvery manuscript page in the page view has ‹ Previous page and Next page › buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#optional-url-parameters",
+    "href": "docs/stringsearch/index.html#optional-url-parameters",
+    "title": "Simple text search",
+    "section": "Optional URL parameters",
+    "text": "Optional URL parameters\nUnlike the browsing apps, this app still keeps its state in a # hash (no query-string parameters); the address follows the search, so bookmarks and Back and Forward work.\n\n#q=&lt;string&gt;&s=&lt;all|iliad|scholia&gt;&t=&lt;diplomatic|normalized&gt;[&p=&lt;passage&gt;] — the string; where to search (s, default all); the text searched and shown (t, default diplomatic); and the passage chosen (p).",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#data-sources",
+    "href": "docs/stringsearch/index.html#data-sources",
+    "title": "Simple text search",
+    "section": "Data sources",
+    "text": "Data sources\n\n#!ctscatalog and #!ctsdata: the texts searched.\nFor the page view of a chosen passage: #!citerelationset (the DSE urn:cite2:hmt:hmtdse.v1:all and the commentary index urn:cite2:hmt:commentary.v1:all, found through #!datamodels), #!datamodels, #!citecollections and #!citedata (codex pages and their labels); #!citelibrary (release name in the status line).\nThe release (hmt-current.cex) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/stringsearch/index.html#output-options",
+    "href": "docs/stringsearch/index.html#output-options",
+    "title": "Simple text search",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "Simple text search"
+    ]
+  },
+  {
+    "objectID": "docs/lemmatizedsearch/index.html",
+    "href": "docs/lemmatizedsearch/index.html",
+    "title": "lemmatizedsearch",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`dse-check`"
+      "`lemmatizedsearch`"
     ]
   },
   {
-    "objectID": "docs/codices/index.html",
-    "href": "docs/codices/index.html",
-    "title": "codices",
+    "objectID": "docs/iliad-scholia/index.html",
+    "href": "docs/iliad-scholia/index.html",
+    "title": "Iliad + scholia reader",
+    "section": "",
+    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#overview",
+    "href": "docs/iliad-scholia/index.html#overview",
+    "title": "Iliad + scholia reader",
+    "section": "",
+    "text": "iliad-scholia: Read a passage of the Iliad in a Homer Multitext edition together with scholia on the passage, in the context of the manuscript page it is on.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#user-options-and-display",
+    "href": "docs/iliad-scholia/index.html#user-options-and-display",
+    "title": "Iliad + scholia reader",
+    "section": "User options and display",
+    "text": "User options and display\n\nVersion of the Iliad: choose a manuscript.\nText: display diplomatic or normalized Iliad edition.\nPassage: a line (1.5), a range (1.1-1.10) or a whole book (1)\nShow: displays requested passage highlighted, along with all other text on the same manuscript page.\nScholia count: appears next to a line commented on by scholia. Click the button to show scholia refernces; selecting a scholion displays its text.\nUnfold/fold all scholia unfolds or folds up all scholia on a page.\n‹ Previous page and Next page ›: display a single preceding or following page.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#optional-parameters",
+    "href": "docs/iliad-scholia/index.html#optional-parameters",
+    "title": "Iliad + scholia reader",
+    "section": "Optional parameters",
+    "text": "Optional parameters\n\ntext — a CTS URN, shows all text indexed to that page, highlighting the requested passage. Example: ?text=urn:cts:greekLit:tlg0012.tlg001.msA:1.1-1.10.\npage — a page URN. Shows text indexed to that page.\nimage — an image URN. Shows the text indexed to that image.\n\nIf multiple parameters are given, text takes priority, then page, then image.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#data-sources",
+    "href": "docs/iliad-scholia/index.html#data-sources",
+    "title": "Iliad + scholia reader",
+    "section": "Data sources",
+    "text": "Data sources\nFrom the HMT release\n\n#!ctscatalog and #!ctsdata: the texts.\n#!citerelationset: DSE records\n#!datamodels, #!citecollections and #!citedata: the codices and their pages\n\nA saved copy of a release can be dropped on the page or chosen with the file picker.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/iliad-scholia/index.html#output-options",
+    "href": "docs/iliad-scholia/index.html#output-options",
+    "title": "Iliad + scholia reader",
+    "section": "Output options",
+    "text": "Output options\nNone.",
+    "crumbs": [
+      "Docs",
+      "*Iliad* + *scholia* reader"
+    ]
+  },
+  {
+    "objectID": "docs/propernames/index.html",
+    "href": "docs/propernames/index.html",
+    "title": "propernames",
     "section": "",
     "text": "App-specific docs not yet available",
     "crumbs": [
       "Docs",
-      "`codices`"
+      "`propernames`"
     ]
   },
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About hmt-apps",
+    "objectID": "docs/coverage/index.html",
+    "href": "docs/coverage/index.html",
+    "title": "coverage",
     "section": "",
-    "text": "Throughout the first quarter of the twenty-first century, the Homer Multitext project’s (HMT) work on Homeric manuscripts intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. Major components of the archive include (among other things):\n\ncollections of digital images of Homeric manuscripts\ncataloged data about manuscripts of the Iliad\neditions of texts of the Iliad and scholia\nindexes associating texts, manuscript pages, and images\nother indexes including proper nouns and adjectives\n\nThis fundamental decision about how to distribute its work is epitomized in the publication of the HMT archive in a single plain-text file, that is always available in its most recent release on github, here."
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`coverage`"
+    ]
   },
   {
-    "objectID": "about.html#the-hmt-archive",
-    "href": "about.html#the-hmt-archive",
-    "title": "About hmt-apps",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Work with published releases of data from the Homer Multitext project",
     "section": "",
-    "text": "Throughout the first quarter of the twenty-first century, the Homer Multitext project’s (HMT) work on Homeric manuscripts intentionally prioritized building openly licensed data sets in simple plain-text formats over developing apps. Major components of the archive include (among other things):\n\ncollections of digital images of Homeric manuscripts\ncataloged data about manuscripts of the Iliad\neditions of texts of the Iliad and scholia\nindexes associating texts, manuscript pages, and images\nother indexes including proper nouns and adjectives\n\nThis fundamental decision about how to distribute its work is epitomized in the publication of the HMT archive in a single plain-text file, that is always available in its most recent release on github, here."
+    "text": "a personal collection of interconnected “two-coffee” web apps\nall apps can be run from a web server or from a single local HTML file\napps dynamically load the HMT project’s latest published release\nbrowse and search HMT datasets starting from text passages, physical artifact, or documentary image\nbrowsing apps support uniform bookmarking with URNs for text, image, or page\nthroughout all apps, display of text passages organizes edited content by manuscript page\ntext displays have uniform previous/next navigation by manuscript page\nimage displays support interactive definition of regions of interest citable with CITE2 URNs.\nURN references apps are linked to other apps"
   },
   {
-    "objectID": "about.html#two-coffee-apps",
-    "href": "about.html#two-coffee-apps",
-    "title": "About hmt-apps",
-    "section": "“Two-coffee apps”",
-    "text": "“Two-coffee apps”\nThis repository is a personal project inspired by the potential of coding agents like Claude. Working with the HMT project’s data releases constantly inspires new ideas for apps to explore the complex interrelationships in the HMT data. With an agentic assistant, it’s now remarkably straightforward to draft working versions of these ideas very quickly. I developed each of the apps linked here to a point where I was comfortable releasing it on github in less time than it took me to finish two cups of coffee. The initial investment in both time and coffee is small enough that if an idea doesn’t work out, I can throw it away without hesitation. This dramatically accelerated release cycle gives new meaning to Eric Raymond’s famous aphorism, “Release early, release often.” By reducing the effort to build an app, coding agents can be a boon to scholars with expertise in particular subject matter, rather than in software engineering.\nAll of the apps in this repository start by downloading the HMT project’s latest data release. Apps quickly developed by agents like Claude amplify the value of the data, and offer a powerful new justification for the HMT project’s decision to favor developing datasets over software."
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Work with published releases of data from the Homer Multitext project",
+    "section": "",
+    "text": "a personal collection of interconnected “two-coffee” web apps\nall apps can be run from a web server or from a single local HTML file\napps dynamically load the HMT project’s latest published release\nbrowse and search HMT datasets starting from text passages, physical artifact, or documentary image\nbrowsing apps support uniform bookmarking with URNs for text, image, or page\nthroughout all apps, display of text passages organizes edited content by manuscript page\ntext displays have uniform previous/next navigation by manuscript page\nimage displays support interactive definition of regions of interest citable with CITE2 URNs.\nURN references apps are linked to other apps"
+  },
+  {
+    "objectID": "index.html#more-info",
+    "href": "index.html#more-info",
+    "title": "Work with published releases of data from the Homer Multitext project",
+    "section": "More info",
+    "text": "More info\n\nWhat is a “two-coffee app”? More about the contents of this repository.\nWhere should I start? Get started exploring HMT archival data.\nWhere can I find running versions of all the apps? Find links to all of the apps hosted here.\nCountdown to 1.0.0: See a github milestone with remaining issues for a 1.0 release of this repository."
+  },
+  {
+    "objectID": "links/index.html",
+    "href": "links/index.html",
+    "title": "Links across apps",
+    "section": "",
+    "text": "Beginning with release 0.13.0, URN references are automatically linked to other apps on the project’s github pages site."
+  },
+  {
+    "objectID": "links/index.html#links-from-text-displays",
+    "href": "links/index.html#links-from-text-displays",
+    "title": "Links across apps",
+    "section": "Links from text displays",
+    "text": "Links from text displays\nIn all text browsing and text searching apps, text displays are organized by manuscript page. Each page label is linked to a full display of the page in codices.html. Each passage reference (Iliad line, scholion identifier) is linked to codices.html with the region of interest for that specific passage highlighted."
+  },
+  {
+    "objectID": "links/index.html#linked-information-in-image-displays",
+    "href": "links/index.html#linked-information-in-image-displays",
+    "title": "Links across apps",
+    "section": "Linked information in image displays",
+    "text": "Linked information in image displays\nLight table views of image collections show badges\nimage displays load all RoIs.\nSingle-image views load all RoI information."
   }
 ]

@@ -17,8 +17,9 @@ Query-string parameters (`?name=value`), never `#` tags. The address follows wha
 - `image` — an image URN opens that image in the viewer; a collection URN shows the light box of that collection, e.g. `?image=urn:cite2:hmt:vaimg.2017a:`.
 - `image` may end with a region of interest, `@x,y,w,h` as fractions of the image size, e.g. `?image=urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.214,0.5184,0.171,0.0225`: the viewer opens that single image, outlines the region in yellow and zooms to it (never past full resolution); Fit shows the whole image with the region still marked. The region stays in the address; moving to another image drops it. A region that is not four numbers inside the image is ignored and removed from the address.
 - `page` — a page URN, e.g. `urn:cite2:hmt:msA.v1:12r`: opens the image of that page.
-- `text` — a passage URN: opens the image the DSE puts it on. For a range, only its first passage is used; the viewer shows one image at a time, so move on with ‹ ›.
-- If several are given, `image` wins, then `page`, then `text`. The address is then rewritten as `?image=…`.
+- `text` — a passage URN: opens the image the DSE puts it on (when there is no `image` or `page`). For a range, only its first passage is used; the viewer shows one image at a time, so move on with ‹ ›.
+- Priority: `image`, then `page` (which an `image` makes ignored), then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
+- The address is then rewritten as `?image=…`, with the `text` if any (`?image=…&text=…`); stepping to another image drops it.
 - A value that leads to no image, or a collection or image not in the release, gives a message (above the thumbnails of the collection if there is one, otherwise in place of the prompt).
 
 ## Output options
@@ -48,3 +49,5 @@ An `image` parameter with a region, `?image=<image URN>@x,y,w,h`, opens the imag
 ## Indexed text on an image
 
 When the DSE indexes text to the open image, the viewer draws a rectangle over each region, as codices.html does: red for the *Iliad*, blue for scholia, green for anything else. The note on the image says how many indexed passages it has. **Iliad**, **Scholia** and **Other** checkboxes in the toolbar (shown only for an image that has indexed text) turn each kind off and on. Hover over a rectangle to read the diplomatic text of its passage (where rectangles overlap, all of them are listed); click one to copy the passage URN and its text, URN on the first line, text on the second. Dragging to pan and Shift-dragging to mark a region of interest copy nothing, and your own regions are drawn above the indexed ones. An image with no indexed text shows no rectangles and no checkboxes.
+
+**`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.

@@ -100,15 +100,27 @@
 
   /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
+    focusKey = '';
     setQuery({ page: urn }, replace);
     showPage(urn);
   }
 
+
+  /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
+  let focusKey = '';
+  function setFocus(text) {
+    focusKey = text ? firstPassageKey(text) || '' : '';
+    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
+
   function route() {
-    const r = resolvePage(locator, readParams(location.search));
+    const params = readParams(location.search);
+    setFocus(params.text);
+    const r = resolvePage(locator, params);
     if (!r) { clear(); return; }
     if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
-    if (decodeURIComponent(location.search) !== `?page=${r.page}`) setQuery({ page: r.page }, true);   // the canonical address
+    const canon = { page: r.page, text: focusKey ? params.text : null };
+    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     showPage(r.page);
   }
 
@@ -193,7 +205,7 @@
       const p = roiToRect(r.roi, width, height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${passageKind(r.passage)}`);
+      rect.setAttribute('class', `roi ${passageKind(r.passage)}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
       frag.appendChild(rect);
     }

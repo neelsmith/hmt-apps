@@ -66,6 +66,45 @@ export function groupByVersion(textIndex, keys, versionOrder) {
 }
 
 /** @param {string} tag @param {string} [cls] @param {string} [text] */
+/**
+ * A link to a passage in the codices app on GitHub Pages (`codices.html?text=<passage URN>`), opened in a new tab.
+ * @param {string} urn  CTS URN of the passage
+ * @param {string} text  What the link says
+ * @returns {HTMLAnchorElement}
+ */
+function pvPassageLink(urn, text) {
+  const a = /** @type {HTMLAnchorElement} */ (document.createElement('a'));
+  a.className = 'plink';
+  a.textContent = text;
+  a.href = `${PV_CODICES_APP}?text=${urn}`;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.title = 'Open this passage in the codices app';
+  return a;
+}
+
+/**
+ * A row of a list of passages, to choose from: a `div` that acts as a button (a real button cannot hold a link).
+ * Enter or Space on it clicks it.  Its clicks are for the list; a click on a link inside is the link's own.
+ * @returns {HTMLElement}
+ */
+function pvRowEl() {
+  const b = pvEl('div', 'row');
+  b.setAttribute('role', 'button');
+  b.tabIndex = 0;
+  b.addEventListener('keydown', e => {
+    if (e.target === b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); b.click(); }
+  });
+  return b;
+}
+
+/** A span of the given class holding a passage link. @param {string} cls @param {string} urn @param {string} text */
+function pvRefEl(cls, urn, text) {
+  const s = pvEl('span', cls);
+  s.appendChild(pvPassageLink(urn, text));
+  return s;
+}
+
 function pvEl(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -170,7 +209,7 @@ export function createPageView(data) {
     if (has) d.classList.add('has');
     if (isCur(current, pk)) d.classList.add('cur');
     const sm = pvEl('summary');
-    sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
+    sm.appendChild(pvRefEl('id', pk, passageLabel(pk, titlesOf())));
     const target = on || commentedOn(pk);
     if (target) sm.appendChild(pvEl('span', 'on', `on ${target}`));
     const lemma = passageText(textIndex, pk, o.textKind()).parts.find(p => p.part === 'lemma');
@@ -185,7 +224,9 @@ export function createPageView(data) {
 
   /** A passage with no page: the passage alone. */
   function renderLoose(box, pk, o) {
-    box.appendChild(pvEl('h2', '', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    const h = pvEl('h2');
+    h.appendChild(pvPassageLink(pk, `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    box.appendChild(h);
     box.appendChild(pvEl('p', 'sub', 'The DSE records do not place this passage on a page; here is the passage alone.'));
     const t = pvEl('div', 'greek');
     o.fillText(t, pk);
@@ -253,7 +294,7 @@ export function createPageView(data) {
         const row = pvEl('div', 'line');
         row.dataset.passage = pk;
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);
@@ -306,7 +347,7 @@ export function createPageView(data) {
       for (const pk of secs.other) {
         const row = pvEl('div', 'line');
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);

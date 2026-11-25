@@ -103,6 +103,14 @@ test('passages on a page or an image, in index order and without repeats', () =>
   assert.deepEqual(loc.passagesOnPage('urn:cite2:hmt:msA.v1:2v'), []);
 });
 
+test('regionsOfText: the regions of a passage on an image', () => {
+  assert.deepEqual(loc.regionsOfText(MSA + '1.2', IMG + 'I1R'), [{ x: 0.1, y: 0.3, w: 0.2, h: 0.2 }]);
+  assert.deepEqual(loc.regionsOfText(MSA.replace(/:$/, '.normalized:') + '1.2-1.3', IMG + 'I1R'), [{ x: 0.1, y: 0.3, w: 0.2, h: 0.2 }], 'a range: its first passage');
+  assert.deepEqual(loc.regionsOfText(MSA + '1.2', IMG + 'I1V'), [], 'the passage is not on that image');
+  assert.deepEqual(loc.regionsOfText('urn:cts:greekLit:tlg5026.msAint.hmt:2.1.comment', IMG + 'I2R'), [{ x: 0.1, y: 0.1, w: 0.2, h: 0.2 }, { x: 0.1, y: 0.3, w: 0.2, h: 0.2 }], 'a scholion: the regions of its comment and its lemma');
+  assert.deepEqual(loc.regionsOfText('nonsense', IMG + 'I1R'), []);
+});
+
 test('iliadRangeOf: the Iliad lines on a page as a range; for a page of scholia only, what they comment on', () => {
   const ti = buildTextIndex(rel), versions = iliadVersions(rel, ti), pairs = commentaryPairs(rel);
   const range = keys => iliadRangeOf(keys, versions, ti, pairs);
@@ -120,7 +128,9 @@ test('resolvePage and resolveImage: precedence and errors', () => {
   const n = { text: null, page: null, image: null };
   assert.equal(resolvePage(loc, n), null);
   assert.equal(resolveImage(loc, n), null);
-  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R' }), { page: P + '2r' }, 'page beats image');
+  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R' }), { page: P + '1r' }, 'image beats page, which is then ignored');
+  assert.ok('error' in resolvePage(loc, { ...n, page: P + '1r', image: IMG + 'NOPE' }), 'a bad image is an error, not a fall back to the page');
+  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R', text: MSA + '1.2' }), { page: P + '1r' }, 'text does not change the page of an image');
   assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1V', text: MSA + '1.1' }), { page: P + '1v' }, 'image beats text');
   assert.deepEqual(resolvePage(loc, { ...n, text: MSA + '1.2' }), { page: P + '1r' });
   assert.deepEqual(resolvePage(loc, { ...n, page: P + '9r', text: MSA + '1.2' }), { page: P + '1r' }, 'a bad page falls through');

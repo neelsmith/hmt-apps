@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.3.0">
 <title>Lemmatized search</title>
 <style>
   :root {
@@ -83,6 +83,7 @@
   .hint { color: var(--muted); padding: 1rem; }
   .vh { font-size: .8125rem; font-weight: 700; color: var(--muted); margin: .75rem .5rem .2rem; }
   .row { display: flex; flex-direction: column; align-items: stretch; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: inherit; padding: .25rem .5rem; border-radius: 6px; }
+  .row { cursor: pointer; }
   .row:hover { background: var(--cur); }
   .row.on { background: var(--cur); border-color: var(--accent); }
   .row .ref { font: .8125rem ui-monospace, Menlo, monospace; }
@@ -130,13 +131,16 @@
 @media (max-width: 48rem) {
   .panel { margin-left: 1rem; }
 }
+
+  a.plink { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+  a.plink:hover { color: var(--accent); border-bottom-style: solid; }
 </style>
 </head>
 <body>
 <header>
   <h1>Lemmatized search</h1>
   <span id="status" role="status">Loading the HMT release and the lemmatization data…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/lemmatizedsearch/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/lemmatizedsearch/">Docs</a></span>
 </header>
 
 <div id="loading" role="status" aria-live="polite">
@@ -2010,6 +2014,45 @@ function groupByVersion(textIndex, keys, versionOrder) {
 }
 
 /** @param {string} tag @param {string} [cls] @param {string} [text] */
+/**
+ * A link to a passage in the codices app on GitHub Pages (`codices.html?text=<passage URN>`), opened in a new tab.
+ * @param {string} urn  CTS URN of the passage
+ * @param {string} text  What the link says
+ * @returns {HTMLAnchorElement}
+ */
+function pvPassageLink(urn, text) {
+  const a = /** @type {HTMLAnchorElement} */ (document.createElement('a'));
+  a.className = 'plink';
+  a.textContent = text;
+  a.href = `${PV_CODICES_APP}?text=${urn}`;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.title = 'Open this passage in the codices app';
+  return a;
+}
+
+/**
+ * A row of a list of passages, to choose from: a `div` that acts as a button (a real button cannot hold a link).
+ * Enter or Space on it clicks it.  Its clicks are for the list; a click on a link inside is the link's own.
+ * @returns {HTMLElement}
+ */
+function pvRowEl() {
+  const b = pvEl('div', 'row');
+  b.setAttribute('role', 'button');
+  b.tabIndex = 0;
+  b.addEventListener('keydown', e => {
+    if (e.target === b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); b.click(); }
+  });
+  return b;
+}
+
+/** A span of the given class holding a passage link. @param {string} cls @param {string} urn @param {string} text */
+function pvRefEl(cls, urn, text) {
+  const s = pvEl('span', cls);
+  s.appendChild(pvPassageLink(urn, text));
+  return s;
+}
+
 function pvEl(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -2114,7 +2157,7 @@ function createPageView(data) {
     if (has) d.classList.add('has');
     if (isCur(current, pk)) d.classList.add('cur');
     const sm = pvEl('summary');
-    sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
+    sm.appendChild(pvRefEl('id', pk, passageLabel(pk, titlesOf())));
     const target = on || commentedOn(pk);
     if (target) sm.appendChild(pvEl('span', 'on', `on ${target}`));
     const lemma = passageText(textIndex, pk, o.textKind()).parts.find(p => p.part === 'lemma');
@@ -2129,7 +2172,9 @@ function createPageView(data) {
 
   /** A passage with no page: the passage alone. */
   function renderLoose(box, pk, o) {
-    box.appendChild(pvEl('h2', '', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    const h = pvEl('h2');
+    h.appendChild(pvPassageLink(pk, `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    box.appendChild(h);
     box.appendChild(pvEl('p', 'sub', 'The DSE records do not place this passage on a page; here is the passage alone.'));
     const t = pvEl('div', 'greek');
     o.fillText(t, pk);
@@ -2197,7 +2242,7 @@ function createPageView(data) {
         const row = pvEl('div', 'line');
         row.dataset.passage = pk;
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);
@@ -2250,7 +2295,7 @@ function createPageView(data) {
       for (const pk of secs.other) {
         const row = pvEl('div', 'line');
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);
@@ -3242,8 +3287,7 @@ function parseLemmaHash(hash) {
 
   function rowFor(entry, i) {
     const occ = occurrenceOf(/** @type {LemmaData} */ (lemmata), entry, i);
-    const b = el('button', 'row');
-    b.type = 'button';
+    const b = pvRowEl();
     b.dataset.lemma = entry.lemma;
     b.dataset.token = occ.tokenUrn;
     b.dataset.i = String(i);
@@ -3251,7 +3295,8 @@ function parseLemmaHash(hash) {
     const t = el('span', 'tok', occ.token);
     t.lang = 'grc';
     b.appendChild(t);
-    b.appendChild(el('span', 'ref', occ.key ? `${refOf(occ.key)}${occ.n ? ` · token ${occ.n}` : ''}` : occ.tokenUrn));
+    if (occ.key) { const r = pvRefEl('ref', occ.key, refOf(occ.key)); if (occ.n) r.append(` · token ${occ.n}`); b.appendChild(r); }
+    else b.appendChild(el('span', 'ref', occ.tokenUrn));
     const pages = occ.key ? surfacesOf.get(occ.key) : null;
     const where = occ.key
       ? `${versionLabels.get(occ.version) ?? occ.version} · ${pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'}`
@@ -3366,7 +3411,7 @@ function parseLemmaHash(hash) {
   $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => ready && search('replace'), DEBOUNCE); });
   $('passages').addEventListener('click', e => {
     const row = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.row'));
-    if (!row) return;
+    if (!row || /** @type {HTMLElement} */ (e.target).closest('a.plink')) return;   // a passage link is the link's own click
     const entry = found.find(x => x.lemma === row.dataset.lemma);
     if (!entry) return;
     showToken(entry, Number(row.dataset.i));

@@ -6,6 +6,7 @@
   .roi.hot { fill-opacity: .38; stroke-width: 3px; }
   #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
   #rois.hide-all .roi { display: none; }
+  .roi.target { fill-opacity: .3; stroke-width: 3px; display: inline !important; }
   #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
          background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
          padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }

@@ -333,8 +333,7 @@
 
   function rowFor(entry, i) {
     const occ = occurrenceOf(/** @type {LemmaData} */ (lemmata), entry, i);
-    const b = el('button', 'row');
-    b.type = 'button';
+    const b = pvRowEl();
     b.dataset.lemma = entry.lemma;
     b.dataset.token = occ.tokenUrn;
     b.dataset.i = String(i);
@@ -342,7 +341,8 @@
     const t = el('span', 'tok', occ.token);
     t.lang = 'grc';
     b.appendChild(t);
-    b.appendChild(el('span', 'ref', occ.key ? `${refOf(occ.key)}${occ.n ? ` · token ${occ.n}` : ''}` : occ.tokenUrn));
+    if (occ.key) { const r = pvRefEl('ref', occ.key, refOf(occ.key)); if (occ.n) r.append(` · token ${occ.n}`); b.appendChild(r); }
+    else b.appendChild(el('span', 'ref', occ.tokenUrn));
     const pages = occ.key ? surfacesOf.get(occ.key) : null;
     const where = occ.key
       ? `${versionLabels.get(occ.version) ?? occ.version} · ${pages ? (pageLabels.get(pages[0]) ?? pages[0]) : 'no page in the DSE records'}`
@@ -457,7 +457,7 @@
   $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => ready && search('replace'), DEBOUNCE); });
   $('passages').addEventListener('click', e => {
     const row = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.row'));
-    if (!row) return;
+    if (!row || /** @type {HTMLElement} */ (e.target).closest('a.plink')) return;   // a passage link is the link's own click
     const entry = found.find(x => x.lemma === row.dataset.lemma);
     if (!entry) return;
     showToken(entry, Number(row.dataset.i));
