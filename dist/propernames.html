@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.3.0">
 <title>Proper names</title>
 <style>
   :root {
@@ -51,6 +51,8 @@
   .nm { border-radius: 3px; padding: 0 .12em; }
   .nm.pers { background: var(--pers); } .nm.place { background: var(--place); } .nm.ethnic { background: var(--ethnic); }
   .nm.unk { box-shadow: inset 0 -2px 0 #0003; }
+  .nm.live { cursor: pointer; }
+  .nm.live:hover { text-decoration: underline; }
   .nm.sel { font-weight: 700; outline: 2px solid var(--sel-ring); outline-offset: 1px; }
   .nm.maybe { outline: 2px dashed var(--sel-ring); outline-offset: 1px; }
 
@@ -121,13 +123,16 @@
 @media (max-width: 48rem) {
   .panel { margin-left: 1rem; }
 }
+
+  a.plink { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+  a.plink:hover { color: var(--accent); border-bottom-style: solid; }
 </style>
 </head>
 <body>
 <header>
   <h1>Proper names</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/propernames/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/propernames/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -2002,6 +2007,30 @@ function groupByVersion(textIndex, keys, versionOrder) {
 }
 
 /** @param {string} tag @param {string} [cls] @param {string} [text] */
+/**
+ * A link to a passage in the codices app on GitHub Pages (`codices.html?text=<passage URN>`), opened in a new tab.
+ * @param {string} urn  CTS URN of the passage
+ * @param {string} text  What the link says
+ * @returns {HTMLAnchorElement}
+ */
+function pvPassageLink(urn, text) {
+  const a = /** @type {HTMLAnchorElement} */ (document.createElement('a'));
+  a.className = 'plink';
+  a.textContent = text;
+  a.href = `${PV_CODICES_APP}?text=${urn}`;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.title = 'Open this passage in the codices app';
+  return a;
+}
+
+/** A span of the given class holding a passage link. @param {string} cls @param {string} urn @param {string} text */
+function pvRefEl(cls, urn, text) {
+  const s = pvEl('span', cls);
+  s.appendChild(pvPassageLink(urn, text));
+  return s;
+}
+
 function pvEl(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -2106,7 +2135,7 @@ function createPageView(data) {
     if (has) d.classList.add('has');
     if (isCur(current, pk)) d.classList.add('cur');
     const sm = pvEl('summary');
-    sm.appendChild(pvEl('span', 'id', passageLabel(pk, titlesOf())));
+    sm.appendChild(pvRefEl('id', pk, passageLabel(pk, titlesOf())));
     const target = on || commentedOn(pk);
     if (target) sm.appendChild(pvEl('span', 'on', `on ${target}`));
     const lemma = passageText(textIndex, pk, o.textKind()).parts.find(p => p.part === 'lemma');
@@ -2121,7 +2150,9 @@ function createPageView(data) {
 
   /** A passage with no page: the passage alone. */
   function renderLoose(box, pk, o) {
-    box.appendChild(pvEl('h2', '', `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    const h = pvEl('h2');
+    h.appendChild(pvPassageLink(pk, `${versionLabels.get(versionOf(pk)) ?? versionOf(pk)} ${refOf(pk)}`));
+    box.appendChild(h);
     box.appendChild(pvEl('p', 'sub', 'The DSE records do not place this passage on a page; here is the passage alone.'));
     const t = pvEl('div', 'greek');
     o.fillText(t, pk);
@@ -2189,7 +2220,7 @@ function createPageView(data) {
         const row = pvEl('div', 'line');
         row.dataset.passage = pk;
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);
@@ -2242,7 +2273,7 @@ function createPageView(data) {
       for (const pk of secs.other) {
         const row = pvEl('div', 'line');
         if (isCur(current, pk)) row.classList.add('cur');
-        row.appendChild(pvEl('span', 'ref', refOf(pk)));
+        row.appendChild(pvRefEl('ref', pk, refOf(pk)));
         const t = pvEl('span', 'greek');
         o.fillText(t, pk);
         row.appendChild(t);
@@ -2491,7 +2522,8 @@ function createPageView(data) {
         if (sp.key && sp.key === selKey) s.classList.add('sel');
         else if (!sp.key && hasSel && sp.kind === sel.kind) s.classList.add('maybe');
         const e = sp.key ? names.entries.get(sp.key) : null;
-        s.title = e ? `${e.label} (${kindLabel(e.kind).toLowerCase().replace(/ names$/, ' name')})` : `${kindLabel(sp.kind).toLowerCase().replace(/ names$/, ' name')}; which one is not determined`;
+        if (e) { s.classList.add('live'); s.dataset.key = sp.key; s.dataset.passage = pk; }
+        s.title = e ? `${e.label} (${kindLabel(e.kind).toLowerCase().replace(/ names$/, ' name')}); click to search for it` : `${kindLabel(sp.kind).toLowerCase().replace(/ names$/, ' name')}; which one is not determined`;
         parent.appendChild(s);
       } else parent.appendChild(document.createTextNode(t.text));
       if (t.space) parent.appendChild(document.createTextNode(' '));
@@ -2538,6 +2570,16 @@ function createPageView(data) {
     const id = e.target.value;
     if (!id) return;
     selectName(names.entries.get(`${kind}:${id}`), '', false);
+  });
+  // a name in the text is live: click it to make it the name searched for (the passage it is in is shown)
+  $('page').addEventListener('click', ev => {
+    const n = ev.target instanceof Element ? ev.target.closest('.nm.live') : null;
+    if (!n || String(window.getSelection()).trim()) return;
+    const entry = names.entries.get(n.dataset.key);
+    if (!entry || (sel && entry.key === sel.key)) return;
+    const pk = n.dataset.passage || selPassage;   // the passage the name was clicked in
+    if (entry.kind !== kind) chooseKind(entry.kind);
+    selectName(entry, entry.passages.includes(pk) ? pk : '', false);
   });
   $('passages').addEventListener('click', e => {
     const row = e.target.closest('.row');

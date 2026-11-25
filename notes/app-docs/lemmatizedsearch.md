@@ -29,3 +29,5 @@ None.
 - Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.
 
 The page URN under each page heading is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's URN; it opens in a new tab, so your place here is kept.
+
+**Passage links:** in the page view, each Iliad line number (and the number of any other text passage) and each scholion heading ("Scholion 1.13 (main) on 1.9") is a link to `https://neelsmith.github.io/hmt-apps/codices.html?text=` followed by the passage URN. It opens in a new tab, so your place here is kept. The passage lists (the buttons you choose a passage from) are not links.

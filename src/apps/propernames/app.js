@@ -209,7 +209,8 @@
         if (sp.key && sp.key === selKey) s.classList.add('sel');
         else if (!sp.key && hasSel && sp.kind === sel.kind) s.classList.add('maybe');
         const e = sp.key ? names.entries.get(sp.key) : null;
-        s.title = e ? `${e.label} (${kindLabel(e.kind).toLowerCase().replace(/ names$/, ' name')})` : `${kindLabel(sp.kind).toLowerCase().replace(/ names$/, ' name')}; which one is not determined`;
+        if (e) { s.classList.add('live'); s.dataset.key = sp.key; s.dataset.passage = pk; }
+        s.title = e ? `${e.label} (${kindLabel(e.kind).toLowerCase().replace(/ names$/, ' name')}); click to search for it` : `${kindLabel(sp.kind).toLowerCase().replace(/ names$/, ' name')}; which one is not determined`;
         parent.appendChild(s);
       } else parent.appendChild(document.createTextNode(t.text));
       if (t.space) parent.appendChild(document.createTextNode(' '));
@@ -256,6 +257,16 @@
     const id = e.target.value;
     if (!id) return;
     selectName(names.entries.get(`${kind}:${id}`), '', false);
+  });
+  // a name in the text is live: click it to make it the name searched for (the passage it is in is shown)
+  $('page').addEventListener('click', ev => {
+    const n = ev.target instanceof Element ? ev.target.closest('.nm.live') : null;
+    if (!n || String(window.getSelection()).trim()) return;
+    const entry = names.entries.get(n.dataset.key);
+    if (!entry || (sel && entry.key === sel.key)) return;
+    const pk = n.dataset.passage || selPassage;   // the passage the name was clicked in
+    if (entry.kind !== kind) chooseKind(entry.kind);
+    selectName(entry, entry.passages.includes(pk) ? pk : '', false);
   });
   $('passages').addEventListener('click', e => {
     const row = e.target.closest('.row');

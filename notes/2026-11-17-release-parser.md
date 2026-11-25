@@ -462,3 +462,11 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## `text` parameter: layers start off, passage shown
 
 - In images, codices and va-facsimile, `setFocus(text)` sets `focusKey = firstPassageKey(text)` and unchecks `#show-iliad/scholia/other`; regions with `dseKey(passage) === focusKey` get class `target` (`.roi.target {display: inline !important}` overrides the layer hiding, so it stays visible). `TextRegions.show(imageUrn, w, h, target)` takes the key. The canonical address keeps `text` (`formatQuery({page|image, text})`); `go()`/`goTo()` clear `focusKey`. Checked in `ui-test-textparam.js` (scratchpad); `ui-test-va.js` expectations updated for the address.
+
+## propernames.html: live names
+
+- `appendMarked` gives each identified name span (`sp.key` with an entry) class `live`, `data-key` and `data-passage`; CSS `.nm.live` (pointer, underline on hover). A delegated click on `#page` (ignored while text is selected, or on the name already chosen) switches kind with `chooseKind` if needed and calls `selectName(entry, passage, false)`, which updates the hash. Checked in `ui-test-namelive.js` (scratchpad).
+
+## Passage links to codices.html?text=
+
+- `src/page-view.js`: `pvPassageLink(urn, text)` (anchor class `plink`, new tab) and `pvRefEl(cls, urn, text)`; used for Iliad/other line refs, scholion summary ids and the loose-passage heading. `src/apps/iliad-scholia/app.js` (`renderPassage`, `renderScholion`, also the editorial and all-scholia apps) uses `pvPassageLink` too (`dseKey(urn)` for scholia). Style `a.plink` in `src/page-text.css`. The result-list rows are buttons and are not linked. Checked in `ui-test-plinks.js` (scratchpad). `ui-test-editorial.js` still looks for `.passage` rows and fails as before (stale).

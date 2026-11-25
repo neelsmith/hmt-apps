@@ -1,0 +1,17 @@
+---
+title: "Links across apps"
+---
+
+Beginning with release `0.13.0`, URN references are automatically linked to other apps on the project's github pages site.
+
+
+
+## Links from text displays
+
+In all text browsing and text searching apps, text displays are organized by manuscript page. Each page label is linked to a full display of the page in `codices.html`. Each passage reference (*Iliad* line, *scholion* identifier)  is linked to `codices.html` with the region of interest for that specific passage highlighted.
+
+
+## Linked information in image displays
+
+Light table views of image collections show badges  
+image displays load all RoIs

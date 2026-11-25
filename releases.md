@@ -2,11 +2,13 @@
 
 ## Repository version tag
 
-Current version:  **0.12.2**
+Current version:  **0.13.0**
 
-**0.12.2**, *?*:
+**0.13.0**, *?*:
 
 - changes response of image display apps `va-facsimile`, `codices` and `images` when both `image` and `text` are identified by URL parameters.
+- in `propernames`, displayed proper names are now live search links.
+- adds linking to `codices` from all text searching and text browsing apps.
 
 
 **0.12.1**, *Nov. 25, 2027*:
@@ -100,6 +102,8 @@ Current version:  **0.12.2**
 
 ### `iliad-scholia.html`
 
+**0.4.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
+
 **0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.2.0**, *Nov. 23, 2026*: Adds standard menu. Changes text display to page orientation.
@@ -110,6 +114,8 @@ Current version:  **0.12.2**
 
 ### `all-scholia.html`
 
+**0.4.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
+
 **0.3.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.2.0**, *Nov. 23, 2026*: Adds standard menu to top of page. Changes to page-oriented text display.
@@ -117,6 +123,8 @@ Current version:  **0.12.2**
 **0.1.0**, *Nov. 19, 2026*: initial release. Same functionality as `iliad-scholia.html` except links edited scholia on the given passage from *all* edited MSS.
 
 ### `editorial.html`
+
+**0.3.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
 
 **0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
@@ -126,6 +134,8 @@ Current version:  **0.12.2**
 
 
 ### `stringsearch.html`
+
+**0.3.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
 
 **0.2.1**, *Nov. 25, 2026*: Adds option to fold up bar chart display
 
@@ -138,6 +148,8 @@ Current version:  **0.12.2**
 
 ### `stringcounter.html`
 
+**0.3.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
+
 **0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
 **0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
@@ -145,6 +157,8 @@ Current version:  **0.12.2**
 **0.1.0**, *Nov. 20, 2026*: search text of *Iliad* and *scholia* for strings of text and count results.
 
 ### `lemmatizedsearch.html`
+
+**0.3.0**, *Nov. 25, 2026*: Adds crosslinking to `codices` on github passages for all passage references.
 
 **0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 
@@ -154,6 +168,9 @@ Current version:  **0.12.2**
 
 
 ### `propernames.html`
+
+**0.3.0**, *Nov. 25, 2026*: All named entities in text display are now live search links.  Adds crosslinking to `codices` on github passages for all passage references.
+
 
 **0.2.0**, *Nov. 24, 2026*: Adds page navigation of search results.
 

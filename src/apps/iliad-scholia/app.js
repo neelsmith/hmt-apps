@@ -306,7 +306,7 @@
     const head = document.createElement('div');
     head.className = 'head';
     const ref = document.createElement('span');
-    ref.className = 'ref'; ref.textContent = line.ref;
+    ref.className = 'ref'; ref.appendChild(pvPassageLink(cur.version.urn + line.ref, line.ref));
     const txt = document.createElement('span');
     txt.className = 'greek'; txt.lang = 'grc';
     const alt = cur.other ? cur.other.texts[cur.other.pos.get(line.ref)] : undefined;
@@ -382,7 +382,7 @@
     const d = document.createElement('div');
     d.className = 'scholion';
     const id = document.createElement('div');
-    id.className = 'id'; id.textContent = s.label; id.title = urn;
+    id.className = 'id'; id.appendChild(pvPassageLink(dseKey(urn) || urn, s.label));
     d.appendChild(id);
     const body = document.createElement('div');
     body.className = 'greek'; body.lang = 'grc';
