@@ -36,3 +36,11 @@ None.
   - **← Images** (or Esc) returns to the light box, with the same filter and scroll position;
   - drag to pan; scroll or pinch to zoom; **+**, **−** and **Fit** (or the `+`, `-` and `0` keys).
 - If the image server cannot be reached, the thumbnails show "no image", a note says so, and the viewer reports the failure.
+
+## Marking regions of interest
+
+On the open image you can mark rectangular regions and cite them. Hold **Shift** and drag to draw one at any time, or press **Select** and drag (the way on a touch screen). With Select on, drag a region to move it, drag a corner handle to resize it, or click a region to make it current; Delete removes the current region and Esc leaves Select. A region is kept as fractions of the whole image, so it bounds the same part of the image however you pan or zoom.
+
+The **Regions of interest** panel under the image lists each region as the image's CITE2 URN plus `@x,y,w,h` (four decimals, each from 0 to 1), e.g. `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225`. **Copy** puts one URN on the clipboard, **Copy all** puts them all, one per line. Regions are kept for each image while the page stays open; they are not saved or written to the address.
+
+An `image` parameter with a region, `?image=<image URN>@x,y,w,h`, opens the image with that region already marked (and zoomed to), so it can be adjusted and copied like the others.

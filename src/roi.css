@@ -1,0 +1,24 @@
+/* Regions of interest drawn on an image (roi-tool.js) and their list (roi-panel.js). */
+.iiif-viewer.roi-draw { cursor: crosshair; }
+#viewer.roi-draw, #viewer.roi-draw.dragging { cursor: crosshair; }   /* more specific than the apps' own `#viewer { cursor: grab }` */
+.iiif-viewer.roi-shift, .iiif-viewer.roi-shift * { cursor: crosshair !important; }   /* Shift held over the image, or a Shift-drag: draws, whatever is under the pointer */
+.roi-layer .user-roi { fill: #ffd23f; fill-opacity: .14; stroke: #ffd23f; stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.roi-layer .user-roi.current { fill: #ff4fd8; stroke: #ff4fd8; fill-opacity: .16; }
+.roi-layer.selecting .user-roi { pointer-events: all; cursor: move; }
+.roi-layer .user-roi-label { fill: #ffd23f; font-family: system-ui, sans-serif; font-weight: 700; paint-order: stroke; stroke: #000; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.roi-layer .user-roi-label.current { fill: #ff4fd8; }
+.roi-layer .user-roi-handle { fill: #ff4fd8; stroke: #111; stroke-width: 1px; vector-effect: non-scaling-stroke; pointer-events: all; }
+.roi-layer .user-roi-handle.nw, .roi-layer .user-roi-handle.se { cursor: nwse-resize; }
+.roi-layer .user-roi-handle.ne, .roi-layer .user-roi-handle.sw { cursor: nesw-resize; }
+#roi-select.on { background: #ff4fd8; border-color: #ff4fd8; color: #111; }
+#roi-panel { border-top: 1px solid var(--line); background: var(--panel); padding: .4rem 1rem .5rem; max-height: 11rem; overflow: auto; font-size: .875rem; }
+#roi-panel .roi-head { font-size: .875rem; margin: 0 0 .25rem; }
+#roi-panel .roi-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+#roi-panel .roi-list li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .1rem .25rem; border-radius: 4px; }
+#roi-panel .roi-list li.current { background: color-mix(in srgb, #ff4fd8 22%, transparent); }
+#roi-panel .roi-num { min-width: 1.6rem; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; }
+#roi-panel .roi-urn { word-break: break-all; user-select: all; flex: 1 1 14rem; }
+#roi-panel .roi-btn { border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: .05rem .5rem; }
+#roi-panel .roi-btn:hover { border-color: var(--accent); }
+#roi-panel .roi-actions { display: flex; gap: .4rem; margin-top: .3rem; }
+#roi-panel .roi-hint { margin: .3rem 0 0; color: var(--muted); font-size: .8125rem; }

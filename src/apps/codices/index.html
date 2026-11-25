@@ -87,6 +87,7 @@
   #problem { color: var(--err); }
   @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar { padding: .5rem .75rem; } #controls { width: 100%; } #controls label.sel { flex: 1 1 100%; } #codex, #page { flex: 1; width: auto; } }
 </style>
+<!-- @inline-style src/roi.css -->
 </head>
 <body>
 <header>
@@ -116,17 +117,19 @@
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
       <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
       <button class="btn" id="fit" title="Fit page (0)">Fit</button>
     </span>
   </div>
   <div id="viewer-wrap">
-    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom."></div>
+    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <p id="intro">Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.</p>
     <div id="viewer-note" hidden></div>
     <div id="viewer-error" role="alert" hidden></div>
     <div id="tip" hidden></div>
     <div id="copied" role="status" hidden></div>
   </div>
+  <div id="roi-panel" hidden></div>
 </section>
 
 <!-- @inline src/hmt-release.js -->
@@ -139,6 +142,9 @@
 <!-- @inline src/locate.js -->
 <!-- @inline src/pan-zoom.js -->
 <!-- @inline src/image-viewer.js -->
+<!-- @inline src/roi.js -->
+<!-- @inline src/roi-tool.js -->
+<!-- @inline src/roi-panel.js -->
 <!-- @inline src/apps/codices/app.js -->
 </body>
 </html>

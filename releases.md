@@ -2,7 +2,10 @@
 
 ## Repository version tag
 
-Current version:  **0.11.3**
+Current version:  **0.12.0**
+
+**0.12.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest in `va-facsimile.html`, `codices.html` and `images.html`.
+
 
 **0.11.3**, *Nov. 24, 2026*: 
 
@@ -60,6 +63,8 @@ Current version:  **0.11.3**
 ## Facsimile apps
 
 ### `va-facsimile.html`
+
+**0.5.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
 
 **0.4.1**, *Nov. 24, 2026*:  corrects behavior for forming sequence of pages in facsimile.
 
@@ -144,6 +149,9 @@ Current version:  **0.11.3**
 
 ### `images.html`
 
+
+**0.4.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
+
 **0.3.1**, *Nov. 24, 2026*:  fixes a bug handling image URNs with RoI.
 
 **0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
@@ -158,6 +166,9 @@ Current version:  **0.11.3**
 
 
 ### `codices.html`
+
+
+**0.3.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
 
 **0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 

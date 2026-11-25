@@ -4,13 +4,14 @@ title: Work with published releases of data from the  Homer Multitext project
 
 ## Overview
 
-- a personal collection of "two-coffee" web apps
+- a personal collection of interconnected "two-coffee" web apps
 - all apps can be run from a web server or from a single local HTML file
 - apps dynamically load the HMT project's latest published release
 - browse and search HMT datasets starting from text passages, physical artifact, or documentary image
 - browsing apps support uniform bookmarking with URNs for `text`, `image`, or `page` 
 - throughout all apps, display of text passages organizes edited content by manuscript page
 - text displays have uniform previous/next navigation by manuscript page
+- image displays support interactive definition of regions of interest citable with CITE2 URNs.
 
 ## More info
 
