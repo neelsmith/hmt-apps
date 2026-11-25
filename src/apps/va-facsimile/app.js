@@ -369,6 +369,33 @@
     tip.style.top = Math.max(4, y) + 'px';
   }
 
+  /** The text of a passage as the hover shows it (diplomatic or normalized), lemma and comment of a scholion with a space between. */
+  function passageString(passage) {
+    return textIndex.size ? passageText(textIndex, passage, kind()).parts.map(p => p.text).join(' ') : '';
+  }
+
+  let toastTimer = 0;
+  function toast(msg, bad) {
+    const t = $('copied');
+    t.textContent = msg;
+    t.classList.toggle('bad', !!bad);
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+
+  /** Copy the text of the topmost region under the pointer. */
+  async function copyAt(clientX, clientY) {
+    const el = document.elementsFromPoint(clientX, clientY).find(e => e.classList && e.classList.contains('roi'));
+    if (!el) return;
+    const passage = el.dataset.passage;
+    const label = passageLabel(passage, titles);
+    const text = passageString(passage);
+    if (!text) { toast(`No text of ${label} in this release`, true); return; }
+    // the passage URN, then its text
+    toast((await copyToClipboard(`${passage}\n${text}`)) ? `Copied the URN and text of ${label} to the clipboard` : `Could not copy ${label}`, false);
+  }
+
   function bindHover() {
     const root = viewer.root;
     let pending = null;
@@ -379,7 +406,12 @@
     });
     root.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { pending = null; hideTip(); } });
     root.addEventListener('pointerdown', () => { if (viewer.pointers.size === 0) $('tip').hidden = true; });
-    root.addEventListener('click', e => { if (!viewer.dragging && e.pointerType !== 'mouse') showTipAt(e.clientX, e.clientY); });
+    root.addEventListener('click', e => {
+      if (viewer.dragging) return;
+      if (e.target instanceof Element && e.target.closest('.roi-layer')) return;   // clicking a region of interest of your own
+      if (e.pointerType !== 'mouse') showTipAt(e.clientX, e.clientY);   // touch has no hover: a tap shows the text too
+      copyAt(e.clientX, e.clientY);
+    });
     root.addEventListener('wheel', () => hideTip(), { passive: true });
   }
 

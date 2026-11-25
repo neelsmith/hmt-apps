@@ -27,3 +27,5 @@ None.
 - The passages where the name occurs are listed by version (60 at a time, with a "show more" button), each with its manuscript page. Choosing one shows that page's *Iliad* lines and scholia, with every name marked in a colour for its kind (person, place, ethnic group); passages and scholia containing the chosen name are unfolded.
 - Names are attributed to words by learning from the release; a word that cannot be attributed is shown as a name of unknown identity.
 - Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.
+
+The page URN under each page heading is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's URN; it opens in a new tab, so your place here is kept.

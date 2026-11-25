@@ -69,13 +69,16 @@
   #viewer.dragging { cursor: grabbing; }
   #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
          border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
-  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; }
+  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; cursor: pointer; }
   .roi.iliad { fill: var(--c-iliad); stroke: var(--c-iliad); }
   .roi.scholia { fill: var(--c-scholia); stroke: var(--c-scholia); }
   .roi.other { fill: var(--c-other); stroke: var(--c-other); }
   .roi.hot { fill-opacity: .38; stroke-width: 3px; }
   #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
   #rois.hide-all .roi { display: none; }
+  #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: #1f6b3a; color: #fff; padding: .2rem .6rem;
+           border-radius: 4px; font-size: .8125rem; pointer-events: none; }
+  #copied.bad { background: #a3201a; }
   #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
          background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
          padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }
@@ -148,6 +151,7 @@
     <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <div id="viewer-note"></div>
     <div id="tip" hidden></div>
+    <div id="copied" role="status" hidden></div>
   </div>
   <div id="roi-panel" hidden></div>
 </section>

@@ -24,3 +24,5 @@ None.
 - Choose where to search: **all texts**, **Iliad** or **scholia**; and the text searched and shown: **diplomatic** or **normalized**.
 - Matching passages are listed under the word forms that contain the string, by version (60 at a time, with a "show more" button). Choosing one shows its manuscript page: the *Iliad* lines and scholia on it, every match marked, the scholia panels with a match unfolded.
 - Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.
+
+The page URN under each page heading is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's URN; it opens in a new tab, so your place here is kept.

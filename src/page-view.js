@@ -19,6 +19,9 @@ import { iliadVersions, commentaryPairs, commentarySpansAllVersions } from './il
 import { passageKey, sectionOf, attachScholia } from './propernames.js';
 import { codices, pageNeighbours } from './codices.js';
 
+/** The codices app on GitHub Pages, where the URN of a page links to. */
+const PV_CODICES_APP = 'https://neelsmith.github.io/hmt-apps/codices.html';
+
 /** Version URN of a passage key (version URN + reference). @param {string} pk */
 export const versionOf = pk => ctsVersionOf(/** @type {RegExpExecArray} */ (/^(urn:cts:[^:]+:[^:]+:)/.exec(pk))[1]);
 
@@ -191,7 +194,13 @@ export function createPageView(data) {
 
   function renderPage(box, surface, current, surfaces, o) {
     box.appendChild(pvEl('h2', '', pageLabels.get(surface) ?? surface));
-    const sub = pvEl('p', 'sub', surface);
+    const sub = pvEl('p', 'sub');
+    const link = /** @type {HTMLAnchorElement} */ (pvEl('a', 'pageurn', surface));
+    link.href = `${PV_CODICES_APP}?page=${surface}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.title = 'Open this page in the codices app';
+    sub.appendChild(link);
     if (surfaces.length > 1) {
       sub.append(' · also on: ');
       for (const s of surfaces.filter(x => x !== surface)) {

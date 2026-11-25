@@ -32,3 +32,5 @@ Unlike the browsing apps, this app still keeps its state in a `#` hash (no query
 - The bar chart shows how often each word form containing the string occurs. **Sort** alphabetically or by count; set **Only words occurring at least N times** (default 1).
 - Clicking a bar lists the passages with that word form (60 at a time); choosing a passage shows its manuscript page with the word marked.
 - Every manuscript page in the page view has **‹ Previous page** and **Next page ›** buttons: the page before or after in the codex, even one with no indexed text. The marks stay on the passages that match.
+
+The page URN under each page heading is a link to the codices app on GitHub Pages, `https://neelsmith.github.io/hmt-apps/codices.html?page=` followed by the page's URN; it opens in a new tab, so your place here is kept.

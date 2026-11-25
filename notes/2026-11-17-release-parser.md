@@ -434,3 +434,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - Regions of interest: the cursor is a crosshair as soon as Shift is down over the image (Shift is noticed on `window`, so the viewer need not have focus) and during a Shift-drag, over indexed rectangles and existing regions too (`roi-shift` class); with Select on it is a crosshair for plain drags. The apps' `#viewer { cursor: grab }` is more specific than a class, hence the `#viewer.roi-draw` rule in `src/roi.css`.
 
 - Regions of interest: the adjust mode of iiif-cite (Select: move, corner-handle resize, click to select, Delete, Esc) was already in `RoiTool`; the panel now says so with a hint line ("To move or resize a region, press Select…", changing to the Select-mode keys while it is on). Browser tests of move and resize added for codices and va-facsimile.
+
+## Page URN links to codices (all text displays)
+
+- In the shared page view (`src/page-view.js`, so in iliad-scholia, all-scholia, editorial, stringsearch, stringcounter, propernames and lemmatizedsearch) the page URN under the heading is now `<a class="pageurn" href="https://neelsmith.github.io/hmt-apps/codices.html?page=<URN>" target="_blank" rel="noopener">`; it follows Previous/Next and the "also on" buttons because it is made in `renderPage`. Opens in a new tab so a search or reading position is not lost. Built by string, not `formatPageQuery`, because location.js is not inlined in the search apps. Style in `src/page-text.css`. Checked in `ui-test-pagenav.js`.
