@@ -474,3 +474,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## Passage links in the result lists
 
 - The rows of the passage lists (stringsearch, stringcounter, propernames, lemmatizedsearch) are now `div.row[role=button][tabindex=0]` from `pvRowEl()` in `src/page-view.js` (Enter/Space click it), because a link cannot sit inside a `<button>`. The reference in each row is `pvRefEl('ref', passageKey, ref)`, a link to `codices.html?text=<passage URN>`; the list click handlers ignore clicks on `a.plink`. `.row {cursor: pointer}` in `src/page-view.css`. Checked in `ui-test-rowlinks.js` and a copy of the lemmatized test (scratchpad).
+
+## codices.html: light box of pages
+
+- The Page menu is gone. `#table-view` (sticky `#controls`: `#codex`, `#find`, `#only-text`, `#cell-size`, `#shown`; `#grid` of `.cell` buttons with `.thumb` and a `.badge` count; `#note`, `#empty`) is the first view; `#viewer-view` has `#back`, prev/next, `#viewer-title` and `#viewer-count`. In `src/apps/codices/app.js`: `selectBook`, `showTable`, `renderGrid` (thumbnails from `pageView(page, …).image`, lazy loaded), `applyFilter`; `route()` treats `?page=<codex URN>` as the light box. `go()` still shows pages directly; Back/Esc and the codex menu set `?page=<codex URN>` and call `route()`. Checked in `ui-test-codex-box.js` (scratchpad); `ui-test-codices.js` updated for the new flow.

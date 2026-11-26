@@ -14,7 +14,7 @@ lemmatizedsearch.html   0.3.0
 
 // images and pages
 images.html  0.5.1
-codices.html    0.3.1
+codices.html    0.4.0
 
 // editorial status
 dse-check.html  0.2.0

@@ -14,11 +14,11 @@ Page images of every codex in the release, with a rectangle over each text passa
 
 Query-string parameters (`?name=value`), never `#` tags.
 
-- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
+- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`; or a codex URN, e.g. `?page=urn:cite2:hmt:msA.v1:`, which opens the light box of that codex. With no parameter the app opens at the light box with no codex chosen.
 - `image` — an image URN: opens the page the DSE (or the catalog) gives that image, showing that image. An `image` decides alone: a `page` given with it is ignored. If the image is on several pages (a bifolio), the page the `text` is on is chosen, else the first.
 - `text` — a passage URN: opens the page the DSE puts it on (when there is no `image` or `page`). For a range only the first passage is used (one page is shown at a time; move on with the page buttons).
 - Priority: `image`, then `page`, then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
-- The address follows what is shown, with the `text` if any (`?image=…&text=…`, or `?page=…&text=…`); the page buttons drop the `text`. Bookmarks, links and Back and Forward work. A value that matches no page gives a message in the status line.
+- The address follows what is shown, with the `text` if any (`?image=…&text=…`, or `?page=…&text=…`); the page buttons drop the `text`. Bookmarks, links and Back and Forward work. A value that matches no page gives a message in the light box.
 
 ## Output options
 
@@ -26,7 +26,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 ## User options and display
 
-- Choose a **Codex**, then a **Page** (the menu marks pages with indexed text with ● and the number of passages), or step with **‹ ›** or the `[` `]` keys.
+- Choose a **Codex**: its pages appear as a **light box** of thumbnails, in order, like the images app. A number on a page is how many indexed text passages it has. **Find** narrows the pages by name, **Only pages with indexed text** hides the rest, and **Size** changes the thumbnails. Choose a page to open it (the single-page view below); **← Pages** or Esc returns to the light box, with its Find text and scroll position kept. In the page view step with **‹ ›** or the `[` `]` keys.
 - The page image is shown with a rectangle over each indexed passage; the **Iliad**, **Scholia** and **Other** checkboxes show or hide each kind. Hovering a rectangle shows its diplomatic text.
 - Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
