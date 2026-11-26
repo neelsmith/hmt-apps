@@ -22,6 +22,9 @@
   let tableScroll = 0;
   let listKey = '';           // the `urns` of the list shown as a collection, or ""
   /** @type {ImageCollection | null} */ let listColl = null;
+  /** @type {Set<number>} */ const picked = new Set();   // thumbnails selected with Shift (indexes in `coll.items`)
+  let dragMode = /** @type {boolean | null} */ (null);   // during a Shift-drag: true selects what it passes over, false unselects
+  let copyTimer = 0;
   let listNote = '';          // what to say about the list: images not found
   /** @type {Map<string, string>} */ let listRois = new Map();   // regions written with the images of the list
   /** @type {any} */ let viewer = null;
@@ -171,12 +174,14 @@
       $('intro').textContent = message || (collections.length ? 'Choose a collection of images.' : '');
       $('shown').textContent = '';
       for (const id of ['find', 'cell-size']) $(id).disabled = true;
+      updateCopy();
       return;
     }
     $('intro').hidden = true;
     for (const id of ['find', 'cell-size']) $(id).disabled = false;
     if (gridOf !== coll) {
       gridOf = coll;
+      picked.clear();
       grid.textContent = '';
       const frag = document.createDocumentFragment();
       let loaded = 0, failed = 0;
@@ -193,7 +198,7 @@
         const thumb = document.createElement('span');
         thumb.className = 'thumb';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = ''; img.draggable = false;
         const service = imageService(item.urn);
         img.onload = () => {
           loaded++;
@@ -227,6 +232,54 @@
       ? plural(coll.items.length, 'image', 'images')
       : `${shown.toLocaleString('en')} of ${plural(coll.items.length, 'image', 'images')} shown`;
     $('empty').hidden = shown > 0;
+    updateCopy();
+  }
+
+  // --- selecting thumbnails, copying URNs ---------------------------------------------
+
+  /** The URNs of the thumbnails in view (not hidden by Find), and those of them that are selected, in grid order. */
+  function viewedUrns() {
+    const cells = $('grid').children;
+    /** @type {string[]} */ const all = [], chosen = [];
+    if (coll) coll.items.forEach((item, k) => {
+      if (!cells[k] || cells[k].hidden) return;
+      all.push(item.urn);
+      if (picked.has(k)) chosen.push(item.urn);
+    });
+    return { all, chosen };
+  }
+
+  function updateCopy() {
+    const { all, chosen } = viewedUrns();
+    $('copy-urns').textContent = chosen.length ? `Copy selected URNs (${chosen.length})` : `Copy all URNs (${all.length})`;
+    $('copy-urns').disabled = all.length === 0;
+    $('clear-sel').hidden = picked.size === 0;
+  }
+
+  /** Select (or unselect) a thumbnail. @param {Element} cell @param {boolean} on */
+  function setPicked(cell, on) {
+    const k = Number(/** @type {HTMLElement} */ (cell).dataset.index);
+    if (on === picked.has(k)) return;
+    if (on) picked.add(k); else picked.delete(k);
+    cell.classList.toggle('sel', on);
+    cell.setAttribute('aria-pressed', String(on));
+    updateCopy();
+  }
+
+  function clearPicked() {
+    picked.clear();
+    for (const c of $('grid').querySelectorAll('.sel')) { c.classList.remove('sel'); c.setAttribute('aria-pressed', 'false'); }
+    updateCopy();
+  }
+
+  async function copyUrns() {
+    const { all, chosen } = viewedUrns();
+    const urns = chosen.length ? chosen : all;
+    if (!urns.length) return;
+    const ok = await copyToClipboard(urns.join(','));
+    $('copy-msg').textContent = ok ? `Copied ${plural(urns.length, 'URN', 'URNs')}` : 'Could not copy';
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { $('copy-msg').textContent = ''; }, 2500);
   }
 
   // --- viewer --------------------------------------------------------------------
@@ -336,9 +389,31 @@
   });
   $('find').addEventListener('input', applyFilter);
   $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
+  // Shift-click selects a thumbnail (again: unselects it); Shift-drag selects the ones it passes over
+  $('grid').addEventListener('pointerdown', e => {
+    if (!e.shiftKey || e.button !== 0) return;
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    e.preventDefault();
+    dragMode = !picked.has(Number(cell.dataset.index));
+    setPicked(cell, dragMode);
+  });
+  document.addEventListener('pointermove', e => {
+    if (dragMode === null) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = over && over.closest('.cell');
+    if (cell && $('grid').contains(cell)) setPicked(cell, dragMode);
+  });
+  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { dragMode = null; });
+  $('copy-urns').addEventListener('click', copyUrns);
+  $('clear-sel').addEventListener('click', clearPicked);
   $('grid').addEventListener('click', e => {
     const cell = e.target.closest('.cell');
     if (!cell) return;
+    if (e.shiftKey) {   // the pointer events did the selecting; Shift with the keyboard (Enter, Space) does it here
+      if (e.detail === 0) setPicked(cell, !picked.has(Number(cell.dataset.index)));
+      return;
+    }
     const urn = coll.items[Number(cell.dataset.index)].urn;
     const roi = listKey ? listRois.get(urn) : '';
     go({ urn: roi ? `${urn}@${roi}` : urn }, false);

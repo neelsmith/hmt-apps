@@ -54,3 +54,9 @@ When the DSE indexes text to the open image, the viewer draws a rectangle over e
 **`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.
 
 In the single-image view the image's CITE2 URN is shown, small and in grey, right after the bold label (e.g. **folio 12, recto** `urn:cite2:hmt:vaimg.2017a:VA012RN_0013`); you can select it to copy.
+
+## Selecting images and copying their URNs
+
+In the light box, **Shift-click** a thumbnail to select it (a ✓ and an outline); Shift-click it again to unselect it. **Shift-drag** across thumbnails selects every one the pointer passes over (dragging from a selected thumbnail unselects what it passes over). A plain click still opens the image. The selection is kept while you look at an image and come back, and cleared when you choose another collection or list.
+
+The button beside the count copies a **comma-separated list of image URNs** to the clipboard (nothing is saved): **Copy selected URNs (n)** when some thumbnails are selected, otherwise **Copy all URNs (n)**. Only the thumbnails in view count: a Find that hides images leaves them out, so a search followed by Copy all URNs saves the list of the images it found. The list is in the order shown and can be pasted into the `urns` parameter (`?urns=…`). **Clear selection** appears while anything is selected.

@@ -486,3 +486,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## images.html: image URN beside the label
 
 - `#viewer-title` gets a `span.urn` with `item.urn` after the label (`src/apps/images/app.js`, style in `index.html`).
+
+## images.html: selecting thumbnails, copying URNs
+
+- `picked` (Set of indexes into `coll.items`), `viewedUrns()` (URNs of cells not hidden by Find, and the selected ones among them), `updateCopy()`, `setPicked()`, `clearPicked()`, `copyUrns()` in `src/apps/images/app.js`. Shift-pointerdown on `#grid` toggles a cell and sets `dragMode`; a document `pointermove` applies it to the cell under the pointer; the click with Shift does nothing (except keyboard Shift+Enter, `detail === 0`). `img.draggable = false` and `#grid {user-select: none}` stop native drags. Buttons `#copy-urns`, `#clear-sel`, message `#copy-msg` in the controls. Checked in `ui-test-pick.js` (scratchpad).
