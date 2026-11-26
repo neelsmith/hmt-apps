@@ -13,6 +13,7 @@
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
   const NS = 'http://www.w3.org/2000/svg';
+  const IMAGES_APP = 'https://neelsmith.github.io/hmt-apps/images.html';
 
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
@@ -22,6 +23,7 @@
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, PageRegion[]>} */ let bySurface = new Map();
   /** @type {Set<string>} */ let catalogImages = new Set();
+  /** @type {Map<string, string[]>} */ let illustrations = new Map();   // page URN to the URNs of its images in the illustration index
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
@@ -44,6 +46,7 @@
     textIndex = buildTextIndex(rel);
     titles = catalogTitles(rel);
     bySurface = indexRegionsBySurface(rel).bySurface;
+    illustrations = illustrationsOf(rel);
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
     locator = createLocator(rel);
@@ -247,6 +250,10 @@
     $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
     hideTip();
+    const more = $('more-images');
+    const imgs = illustrations.get(page.urn) ?? [];
+    more.hidden = imgs.length === 0;
+    if (imgs.length) { more.textContent = plural(imgs.length, 'image', 'images'); more.href = imagesListUrl(imgs, IMAGES_APP); }
     document.title = `${page.label || page.id} – Codices`;
     const view = pageView(page, regionsOn(page), catalogImages);
     if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }

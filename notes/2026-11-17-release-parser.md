@@ -498,3 +498,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## codices.html: diplomatic / normalized choice
 
 - Radios `name=kind` in the page bar; `kind()` replaces the constant `KIND` in `src/apps/codices/app.js` for the hover tip and the copied text; the tip's cache key includes it and the tip hides on a change (as in va-facsimile). Checked in `ui-test-kind.js` (scratchpad, line 1.44 where the editions differ). With this codices does everything va-facsimile does for the Venetus A.
+
+## codices.html: other images of a page (illustration index)
+
+- New `src/illustrations.js`: `illustrationsOf(release)` (Map of illustrated object URN to image URNs, from relation sets of the illustration model or with `image` and `illustrated` columns) and `imagesListUrl(urns, base)`; tests in `test/illustrations.test.js`. In `src/apps/codices/app.js`, `illustrations` is built in `start()`; `showPage` shows `#more-images` ("N images") linking to `images.html?urns=…` on GitHub Pages. The format was taken from the request (heading `image|illustrated`); the local `scratch/hmt-current.cex` has no illustration data, so the browser check `ui-test-illus.js` (scratchpad) adds a synthetic data model entry and relation set to a copy of it.

@@ -7,6 +7,7 @@ Page images of every codex in the release, with a rectangle over each text passa
 - `#!datamodels` (codex model `urn:cite2:hmt:datamodels.v1:codexmodel`; image model), `#!citecollections` and `#!citedata`: the codices, their pages (in sequence) and their images.
 - `#!citerelationset`: the DSE (`urn:cite2:hmt:hmtdse.v1:all`).
 - `#!ctscatalog` and `#!ctsdata`: the diplomatic text shown for each region.
+- `#!citerelationset` following the illustration model (`urn:cite2:cite:datamodels.v1:illustrationmodel`, listed in `#!datamodels`), with the heading `image|illustrated`: each row gives an image and the object (here a page) it illustrates. Optional: releases without it simply show no link. (A relation set with `image` and `illustrated` columns is also used if the release does not list it in `#!datamodels`.)
 - `#!citelibrary`: the release name in the status line. The page images come from the IIIF service named in the data.
 - The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
@@ -39,3 +40,5 @@ The **Regions of interest** panel under the image lists each region as the CITE2
 **`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.
 
 In the page view the page's CITE2 URN is shown, small and grey, right after the bold page label (e.g. **Venetus A (Marciana 454 = 822), folio 12, recto** `urn:cite2:hmt:msA.v1:12r`); you can select it to copy.
+
+**Other images of the page:** when the illustration index has images whose `illustrated` value is the page's URN, the page bar shows a link **N images** (or **1 image**) after the page count. It opens, in a new tab, the images app on GitHub Pages with all those image URNs as a list: `https://neelsmith.github.io/hmt-apps/images.html?urns=URN1,URN2,…`, which shows just those images in a light box. The link is not shown for a page with no entries.
