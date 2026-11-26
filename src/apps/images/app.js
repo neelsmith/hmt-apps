@@ -6,6 +6,8 @@
 // Address (no `#`): `?image=<collection URN>` is the light box of a collection,
 // `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` also marks that region of it; Shift-drag marks others); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
+// `?urns=<image URN>,<image URN>,…` treats the list as a collection: the light box shows just those images, in that order
+// (an entry may carry a region, `…@x,y,w,h`).  Choosing an image adds it as `&image=…`; Back returns to the list.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -18,6 +20,10 @@
   let current = -1;           // index of the open image in `coll.items`, or -1
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
+  let listKey = '';           // the `urns` of the list shown as a collection, or ""
+  /** @type {ImageCollection | null} */ let listColl = null;
+  let listNote = '';          // what to say about the list: images not found
+  /** @type {Map<string, string>} */ let listRois = new Map();   // regions written with the images of the list
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let textRegions = null;   // indexed text on the open image
   /** @type {{byImage: Map<string, any>, textIndex: Map<string, any>, titles: Map<string, string>}} */
@@ -39,7 +45,7 @@
     textData = { byImage: indexDse(rel).byImage, textIndex: buildTextIndex(rel), titles: catalogTitles(rel) };
     if (textRegions) textRegions.setData(textData);
     locator = createLocator(rel);
-    coll = null; current = -1;
+    coll = null; current = -1; listKey = ''; listColl = null;
     const sel = $('collection');
     sel.textContent = '';
     const first = document.createElement('option');
@@ -77,7 +83,7 @@
 
   /** Go to a collection page or an image: update the address and show it at once. */
   function go(where, replace) {
-    setQuery(imageParams(where), replace);
+    setQuery(listKey ? { urns: listKey, ...imageParams(where) } : imageParams(where), replace);   // in a list the address keeps it
     route();
   }
 
@@ -89,9 +95,32 @@
     if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
   }
 
+  /** The address has `urns`: the list is the collection shown. */
+  function routeList(params) {
+    if (params.urns !== listKey || !listColl) {
+      const l = imageList(collections, params.urns);
+      listKey = params.urns; listColl = l.collection; listRois = l.rois;
+      listNote = !l.collection.items.length
+        ? 'None of the listed images is in this release.'
+        : l.missing.length ? `Not found in this release, so left out: ${l.missing.join(', ')}` : '';
+    }
+    selectCollection(listColl);
+    const r = params.image ? resolveImage(locator, { image: params.image, page: null, text: null }) : null;
+    if (r && !('error' in r)) {
+      const idx = listColl.items.findIndex(i => i.urn === r.image);
+      if (idx < 0) { showTable(`${r.image} is not one of the listed images.`); return; }
+      const roiText = r.roi ? r.roiText : (listRois.get(r.image) ?? '');
+      showViewer(idx, r.roi ?? parseRoi(roiText), roiText);
+      return;
+    }
+    showTable(listNote);
+  }
+
   function route() {
-    const params = readParams(location.search);
+    const params = readParams(location.search, ['text', 'page', 'image', 'urns']);
     setFocus(params.text);
+    if (params.urns) { routeList(params); return; }
+    listKey = ''; listColl = null; listRois = new Map();
     const r = resolveImage(locator, params);
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
     const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
@@ -243,7 +272,11 @@
     viewer.close();
     roiUi.close();
     textRegions.clear();
-    $('viewer-title').textContent = item.label;
+    const title = $('viewer-title');
+    title.textContent = item.label;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = item.urn;
+    title.append(' ', u);
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
     $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
     $('rights').textContent = item.rights || 'No rights statement in the release.';
@@ -298,13 +331,17 @@
   $('collection').addEventListener('change', e => {
     tableScroll = 0;
     const urn = e.target.value;
+    listKey = '';   // a collection of the release replaces the list
     if (urn) go({ urn }, false); else { setQuery({}, false); route(); }
   });
   $('find').addEventListener('input', applyFilter);
   $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
   $('grid').addEventListener('click', e => {
     const cell = e.target.closest('.cell');
-    if (cell) go({ urn: coll.items[Number(cell.dataset.index)].urn }, false);
+    if (!cell) return;
+    const urn = coll.items[Number(cell.dataset.index)].urn;
+    const roi = listKey ? listRois.get(urn) : '';
+    go({ urn: roi ? `${urn}@${roi}` : urn }, false);
   });
 
   $('back').addEventListener('click', backToGrid);

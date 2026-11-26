@@ -12,9 +12,10 @@
 
 ## Run locally
 
-- internet access required
-- all HTML files in the [`dist`](https://github.com/neelsmith/hmt-apps/tree/main/dist) directory can be saved to a local file and run by opening them in a browser
 
+- all HTML files in the [`dist`](https://github.com/neelsmith/hmt-apps/tree/main/dist) directory can be saved to a local file and run by opening them in a browser
+- if internet is available, most recent published release of the HMT archive is automatically downloaded
+- drag and drop a saved release from the HMT archive to run without internet access
 
 ## Countdown to 1.0
 

@@ -478,3 +478,11 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## codices.html: light box of pages
 
 - The Page menu is gone. `#table-view` (sticky `#controls`: `#codex`, `#find`, `#only-text`, `#cell-size`, `#shown`; `#grid` of `.cell` buttons with `.thumb` and a `.badge` count; `#note`, `#empty`) is the first view; `#viewer-view` has `#back`, prev/next, `#viewer-title` and `#viewer-count`. In `src/apps/codices/app.js`: `selectBook`, `showTable`, `renderGrid` (thumbnails from `pageView(page, …).image`, lazy loaded), `applyFilter`; `route()` treats `?page=<codex URN>` as the light box. `go()` still shows pages directly; Back/Esc and the codex menu set `?page=<codex URN>` and call `route()`. Checked in `ui-test-codex-box.js` (scratchpad); `ui-test-codices.js` updated for the new flow.
+
+## images.html: `urns` parameter
+
+- `parseImageList(text)` (split on `,` only before `urn:`, so `@x,y,w,h` survives; order kept, repeats dropped) and `imageList(collections, text)` (a virtual `ImageCollection` with `urn: ''` of the listed catalog images, plus `rois` and `missing`) in `src/images.js`, with tests in `test/images.test.js`. In `src/apps/images/app.js`: `routeList(params)` (cached by `listKey`, so stepping does not rebuild the grid), `listRois`, `listNote`; `go()` adds `urns` to the address while a list is shown; the grid click carries a listed region; the collection menu clears `listKey`. The address stays as written (`?urns=…[&image=…]`). Checked in `ui-test-urns.js` (scratchpad). The existing parameter is `image` (not `urn`); its behaviour is unchanged.
+
+## images.html: image URN beside the label
+
+- `#viewer-title` gets a `span.urn` with `item.urn` after the label (`src/apps/images/app.js`, style in `index.html`).

@@ -7,6 +7,7 @@ Current version:  **0.14.0**
 **0.14.0**, *?*:
 
 - changes `codices.html` to select pages from a light box view rather than a menu
+- adds new `urns` parameter to `images.html` for working with a specified *list* of images.
 
 **0.13.0**, *Nov. 25, 2026*:
 
@@ -187,6 +188,8 @@ Current version:  **0.14.0**
 ## Apps starting from physical artifacts and images
 
 ### `images.html`
+
+**0.6.0**, *Nov. 26, 2026*: adds new `urns` parameter to work with a specified *list* of images.
 
 
 **0.5.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given

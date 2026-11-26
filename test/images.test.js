@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseRelease } from '../src/hmt-release.js';
 import {
-  imageCollections, imageService, parseInfo, cellLabel, formatImageQuery, parseImageQuery, imageMatches,
+  imageCollections, imageService, parseInfo, cellLabel, formatImageQuery, parseImageQuery, imageMatches, parseImageList, imageList,
   IMAGE_SERVICE_BASE,
 } from '../src/images.js';
 
@@ -115,4 +115,23 @@ test('real release: the image collections', { skip: !existsSync(REAL) }, () => {
     assert.equal(new Set(c.items.map(i => i.urn)).size, c.items.length, `duplicate images in ${c.urn}`);
   }
   assert.ok(cols.some(c => c.items.length === 0), 'at least one empty collection (e3img)');
+});
+
+test('parseImageList: commas inside a region do not split; order kept, repeats dropped', () => {
+  const l = parseImageList('urn:cite2:hmt:vaimg.2017a:B@0.1,0.2,0.3,0.4, urn:cite2:hmt:vaimg.2017a:A,urn:cite2:hmt:vaimg.2017a:B,,');
+  assert.deepEqual(l, [
+    { urn: 'urn:cite2:hmt:vaimg.2017a:B', roiText: '0.1,0.2,0.3,0.4' },
+    { urn: 'urn:cite2:hmt:vaimg.2017a:A', roiText: '' },
+  ]);
+  assert.deepEqual(parseImageList(''), []);
+  assert.deepEqual(parseImageList(null), []);
+});
+
+test('imageList: a collection of just the listed images, in list order, and what was not found', () => {
+  const cs = imageCollections(parseRelease(CEX));
+  const r = imageList(cs, 'urn:cite2:hmt:vaimg.2017a:VA013RN_0014,urn:cite2:hmt:vaimg.2017a:nope,urn:cite2:hmt:vaimg.2017a:VA012RN_0013@0.1,0.2,0.3,0.4');
+  assert.deepEqual(r.collection.items.map(i => i.id), ['VA013RN_0014', 'VA012RN_0013']);
+  assert.deepEqual(r.missing, ['urn:cite2:hmt:vaimg.2017a:nope']);
+  assert.equal(r.rois.get('urn:cite2:hmt:vaimg.2017a:VA012RN_0013'), '0.1,0.2,0.3,0.4');
+  assert.equal(r.collection.urn, '');
 });
