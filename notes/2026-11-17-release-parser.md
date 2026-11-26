@@ -502,3 +502,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## codices.html: other images of a page (illustration index)
 
 - New `src/illustrations.js`: `illustrationsOf(release)` (Map of illustrated object URN to image URNs, from relation sets of the illustration model or with `image` and `illustrated` columns) and `imagesListUrl(urns, base)`; tests in `test/illustrations.test.js`. In `src/apps/codices/app.js`, `illustrations` is built in `start()`; `showPage` shows `#more-images` ("N images") linking to `images.html?urns=…` on GitHub Pages. The format was taken from the request (heading `image|illustrated`); the local `scratch/hmt-current.cex` has no illustration data, so the browser check `ui-test-illus.js` (scratchpad) adds a synthetic data model entry and relation set to a copy of it.
+
+## va-facsimile removed
+
+- `va-facsimile.html` is retired: `codices.html` does everything it did for the Venetus A (light box, page view, regions, hover and copy with diplomatic or normalized text, `page`/`image`/`text` addresses) and covers every codex. Removed `src/apps/va-facsimile/` and `notes/app-docs/va-facsimile.md`; the earlier sections of this log and `notes/va-facsimile-usage.md` are kept as history. (It had already been taken out of `version.txt`, so the build no longer produced it.) Left alone, as they are yours: the link in `docs/apps.html`, `releases.md`, and the quarto pages.
