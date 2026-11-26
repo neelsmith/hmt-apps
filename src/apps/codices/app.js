@@ -13,7 +13,6 @@
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
   const NS = 'http://www.w3.org/2000/svg';
-  const KIND = 'diplomatic';
 
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
@@ -240,7 +239,11 @@
     const token = ++openToken;
     $('table-view').hidden = true;
     $('viewer-view').hidden = false;
-    $('viewer-title').textContent = page.label || page.id;
+    const title = $('viewer-title');
+    title.textContent = page.label || page.id;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = page.urn;
+    title.append(' ', u);
     $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
     hideTip();
@@ -300,6 +303,9 @@
     hideTip();
   }
 
+  /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */
+  function kind() { return /** @type {HTMLInputElement} */ (document.querySelector('input[name=kind]:checked')).value; }
+
   // --- hover tooltip ---------------------------------------------------------------
 
   function hideTip() {
@@ -319,7 +325,7 @@
     div.appendChild(what);
     const body = document.createElement('div');
     body.className = 'greek'; body.lang = 'grc';
-    const { parts } = passageText(textIndex, passage, KIND);
+    const { parts } = passageText(textIndex, passage, kind());
     if (!parts.length) {
       body.className = 'none';
       body.textContent = 'Text not available in this release.';
@@ -342,7 +348,7 @@
 
   /** Full diplomatic text of a passage (lemma and comment of a scholion with a space between), or "". */
   function passageString(passage) {
-    return passageText(textIndex, passage, KIND).parts.map(p => p.text).join(' ');
+    return passageText(textIndex, passage, kind()).parts.map(p => p.text).join(' ');
   }
 
   /** Copy to the clipboard; falls back to a hidden textarea where the clipboard API is missing (e.g. some file:// pages). */
@@ -385,7 +391,7 @@
 
   function showTipAt(clientX, clientY) {
     const els = document.elementsFromPoint(clientX, clientY).filter(el => el.classList && el.classList.contains('roi'));
-    const key = els.map(el => el.dataset.passage).join('\n');
+    const key = els.map(el => el.dataset.passage).join('\n') + '|' + kind();
     const tip = $('tip');
     if (!els.length) { hideTip(); return; }
     if (key !== lastTipKey) {
@@ -452,6 +458,7 @@
   $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
+  for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
   window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {

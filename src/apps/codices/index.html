@@ -96,6 +96,7 @@
   #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
          border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
   #copied.bad { background: #a3201a; }
+  #viewer-title .urn { font: 400 .75rem ui-monospace, Menlo, monospace; color: var(--muted); margin-left: .35rem; overflow-wrap: anywhere; }
   #viewer-count { color: var(--muted); font-size: .875rem; }
   #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
 
@@ -148,6 +149,10 @@
       <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
       <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
       <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
+    <span class="group" role="group" aria-label="Text shown on hover">
+      <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
+      <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>

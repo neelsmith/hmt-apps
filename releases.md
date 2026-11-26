@@ -217,7 +217,10 @@ Current version:  **0.14.0**
 ### `codices.html`
 
 
-**0.4.0**, *Nov. 26, 2026*: changes UI to select pages from a light table view rather than a menu.
+**0.4.0**, *Nov. 26, 2026*: 
+
+- changes UI to select pages from a light table view rather than a menu.
+- adds option of viewing diplomatic or normalized edition of text.
 
 
 **0.3.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given

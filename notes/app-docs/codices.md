@@ -22,7 +22,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 ## Output options
 
-- Clicking a region **copies its passage URN and its text to the clipboard** (URN on the first line, diplomatic text on the second; a message confirms). Nothing is saved to a file.
+- Clicking a region **copies its passage URN and its text to the clipboard** (URN on the first line, the text on the second; a message confirms). The text is the **diplomatic** or the **normalized** edition, whichever is chosen with the radio buttons in the page bar (diplomatic at first); hovering shows the same one. Nothing is saved to a file.
 
 ## User options and display
 
@@ -37,3 +37,5 @@ On the open image you can mark rectangular regions and cite them. Hold **Shift**
 The **Regions of interest** panel under the image lists each region as the CITE2 URN of the page's image plus `@x,y,w,h` (four decimals, each from 0 to 1), e.g. `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225`. **Copy** puts one URN on the clipboard, **Copy all** puts them all, one per line. Regions are kept for each image while the page stays open; they are not saved or written to the address.
 
 **`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.
+
+In the page view the page's CITE2 URN is shown, small and grey, right after the bold page label (e.g. **Venetus A (Marciana 454 = 822), folio 12, recto** `urn:cite2:hmt:msA.v1:12r`); you can select it to copy.

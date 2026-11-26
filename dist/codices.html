@@ -96,6 +96,7 @@
   #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
          border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
   #copied.bad { background: #a3201a; }
+  #viewer-title .urn { font: 400 .75rem ui-monospace, Menlo, monospace; color: var(--muted); margin-left: .35rem; overflow-wrap: anywhere; }
   #viewer-count { color: var(--muted); font-size: .875rem; }
   #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
 
@@ -173,6 +174,10 @@
       <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
       <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
       <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
+    <span class="group" role="group" aria-label="Text shown on hover">
+      <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
+      <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
@@ -2423,7 +2428,6 @@ class RoiUi {
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
   const NS = 'http://www.w3.org/2000/svg';
-  const KIND = 'diplomatic';
 
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
@@ -2650,7 +2654,11 @@ class RoiUi {
     const token = ++openToken;
     $('table-view').hidden = true;
     $('viewer-view').hidden = false;
-    $('viewer-title').textContent = page.label || page.id;
+    const title = $('viewer-title');
+    title.textContent = page.label || page.id;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = page.urn;
+    title.append(' ', u);
     $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
     hideTip();
@@ -2710,6 +2718,9 @@ class RoiUi {
     hideTip();
   }
 
+  /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */
+  function kind() { return /** @type {HTMLInputElement} */ (document.querySelector('input[name=kind]:checked')).value; }
+
   // --- hover tooltip ---------------------------------------------------------------
 
   function hideTip() {
@@ -2729,7 +2740,7 @@ class RoiUi {
     div.appendChild(what);
     const body = document.createElement('div');
     body.className = 'greek'; body.lang = 'grc';
-    const { parts } = passageText(textIndex, passage, KIND);
+    const { parts } = passageText(textIndex, passage, kind());
     if (!parts.length) {
       body.className = 'none';
       body.textContent = 'Text not available in this release.';
@@ -2752,7 +2763,7 @@ class RoiUi {
 
   /** Full diplomatic text of a passage (lemma and comment of a scholion with a space between), or "". */
   function passageString(passage) {
-    return passageText(textIndex, passage, KIND).parts.map(p => p.text).join(' ');
+    return passageText(textIndex, passage, kind()).parts.map(p => p.text).join(' ');
   }
 
   /** Copy to the clipboard; falls back to a hidden textarea where the clipboard API is missing (e.g. some file:// pages). */
@@ -2795,7 +2806,7 @@ class RoiUi {
 
   function showTipAt(clientX, clientY) {
     const els = document.elementsFromPoint(clientX, clientY).filter(el => el.classList && el.classList.contains('roi'));
-    const key = els.map(el => el.dataset.passage).join('\n');
+    const key = els.map(el => el.dataset.passage).join('\n') + '|' + kind();
     const tip = $('tip');
     if (!els.length) { hideTip(); return; }
     if (key !== lastTipKey) {
@@ -2862,6 +2873,7 @@ class RoiUi {
   $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
+  for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
   window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
