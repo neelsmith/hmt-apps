@@ -1044,6 +1044,43 @@ function imageParams(where) {
 }
 
 /**
+ * The image URNs of a list: comma-separated, each optionally with a region of interest (`urn:…:VA012RN_0013@0.2,0.3,0.1,0.1`,
+ * whose own commas do not split it: a new entry starts only where `urn:` does).  Order kept, repeats dropped.
+ * @param {string} text
+ * @returns {{urn: string, roiText: string}[]}
+ */
+function parseImageList(text) {
+  /** @type {Map<string, {urn: string, roiText: string}>} */
+  const out = new Map();
+  for (const part of (text ?? '').split(/,(?=\s*urn:)/)) {
+    const t = part.replace(/^[\s,]+|[\s,]+$/g, '');
+    if (!t) continue;
+    const at = t.indexOf('@');
+    const urn = (at < 0 ? t : t.slice(0, at)).trim();
+    if (urn && !out.has(urn)) out.set(urn, { urn, roiText: at < 0 ? '' : t.slice(at + 1).trim() });
+  }
+  return [...out.values()];
+}
+
+/**
+ * Treat a list of image URNs as a collection: the images of the release that are in the list, in the order of the list.
+ * @param {ImageCollection[]} collections
+ * @param {string} text  the `urns` parameter
+ * @returns {{collection: ImageCollection, rois: Map<string, string>, missing: string[]}}
+ *   `rois` holds the region written with an image, `missing` the URNs that are no image of the release.
+ */
+function imageList(collections, text) {
+  const byUrn = new Map(collections.flatMap(c => c.items.map(i => /** @type {[string, ImageItem]} */ ([i.urn, i]))));
+  const entries = parseImageList(text);
+  const items = [], missing = [], rois = new Map();
+  for (const e of entries) {
+    const item = byUrn.get(e.urn);
+    if (item) { items.push(item); if (e.roiText) rois.set(e.urn, e.roiText); } else missing.push(e.urn);
+  }
+  return { collection: { urn: '', label: 'Selected images', license: '', items }, rois, missing };
+}
+
+/**
  * Read a query string written by `formatImageQuery`.
  * @param {string} search
  * @returns {{urn: string} | null}  Null if there is no `image` parameter with a CITE2 URN.

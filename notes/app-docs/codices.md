@@ -7,6 +7,7 @@ Page images of every codex in the release, with a rectangle over each text passa
 - `#!datamodels` (codex model `urn:cite2:hmt:datamodels.v1:codexmodel`; image model), `#!citecollections` and `#!citedata`: the codices, their pages (in sequence) and their images.
 - `#!citerelationset`: the DSE (`urn:cite2:hmt:hmtdse.v1:all`).
 - `#!ctscatalog` and `#!ctsdata`: the diplomatic text shown for each region.
+- `#!citerelationset` following the illustration model (`urn:cite2:cite:datamodels.v1:illustrationmodel`, listed in `#!datamodels`), with the heading `image|illustrated`: each row gives an image and the object (here a page) it illustrates. Optional: releases without it simply show no link. (A relation set with `image` and `illustrated` columns is also used if the release does not list it in `#!datamodels`.)
 - `#!citelibrary`: the release name in the status line. The page images come from the IIIF service named in the data.
 - The release (`hmt-current.cex`) is fetched when the page opens; if that fails, a saved copy can be dropped on the page or chosen with the file picker.
 
@@ -14,19 +15,19 @@ Page images of every codex in the release, with a rectangle over each text passa
 
 Query-string parameters (`?name=value`), never `#` tags.
 
-- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`.
+- `page` — a page URN, e.g. `?page=urn:cite2:hmt:msA.v1:12r`; or a codex URN, e.g. `?page=urn:cite2:hmt:msA.v1:`, which opens the light box of that codex. With no parameter the app opens at the light box with no codex chosen.
 - `image` — an image URN: opens the page the DSE (or the catalog) gives that image, showing that image. An `image` decides alone: a `page` given with it is ignored. If the image is on several pages (a bifolio), the page the `text` is on is chosen, else the first.
 - `text` — a passage URN: opens the page the DSE puts it on (when there is no `image` or `page`). For a range only the first passage is used (one page is shown at a time; move on with the page buttons).
 - Priority: `image`, then `page`, then `text`. A `text` is also used with the others, to mark its region: Whichever image is shown, the region the DSE gives the `text` passage on it (for a range, its first passage) is marked like a region just drawn with Shift-drag: outlined in pink, numbered, and listed in the Regions of interest panel as a citable URN. It is separate from the Iliad, Scholia and Other regions, so the checkboxes do not hide it. If the passage has no region on the image shown, the note under the image says so. 
-- The address follows what is shown, with the `text` if any (`?image=…&text=…`, or `?page=…&text=…`); the page buttons drop the `text`. Bookmarks, links and Back and Forward work. A value that matches no page gives a message in the status line.
+- The address follows what is shown, with the `text` if any (`?image=…&text=…`, or `?page=…&text=…`); the page buttons drop the `text`. Bookmarks, links and Back and Forward work. A value that matches no page gives a message in the light box.
 
 ## Output options
 
-- Clicking a region **copies its passage URN and its text to the clipboard** (URN on the first line, diplomatic text on the second; a message confirms). Nothing is saved to a file.
+- Clicking a region **copies its passage URN and its text to the clipboard** (URN on the first line, the text on the second; a message confirms). The text is the **diplomatic** or the **normalized** edition, whichever is chosen with the radio buttons in the page bar (diplomatic at first); hovering shows the same one. Nothing is saved to a file.
 
 ## User options and display
 
-- Choose a **Codex**, then a **Page** (the menu marks pages with indexed text with ● and the number of passages), or step with **‹ ›** or the `[` `]` keys.
+- Choose a **Codex**: its pages appear as a **light box** of thumbnails, in order, like the images app. A number on a page is how many indexed text passages it has. **Find** narrows the pages by name, **Only pages with indexed text** hides the rest, and **Size** changes the thumbnails. Choose a page to open it (the single-page view below); **← Pages** or Esc returns to the light box, with its Find text and scroll position kept. In the page view step with **‹ ›** or the `[` `]` keys.
 - The page image is shown with a rectangle over each indexed passage; the **Iliad**, **Scholia** and **Other** checkboxes show or hide each kind. Hovering a rectangle shows its diplomatic text.
 - Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
 
@@ -37,3 +38,7 @@ On the open image you can mark rectangular regions and cite them. Hold **Shift**
 The **Regions of interest** panel under the image lists each region as the CITE2 URN of the page's image plus `@x,y,w,h` (four decimals, each from 0 to 1), e.g. `urn:cite2:hmt:vaimg.2017a:VA051RN_0052@0.2140,0.5184,0.1710,0.0225`. **Copy** puts one URN on the clipboard, **Copy all** puts them all, one per line. Regions are kept for each image while the page stays open; they are not saved or written to the address.
 
 **`text` in the address:** when the address has `text=<passage URN>` (for a range, its first passage), the Iliad, Scholia and Other checkboxes start unchecked and only the regions of that passage are drawn (heavier outline), so it is easy to see. Check a box to show that kind again. The address keeps `text` next to `page`/`image` (e.g. `?page=…&text=…`) so a reload or a copied link does the same; going to another page drops it.
+
+In the page view the page's CITE2 URN is shown, small and grey, right after the bold page label (e.g. **Venetus A (Marciana 454 = 822), folio 12, recto** `urn:cite2:hmt:msA.v1:12r`); you can select it to copy.
+
+**Other images of the page:** when the illustration index has images whose `illustrated` value is the page's URN, the page bar shows a link **N images** (or **1 image**) after the page count. It opens, in a new tab, the images app on GitHub Pages with all those image URNs as a list: `https://neelsmith.github.io/hmt-apps/images.html?urns=URN1,URN2,…`, which shows just those images in a light box. The link is not shown for a page with no entries.

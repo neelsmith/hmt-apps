@@ -474,3 +474,31 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## Passage links in the result lists
 
 - The rows of the passage lists (stringsearch, stringcounter, propernames, lemmatizedsearch) are now `div.row[role=button][tabindex=0]` from `pvRowEl()` in `src/page-view.js` (Enter/Space click it), because a link cannot sit inside a `<button>`. The reference in each row is `pvRefEl('ref', passageKey, ref)`, a link to `codices.html?text=<passage URN>`; the list click handlers ignore clicks on `a.plink`. `.row {cursor: pointer}` in `src/page-view.css`. Checked in `ui-test-rowlinks.js` and a copy of the lemmatized test (scratchpad).
+
+## codices.html: light box of pages
+
+- The Page menu is gone. `#table-view` (sticky `#controls`: `#codex`, `#find`, `#only-text`, `#cell-size`, `#shown`; `#grid` of `.cell` buttons with `.thumb` and a `.badge` count; `#note`, `#empty`) is the first view; `#viewer-view` has `#back`, prev/next, `#viewer-title` and `#viewer-count`. In `src/apps/codices/app.js`: `selectBook`, `showTable`, `renderGrid` (thumbnails from `pageView(page, …).image`, lazy loaded), `applyFilter`; `route()` treats `?page=<codex URN>` as the light box. `go()` still shows pages directly; Back/Esc and the codex menu set `?page=<codex URN>` and call `route()`. Checked in `ui-test-codex-box.js` (scratchpad); `ui-test-codices.js` updated for the new flow.
+
+## images.html: `urns` parameter
+
+- `parseImageList(text)` (split on `,` only before `urn:`, so `@x,y,w,h` survives; order kept, repeats dropped) and `imageList(collections, text)` (a virtual `ImageCollection` with `urn: ''` of the listed catalog images, plus `rois` and `missing`) in `src/images.js`, with tests in `test/images.test.js`. In `src/apps/images/app.js`: `routeList(params)` (cached by `listKey`, so stepping does not rebuild the grid), `listRois`, `listNote`; `go()` adds `urns` to the address while a list is shown; the grid click carries a listed region; the collection menu clears `listKey`. The address stays as written (`?urns=…[&image=…]`). Checked in `ui-test-urns.js` (scratchpad). The existing parameter is `image` (not `urn`); its behaviour is unchanged.
+
+## images.html: image URN beside the label
+
+- `#viewer-title` gets a `span.urn` with `item.urn` after the label (`src/apps/images/app.js`, style in `index.html`).
+
+## images.html: selecting thumbnails, copying URNs
+
+- `picked` (Set of indexes into `coll.items`), `viewedUrns()` (URNs of cells not hidden by Find, and the selected ones among them), `updateCopy()`, `setPicked()`, `clearPicked()`, `copyUrns()` in `src/apps/images/app.js`. Shift-pointerdown on `#grid` toggles a cell and sets `dragMode`; a document `pointermove` applies it to the cell under the pointer; the click with Shift does nothing (except keyboard Shift+Enter, `detail === 0`). `img.draggable = false` and `#grid {user-select: none}` stop native drags. Buttons `#copy-urns`, `#clear-sel`, message `#copy-msg` in the controls. Checked in `ui-test-pick.js` (scratchpad).
+
+## codices.html: page URN beside the label
+
+- `#viewer-title` gets a `span.urn` with `page.urn` after the label (`src/apps/codices/app.js`, style in `index.html`), as in images.html.
+
+## codices.html: diplomatic / normalized choice
+
+- Radios `name=kind` in the page bar; `kind()` replaces the constant `KIND` in `src/apps/codices/app.js` for the hover tip and the copied text; the tip's cache key includes it and the tip hides on a change (as in va-facsimile). Checked in `ui-test-kind.js` (scratchpad, line 1.44 where the editions differ). With this codices does everything va-facsimile does for the Venetus A.
+
+## codices.html: other images of a page (illustration index)
+
+- New `src/illustrations.js`: `illustrationsOf(release)` (Map of illustrated object URN to image URNs, from relation sets of the illustration model or with `image` and `illustrated` columns) and `imagesListUrl(urns, base)`; tests in `test/illustrations.test.js`. In `src/apps/codices/app.js`, `illustrations` is built in `start()`; `showPage` shows `#more-images` ("N images") linking to `images.html?urns=…` on GitHub Pages. The format was taken from the request (heading `image|illustrated`); the local `scratch/hmt-current.cex` has no illustration data, so the browser check `ui-test-illus.js` (scratchpad) adds a synthetic data model entry and relation set to a copy of it.

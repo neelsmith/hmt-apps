@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.3.1">
+<meta name="app-version" content="0.4.0">
 <title>Codices</title>
 <style>
   :root {
@@ -69,15 +69,36 @@
   #tip .lemma { font-weight: 700; }
   #tip .none { color: var(--muted); font-style: italic; }
 
-  #controls label.sel { display: inline-flex; gap: .4rem; align-items: center; min-width: 0; }
-  #controls select { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; max-width: 100%; min-width: 0; }
+  /* ---- light box of the pages of a codex ---- */
+  #table-view { flex: 1; overflow: auto; background: var(--table); color: var(--table-fg); display: flex; flex-direction: column; }
+  #controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center;
+         padding: .6rem 1rem; background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); }
+  #controls label { display: inline-flex; gap: .4rem; align-items: center; }
+  #controls .coll { flex: 1 1 20rem; min-width: 0; }
+  #codex { flex: 1; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; }
+  #find { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); width: 11rem; }
+  #shown { color: var(--muted); font-size: .875rem; }
+  #intro, #note { padding: 2rem 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
+  #note { padding: .75rem 1rem 0; color: #ffb4a8; opacity: 1; }
+  #grid { --cell-w: 170px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), 1fr)); gap: .75rem; padding: 1rem; }
+  .cell { position: relative; display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
+          border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
+  .cell:hover { border-color: var(--accent); }
+  .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
+  .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cell .thumb.missing img { display: none; }
+  .cell .thumb.missing::after { content: "no image"; font-size: .75rem; opacity: .6; }
+  .cell .lbl { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cell .badge { position: absolute; top: .6rem; right: .6rem; background: var(--accent); color: var(--accent-fg); border-radius: 999px;
+          padding: 0 .45rem; font-size: .75rem; line-height: 1.35; box-shadow: 0 1px 4px #0008; }
+  #empty { padding: 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
   .roi { cursor: pointer; }
   #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
          border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
   #copied.bad { background: #a3201a; }
-  #controls { flex-wrap: wrap; }
-  #codex { width: 16rem; } #page { width: 15rem; }
-  #intro { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #d8d2c8; }
+  #viewer-title .urn { font: 400 .75rem ui-monospace, Menlo, monospace; color: var(--muted); margin-left: .35rem; overflow-wrap: anywhere; }
+  #more-images { color: var(--accent); font-size: .875rem; white-space: nowrap; }
+  #viewer-count { color: var(--muted); font-size: .875rem; }
   #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
 
   /* ---- loading / errors ---- */
@@ -86,7 +107,7 @@
   body.dragging #drop { border-color: var(--accent); }
   #drop input[type=file] { max-width: 100%; }
   #problem { color: var(--err); }
-  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar { padding: .5rem .75rem; } #controls { width: 100%; } #controls label.sel { flex: 1 1 100%; } #codex, #page { flex: 1; width: auto; } }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar, #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
 </style>
 <style>
 /* Regions of interest drawn on an image (roi-tool.js) and their list (roi-panel.js). */
@@ -119,7 +140,7 @@
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.3.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -127,18 +148,38 @@
   <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
 </div>
 
-<section id="viewer-view">
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Codex <select id="codex" disabled></select></label>
+    <label>Find <input type="search" id="find" placeholder="part of a page name…" autocomplete="off" disabled></label>
+    <label><input type="checkbox" id="only-text" disabled> Only pages with indexed text</label>
+    <label>Size <input type="range" id="cell-size" min="90" max="320" value="170" disabled></label>
+    <span id="shown"></span>
+  </div>
+  <p id="intro">Choose a codex. Its pages appear here; choose a page to open it. A number on a page is how many indexed text passages it has.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <p id="empty" hidden>No pages match.</p>
+</main>
+
+<section id="viewer-view" hidden>
   <div id="viewer-bar">
-    <span id="controls" class="group">
-      <label class="sel">Codex <select id="codex" disabled></select></label>
-      <label class="sel">Page <select id="page" disabled title="● marks pages with indexed text; the number is how many passages"></select></label>
+    <button class="btn" id="back" title="Back to the pages of the codex (Esc)">← Pages</button>
+    <span class="group">
       <button class="btn" id="prev" title="Previous page ([)" aria-label="Previous page" disabled>‹</button>
       <button class="btn" id="next" title="Next page (])" aria-label="Next page" disabled>›</button>
     </span>
+    <span id="viewer-title"></span>
+    <span id="viewer-count"></span>
+    <a id="more-images" href="#" target="_blank" rel="noopener" hidden title="Other images of this page, in the images app"></a>
     <span class="group" role="group" aria-label="Regions shown">
       <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
       <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
       <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
+    <span class="group" role="group" aria-label="Text shown on hover">
+      <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
+      <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
@@ -149,7 +190,6 @@
   </div>
   <div id="viewer-wrap">
     <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
-    <p id="intro">Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.</p>
     <div id="viewer-note" hidden></div>
     <div id="viewer-error" role="alert" hidden></div>
     <div id="tip" hidden></div>
@@ -1020,6 +1060,43 @@ function imageParams(where) {
 }
 
 /**
+ * The image URNs of a list: comma-separated, each optionally with a region of interest (`urn:…:VA012RN_0013@0.2,0.3,0.1,0.1`,
+ * whose own commas do not split it: a new entry starts only where `urn:` does).  Order kept, repeats dropped.
+ * @param {string} text
+ * @returns {{urn: string, roiText: string}[]}
+ */
+function parseImageList(text) {
+  /** @type {Map<string, {urn: string, roiText: string}>} */
+  const out = new Map();
+  for (const part of (text ?? '').split(/,(?=\s*urn:)/)) {
+    const t = part.replace(/^[\s,]+|[\s,]+$/g, '');
+    if (!t) continue;
+    const at = t.indexOf('@');
+    const urn = (at < 0 ? t : t.slice(0, at)).trim();
+    if (urn && !out.has(urn)) out.set(urn, { urn, roiText: at < 0 ? '' : t.slice(at + 1).trim() });
+  }
+  return [...out.values()];
+}
+
+/**
+ * Treat a list of image URNs as a collection: the images of the release that are in the list, in the order of the list.
+ * @param {ImageCollection[]} collections
+ * @param {string} text  the `urns` parameter
+ * @returns {{collection: ImageCollection, rois: Map<string, string>, missing: string[]}}
+ *   `rois` holds the region written with an image, `missing` the URNs that are no image of the release.
+ */
+function imageList(collections, text) {
+  const byUrn = new Map(collections.flatMap(c => c.items.map(i => /** @type {[string, ImageItem]} */ ([i.urn, i]))));
+  const entries = parseImageList(text);
+  const items = [], missing = [], rois = new Map();
+  for (const e of entries) {
+    const item = byUrn.get(e.urn);
+    if (item) { items.push(item); if (e.roiText) rois.set(e.urn, e.roiText); } else missing.push(e.urn);
+  }
+  return { collection: { urn: '', label: 'Selected images', license: '', items }, rois, missing };
+}
+
+/**
  * Read a query string written by `formatImageQuery`.
  * @param {string} search
  * @returns {{urn: string} | null}  Null if there is no `image` parameter with a CITE2 URN.
@@ -1041,6 +1118,53 @@ function imageMatches(item, query) {
   const q = norm(query);
   if (!q) return true;
   return [item.caption || item.id, item.label].some(h => norm(h).includes(q));
+}
+
+</script>
+<script>
+// @ts-check
+/**
+ * Illustrations: other images of a citable object (a manuscript page, say).  A release that follows the
+ * illustration data model (`urn:cite2:cite:datamodels.v1:illustrationmodel`) has a relation set (`#!citerelationset`)
+ * with the heading `image|illustrated`: each row gives an image URN and the URN of the object it illustrates.
+ *
+ * Convention for inlining (see scripts/build.js): imports are single-line.
+ */
+
+/** The data model of an index of images to the objects they illustrate. */
+const ILLUSTRATION_MODEL = 'urn:cite2:cite:datamodels.v1:illustrationmodel';
+
+/**
+ * The images that illustrate each object, from every relation set that follows the illustration model
+ * (or, if the release does not say, any relation set with `image` and `illustrated` columns).
+ * @param {import('./hmt-release.js').HmtRelease} release
+ * @returns {Map<string, string[]>}  Object URN to the URNs of its images, in release order, without repeats.
+ */
+function illustrationsOf(release) {
+  const modelled = new Set(release.dataModels().filter(m => m.model === ILLUSTRATION_MODEL).map(m => m.collection));
+  /** @type {Map<string, string[]>} */
+  const out = new Map();
+  for (const set of release.relationSets()) {
+    const columns = set.header.map(h => h.trim().toLowerCase());
+    if (!(modelled.has(set.urn) || (columns.includes('image') && columns.includes('illustrated')))) continue;
+    for (const row of set.rows) {
+      const image = (row.image ?? '').trim(), object = (row.illustrated ?? '').trim();
+      if (!image || !object) continue;
+      const list = out.get(object) ?? [];
+      if (!list.includes(image)) list.push(image);
+      out.set(object, list);
+    }
+  }
+  return out;
+}
+
+/**
+ * Address of the images app showing a list of images (`images.html?urns=…`).
+ * @param {string[]} urns
+ * @param {string} base  e.g. `https://neelsmith.github.io/hmt-apps/images.html`
+ */
+function imagesListUrl(urns, base) {
+  return `${base}?urns=${urns.join(',')}`;
 }
 
 </script>
@@ -2338,13 +2462,13 @@ class RoiUi {
 
 </script>
 <script>
-// Browser UI for the codices app: choose a codex, then a page; the page image
+// Browser UI for the codices app: choose a codex, browse its pages as a light box of thumbnails, open one; the page image
 // of the DSE records is shown with a rectangle over each indexed text passage,
 // hovering a rectangle shows the diplomatic text, and clicking it copies the
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Address: `?page=<page URN>`, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
+// Address: `?page=<page URN>`, `?page=<codex URN>` for the light box of a codex, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
 // the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
@@ -2353,7 +2477,7 @@ class RoiUi {
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
   const NS = 'http://www.w3.org/2000/svg';
-  const KIND = 'diplomatic';
+  const IMAGES_APP = 'https://neelsmith.github.io/hmt-apps/images.html';
 
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
@@ -2363,10 +2487,14 @@ class RoiUi {
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, PageRegion[]>} */ let bySurface = new Map();
   /** @type {Set<string>} */ let catalogImages = new Set();
+  /** @type {Map<string, string[]>} */ let illustrations = new Map();   // page URN to the URNs of its images in the illustration index
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
-  let current = -1;            // index of the page in `book.pages`
+  let current = -1;            // index of the page in `book.pages`; -1 while the light box shows
+  /** @type {Codex | null} */ let gridOf = null;   // the codex whose thumbnails are in the grid
+  let renderToken = 0;         // identifies the latest grid, so late thumbnail events can be ignored
+  let tableScroll = 0;         // scroll position of the light box, kept while a page is open
   let openToken = 0;
   let lastTipKey = '';
 
@@ -2382,10 +2510,11 @@ class RoiUi {
     textIndex = buildTextIndex(rel);
     titles = catalogTitles(rel);
     bySurface = indexRegionsBySurface(rel).bySurface;
+    illustrations = illustrationsOf(rel);
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
     locator = createLocator(rel);
-    book = null; current = -1;
+    book = null; current = -1; gridOf = null; $('grid').textContent = '';
     const sel = $('codex');
     sel.textContent = '';
     sel.appendChild(new Option('Choose a codex…', ''));
@@ -2415,23 +2544,13 @@ class RoiUi {
 
   // --- menus -------------------------------------------------------------------
 
-  function chooseCodex(urn) {
-    book = books.find(c => c.urn === urn) ?? null;
-    const sel = $('page');
-    sel.textContent = '';
-    if (!book) { sel.disabled = true; return; }
-    sel.appendChild(new Option('Choose a page…', ''));
-    book.pages.forEach((p, i) => {
-      const n = pageView(p, regionsOn(p), catalogImages).regions.length;   // regions that will be drawn
-      // "●" marks pages with indexed text; a figure space keeps the others aligned with them
-      sel.appendChild(new Option(n ? `● ${p.short} · ${n}` : `\u2007  ${p.short}`, String(i)));
-    });
-    sel.disabled = false;
+  /** Make a codex the one whose pages are shown (or none). */
+  function selectBook(c) {
+    if (c !== book) { book = c; gridOf = null; $('grid').textContent = ''; $('find').value = ''; $('only-text').checked = false; tableScroll = 0; }
+    $('codex').value = c ? c.urn : '';
   }
 
   function syncControls() {
-    $('codex').value = book ? book.urn : '';
-    $('page').value = book && current >= 0 ? String(current) : '';
     $('prev').disabled = !book || current <= 0;
     $('next').disabled = !book || current < 0 || current >= book.pages.length - 1;
   }
@@ -2456,24 +2575,108 @@ class RoiUi {
   function route() {
     const params = readParams(location.search);
     setFocus(params.text);
+    const codex = params.page ? books.find(c => c.urn === params.page) : null;
+    if (codex) { selectBook(codex); showTable(); return; }   // the address names a codex: its light box
     const r = resolvePage(locator, params);
-    if (!r) { clear(); return; }
-    if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
+    if (!r) { selectBook(null); showTable(); return; }
+    if ('error' in r) { selectBook(null); showTable(r.error); return; }
     const canon = { page: r.page, text: focusKey ? params.text : null };
     if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     showPage(r.page);
   }
 
-  function clear() {
+  // --- light box ----------------------------------------------------------------
+
+  /** @param {string} [message]  A note above the grid (or instead of it, when no codex is chosen). */
+  function showTable(message) {
     openToken++;
     if (viewer) { viewer.close(); roiUi.close(); }
     current = -1;
     hideTip();
-    $('intro').hidden = false;
-    $('viewer-note').hidden = true;
-    $('viewer-error').hidden = true;
-    document.title = 'Codices';
-    syncControls();
+    $('viewer-view').hidden = true;
+    $('table-view').hidden = false;
+    renderGrid(message);
+    $('table-view').scrollTop = tableScroll;
+    document.title = book ? `${book.label} – Codices` : 'Codices';
+  }
+
+  /** Every page of the codex as a thumbnail (the browser loads them as they scroll into view). */
+  function renderGrid(message) {
+    const grid = $('grid');
+    $('note').hidden = !message;
+    $('note').textContent = message || '';
+    const controls = ['find', 'only-text', 'cell-size'];
+    if (!book) {
+      grid.textContent = '';
+      gridOf = null;
+      $('intro').hidden = !!message;
+      $('shown').textContent = '';
+      $('empty').hidden = true;
+      for (const id of controls) $(id).disabled = true;
+      return;
+    }
+    $('intro').hidden = true;
+    for (const id of controls) $(id).disabled = false;
+    if (gridOf !== book) {
+      gridOf = book;
+      grid.textContent = '';
+      const frag = document.createDocumentFragment();
+      let loaded = 0, failed = 0;
+      const mine = ++renderToken;
+      const check = () => {
+        if (mine !== renderToken || loaded > 0 || failed < 6) return;   // the first thumbnails all failed
+        $('note').textContent = 'None of the thumbnails loaded. The image server may be unreachable, or these pages may not be served where this app expects them.';
+        $('note').hidden = false;
+      };
+      book.pages.forEach((page, k) => {
+        const view = pageView(page, regionsOn(page), catalogImages);
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'cell'; b.dataset.index = String(k); b.dataset.n = String(view.regions.length);
+        b.title = page.label || page.id;
+        const thumb = document.createElement('span');
+        thumb.className = 'thumb';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+        const service = view.image ? imageService(view.image) : null;
+        img.onload = () => {
+          loaded++;
+          if (img.naturalWidth && img.naturalHeight) thumb.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        };
+        img.onerror = () => { failed++; thumb.classList.add('missing'); check(); };
+        if (service) img.src = urlFor(service, 'full', `${THUMB_W},`); else { thumb.classList.add('missing'); failed++; check(); }
+        thumb.appendChild(img);
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl'; lbl.textContent = page.short;
+        b.append(thumb, lbl);
+        if (view.regions.length) {
+          const n = document.createElement('span');
+          n.className = 'badge'; n.textContent = String(view.regions.length);
+          n.title = `${plural(view.regions.length, 'indexed passage', 'indexed passages')}`;
+          b.appendChild(n);
+        }
+        frag.appendChild(b);
+      });
+      grid.appendChild(frag);
+    }
+    applyFilter();
+  }
+
+  /** Show the thumbnails that match the Find box and the "only pages with indexed text" box. */
+  function applyFilter() {
+    if (!book) return;
+    const q = $('find').value.trim().toLowerCase();
+    const only = $('only-text').checked;
+    const cells = $('grid').children;
+    let shown = 0;
+    book.pages.forEach((p, k) => {
+      const ok = (!q || `${p.short} ${p.label} ${p.id}`.toLowerCase().includes(q)) && (!only || cells[k].dataset.n !== '0');
+      cells[k].hidden = !ok;
+      if (ok) shown++;
+    });
+    $('shown').textContent = shown === book.pages.length
+      ? plural(book.pages.length, 'page', 'pages')
+      : `${shown.toLocaleString('en')} of ${plural(book.pages.length, 'page', 'pages')} shown`;
+    $('empty').hidden = shown > 0;
   }
 
   // --- the page ------------------------------------------------------------------
@@ -2494,15 +2697,27 @@ class RoiUi {
   async function showPage(urn) {
     const owner = books.find(c => c.urn === (collectionOfObject(urn) ?? ''));
     const idx = owner ? owner.pages.findIndex(p => p.urn === urn) : -1;
-    if (idx < 0) { clear(); setStatus(`${release.library.name}: no page ${urn} in this release`); return; }
-    if (owner !== book) chooseCodex(owner.urn);
+    if (idx < 0) { selectBook(null); showTable(`No page ${urn} in this release.`); return; }
+    selectBook(owner);
+    if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     syncControls();
     const page = book.pages[idx];
     const token = ++openToken;
-    $('intro').hidden = true;
+    $('table-view').hidden = true;
+    $('viewer-view').hidden = false;
+    const title = $('viewer-title');
+    title.textContent = page.label || page.id;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = page.urn;
+    title.append(' ', u);
+    $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
     hideTip();
+    const more = $('more-images');
+    const imgs = illustrations.get(page.urn) ?? [];
+    more.hidden = imgs.length === 0;
+    if (imgs.length) { more.textContent = plural(imgs.length, 'image', 'images'); more.href = imagesListUrl(imgs, IMAGES_APP); }
     document.title = `${page.label || page.id} – Codices`;
     const view = pageView(page, regionsOn(page), catalogImages);
     if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
@@ -2559,6 +2774,9 @@ class RoiUi {
     hideTip();
   }
 
+  /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */
+  function kind() { return /** @type {HTMLInputElement} */ (document.querySelector('input[name=kind]:checked')).value; }
+
   // --- hover tooltip ---------------------------------------------------------------
 
   function hideTip() {
@@ -2578,7 +2796,7 @@ class RoiUi {
     div.appendChild(what);
     const body = document.createElement('div');
     body.className = 'greek'; body.lang = 'grc';
-    const { parts } = passageText(textIndex, passage, KIND);
+    const { parts } = passageText(textIndex, passage, kind());
     if (!parts.length) {
       body.className = 'none';
       body.textContent = 'Text not available in this release.';
@@ -2601,7 +2819,7 @@ class RoiUi {
 
   /** Full diplomatic text of a passage (lemma and comment of a scholion with a space between), or "". */
   function passageString(passage) {
-    return passageText(textIndex, passage, KIND).parts.map(p => p.text).join(' ');
+    return passageText(textIndex, passage, kind()).parts.map(p => p.text).join(' ');
   }
 
   /** Copy to the clipboard; falls back to a hidden textarea where the clipboard API is missing (e.g. some file:// pages). */
@@ -2644,7 +2862,7 @@ class RoiUi {
 
   function showTipAt(clientX, clientY) {
     const els = document.elementsFromPoint(clientX, clientY).filter(el => el.classList && el.classList.contains('roi'));
-    const key = els.map(el => el.dataset.passage).join('\n');
+    const key = els.map(el => el.dataset.passage).join('\n') + '|' + kind();
     const tip = $('tip');
     if (!els.length) { hideTip(); return; }
     if (key !== lastTipKey) {
@@ -2691,17 +2909,19 @@ class RoiUi {
   // --- wiring ----------------------------------------------------------------------
 
   $('codex').addEventListener('change', e => {
+    tableScroll = 0;
     const urn = e.target.value;
-    chooseCodex(urn);
-    current = -1;
-    if (urn) { openToken++; if (viewer) { viewer.close(); roiUi.close(); } syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
-    else { setQuery({}, false); clear(); }
-    $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
-    if (urn) setQuery({}, true);
+    setQuery(urn ? { page: urn } : {}, false);
+    route();
   });
-  $('page').addEventListener('change', e => {
-    if (e.target.value !== '' && book) go(book.pages[Number(e.target.value)].urn, false);
+  $('find').addEventListener('input', applyFilter);
+  $('only-text').addEventListener('change', applyFilter);
+  $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
+  $('grid').addEventListener('click', e => {
+    const cell = e.target.closest('.cell');
+    if (cell && book) go(book.pages[Number(cell.dataset.index)].urn, false);
   });
+  $('back').addEventListener('click', () => { if (book) { setQuery({ page: book.urn }, false); route(); } });
   const step = d => { if (book && current >= 0 && book.pages[current + d]) go(book.pages[current + d].urn, true); };
   $('prev').addEventListener('click', () => step(-1));
   $('next').addEventListener('click', () => step(1));
@@ -2709,11 +2929,13 @@ class RoiUi {
   $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
+  for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
   window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if (current < 0 || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
+    if (e.key === 'Escape' && book) { setQuery({ page: book.urn }, false); route(); }
+    else if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
     else if (e.key === ']' || e.key === 'PageDown') { e.preventDefault(); step(1); }
   });
 

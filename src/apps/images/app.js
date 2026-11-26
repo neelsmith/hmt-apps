@@ -6,6 +6,8 @@
 // Address (no `#`): `?image=<collection URN>` is the light box of a collection,
 // `?image=<image URN>` an image (`?image=<image URN>@x,y,w,h` also marks that region of it; Shift-drag marks others); `?page=<page URN>` or `?text=<passage URN>` are turned into an image through the
 // DSE records and the catalog, and the address is rewritten as `?image=…`; so links, bookmarks and the Back button work.
+// `?urns=<image URN>,<image URN>,…` treats the list as a collection: the light box shows just those images, in that order
+// (an entry may carry a region, `…@x,y,w,h`).  Choosing an image adds it as `&image=…`; Back returns to the list.
 (function () {
   const $ = id => document.getElementById(id);
   const proto = location.protocol;
@@ -18,6 +20,13 @@
   let current = -1;           // index of the open image in `coll.items`, or -1
   let currentRoi = '';        // the region highlighted in the open image, as written in the address, or ""
   let tableScroll = 0;
+  let listKey = '';           // the `urns` of the list shown as a collection, or ""
+  /** @type {ImageCollection | null} */ let listColl = null;
+  /** @type {Set<number>} */ const picked = new Set();   // thumbnails selected with Shift (indexes in `coll.items`)
+  let dragMode = /** @type {boolean | null} */ (null);   // during a Shift-drag: true selects what it passes over, false unselects
+  let copyTimer = 0;
+  let listNote = '';          // what to say about the list: images not found
+  /** @type {Map<string, string>} */ let listRois = new Map();   // regions written with the images of the list
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let textRegions = null;   // indexed text on the open image
   /** @type {{byImage: Map<string, any>, textIndex: Map<string, any>, titles: Map<string, string>}} */
@@ -39,7 +48,7 @@
     textData = { byImage: indexDse(rel).byImage, textIndex: buildTextIndex(rel), titles: catalogTitles(rel) };
     if (textRegions) textRegions.setData(textData);
     locator = createLocator(rel);
-    coll = null; current = -1;
+    coll = null; current = -1; listKey = ''; listColl = null;
     const sel = $('collection');
     sel.textContent = '';
     const first = document.createElement('option');
@@ -77,7 +86,7 @@
 
   /** Go to a collection page or an image: update the address and show it at once. */
   function go(where, replace) {
-    setQuery(imageParams(where), replace);
+    setQuery(listKey ? { urns: listKey, ...imageParams(where) } : imageParams(where), replace);   // in a list the address keeps it
     route();
   }
 
@@ -89,9 +98,32 @@
     if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
   }
 
+  /** The address has `urns`: the list is the collection shown. */
+  function routeList(params) {
+    if (params.urns !== listKey || !listColl) {
+      const l = imageList(collections, params.urns);
+      listKey = params.urns; listColl = l.collection; listRois = l.rois;
+      listNote = !l.collection.items.length
+        ? 'None of the listed images is in this release.'
+        : l.missing.length ? `Not found in this release, so left out: ${l.missing.join(', ')}` : '';
+    }
+    selectCollection(listColl);
+    const r = params.image ? resolveImage(locator, { image: params.image, page: null, text: null }) : null;
+    if (r && !('error' in r)) {
+      const idx = listColl.items.findIndex(i => i.urn === r.image);
+      if (idx < 0) { showTable(`${r.image} is not one of the listed images.`); return; }
+      const roiText = r.roi ? r.roiText : (listRois.get(r.image) ?? '');
+      showViewer(idx, r.roi ?? parseRoi(roiText), roiText);
+      return;
+    }
+    showTable(listNote);
+  }
+
   function route() {
-    const params = readParams(location.search);
+    const params = readParams(location.search, ['text', 'page', 'image', 'urns']);
     setFocus(params.text);
+    if (params.urns) { routeList(params); return; }
+    listKey = ''; listColl = null; listRois = new Map();
     const r = resolveImage(locator, params);
     if (r && 'error' in r) { selectCollection(null); showTable(r.error); return; }
     const roiText = r && 'roi' in r && r.roi ? r.roiText : '';   // an unusable region is dropped
@@ -142,12 +174,14 @@
       $('intro').textContent = message || (collections.length ? 'Choose a collection of images.' : '');
       $('shown').textContent = '';
       for (const id of ['find', 'cell-size']) $(id).disabled = true;
+      updateCopy();
       return;
     }
     $('intro').hidden = true;
     for (const id of ['find', 'cell-size']) $(id).disabled = false;
     if (gridOf !== coll) {
       gridOf = coll;
+      picked.clear();
       grid.textContent = '';
       const frag = document.createDocumentFragment();
       let loaded = 0, failed = 0;
@@ -164,7 +198,7 @@
         const thumb = document.createElement('span');
         thumb.className = 'thumb';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = ''; img.draggable = false;
         const service = imageService(item.urn);
         img.onload = () => {
           loaded++;
@@ -198,6 +232,54 @@
       ? plural(coll.items.length, 'image', 'images')
       : `${shown.toLocaleString('en')} of ${plural(coll.items.length, 'image', 'images')} shown`;
     $('empty').hidden = shown > 0;
+    updateCopy();
+  }
+
+  // --- selecting thumbnails, copying URNs ---------------------------------------------
+
+  /** The URNs of the thumbnails in view (not hidden by Find), and those of them that are selected, in grid order. */
+  function viewedUrns() {
+    const cells = $('grid').children;
+    /** @type {string[]} */ const all = [], chosen = [];
+    if (coll) coll.items.forEach((item, k) => {
+      if (!cells[k] || cells[k].hidden) return;
+      all.push(item.urn);
+      if (picked.has(k)) chosen.push(item.urn);
+    });
+    return { all, chosen };
+  }
+
+  function updateCopy() {
+    const { all, chosen } = viewedUrns();
+    $('copy-urns').textContent = chosen.length ? `Copy selected URNs (${chosen.length})` : `Copy all URNs (${all.length})`;
+    $('copy-urns').disabled = all.length === 0;
+    $('clear-sel').hidden = picked.size === 0;
+  }
+
+  /** Select (or unselect) a thumbnail. @param {Element} cell @param {boolean} on */
+  function setPicked(cell, on) {
+    const k = Number(/** @type {HTMLElement} */ (cell).dataset.index);
+    if (on === picked.has(k)) return;
+    if (on) picked.add(k); else picked.delete(k);
+    cell.classList.toggle('sel', on);
+    cell.setAttribute('aria-pressed', String(on));
+    updateCopy();
+  }
+
+  function clearPicked() {
+    picked.clear();
+    for (const c of $('grid').querySelectorAll('.sel')) { c.classList.remove('sel'); c.setAttribute('aria-pressed', 'false'); }
+    updateCopy();
+  }
+
+  async function copyUrns() {
+    const { all, chosen } = viewedUrns();
+    const urns = chosen.length ? chosen : all;
+    if (!urns.length) return;
+    const ok = await copyToClipboard(urns.join(','));
+    $('copy-msg').textContent = ok ? `Copied ${plural(urns.length, 'URN', 'URNs')}` : 'Could not copy';
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { $('copy-msg').textContent = ''; }, 2500);
   }
 
   // --- viewer --------------------------------------------------------------------
@@ -243,7 +325,11 @@
     viewer.close();
     roiUi.close();
     textRegions.clear();
-    $('viewer-title').textContent = item.label;
+    const title = $('viewer-title');
+    title.textContent = item.label;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = item.urn;
+    title.append(' ', u);
     $('viewer-count').textContent = `${idx + 1} of ${coll.items.length}`;
     $('viewer-note').textContent = (item.caption || item.id) + (roi ? ` · highlighted region @${roiText}` : '');
     $('rights').textContent = item.rights || 'No rights statement in the release.';
@@ -298,13 +384,39 @@
   $('collection').addEventListener('change', e => {
     tableScroll = 0;
     const urn = e.target.value;
+    listKey = '';   // a collection of the release replaces the list
     if (urn) go({ urn }, false); else { setQuery({}, false); route(); }
   });
   $('find').addEventListener('input', applyFilter);
   $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
+  // Shift-click selects a thumbnail (again: unselects it); Shift-drag selects the ones it passes over
+  $('grid').addEventListener('pointerdown', e => {
+    if (!e.shiftKey || e.button !== 0) return;
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    e.preventDefault();
+    dragMode = !picked.has(Number(cell.dataset.index));
+    setPicked(cell, dragMode);
+  });
+  document.addEventListener('pointermove', e => {
+    if (dragMode === null) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = over && over.closest('.cell');
+    if (cell && $('grid').contains(cell)) setPicked(cell, dragMode);
+  });
+  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { dragMode = null; });
+  $('copy-urns').addEventListener('click', copyUrns);
+  $('clear-sel').addEventListener('click', clearPicked);
   $('grid').addEventListener('click', e => {
     const cell = e.target.closest('.cell');
-    if (cell) go({ urn: coll.items[Number(cell.dataset.index)].urn }, false);
+    if (!cell) return;
+    if (e.shiftKey) {   // the pointer events did the selecting; Shift with the keyboard (Enter, Space) does it here
+      if (e.detail === 0) setPicked(cell, !picked.has(Number(cell.dataset.index)));
+      return;
+    }
+    const urn = coll.items[Number(cell.dataset.index)].urn;
+    const roi = listKey ? listRois.get(urn) : '';
+    go({ urn: roi ? `${urn}@${roi}` : urn }, false);
   });
 
   $('back').addEventListener('click', backToGrid);

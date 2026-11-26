@@ -69,15 +69,36 @@
   #tip .lemma { font-weight: 700; }
   #tip .none { color: var(--muted); font-style: italic; }
 
-  #controls label.sel { display: inline-flex; gap: .4rem; align-items: center; min-width: 0; }
-  #controls select { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; max-width: 100%; min-width: 0; }
+  /* ---- light box of the pages of a codex ---- */
+  #table-view { flex: 1; overflow: auto; background: var(--table); color: var(--table-fg); display: flex; flex-direction: column; }
+  #controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center;
+         padding: .6rem 1rem; background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); }
+  #controls label { display: inline-flex; gap: .4rem; align-items: center; }
+  #controls .coll { flex: 1 1 20rem; min-width: 0; }
+  #codex { flex: 1; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; }
+  #find { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); width: 11rem; }
+  #shown { color: var(--muted); font-size: .875rem; }
+  #intro, #note { padding: 2rem 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
+  #note { padding: .75rem 1rem 0; color: #ffb4a8; opacity: 1; }
+  #grid { --cell-w: 170px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), 1fr)); gap: .75rem; padding: 1rem; }
+  .cell { position: relative; display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
+          border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
+  .cell:hover { border-color: var(--accent); }
+  .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
+  .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cell .thumb.missing img { display: none; }
+  .cell .thumb.missing::after { content: "no image"; font-size: .75rem; opacity: .6; }
+  .cell .lbl { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cell .badge { position: absolute; top: .6rem; right: .6rem; background: var(--accent); color: var(--accent-fg); border-radius: 999px;
+          padding: 0 .45rem; font-size: .75rem; line-height: 1.35; box-shadow: 0 1px 4px #0008; }
+  #empty { padding: 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
   .roi { cursor: pointer; }
   #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
          border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
   #copied.bad { background: #a3201a; }
-  #controls { flex-wrap: wrap; }
-  #codex { width: 16rem; } #page { width: 15rem; }
-  #intro { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #d8d2c8; }
+  #viewer-title .urn { font: 400 .75rem ui-monospace, Menlo, monospace; color: var(--muted); margin-left: .35rem; overflow-wrap: anywhere; }
+  #more-images { color: var(--accent); font-size: .875rem; white-space: nowrap; }
+  #viewer-count { color: var(--muted); font-size: .875rem; }
   #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
 
   /* ---- loading / errors ---- */
@@ -86,7 +107,7 @@
   body.dragging #drop { border-color: var(--accent); }
   #drop input[type=file] { max-width: 100%; }
   #problem { color: var(--err); }
-  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar { padding: .5rem .75rem; } #controls { width: 100%; } #controls label.sel { flex: 1 1 100%; } #codex, #page { flex: 1; width: auto; } }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar, #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
 </style>
 <!-- @inline-style src/roi.css -->
 </head>
@@ -102,18 +123,38 @@
   <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
 </div>
 
-<section id="viewer-view">
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Codex <select id="codex" disabled></select></label>
+    <label>Find <input type="search" id="find" placeholder="part of a page name…" autocomplete="off" disabled></label>
+    <label><input type="checkbox" id="only-text" disabled> Only pages with indexed text</label>
+    <label>Size <input type="range" id="cell-size" min="90" max="320" value="170" disabled></label>
+    <span id="shown"></span>
+  </div>
+  <p id="intro">Choose a codex. Its pages appear here; choose a page to open it. A number on a page is how many indexed text passages it has.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <p id="empty" hidden>No pages match.</p>
+</main>
+
+<section id="viewer-view" hidden>
   <div id="viewer-bar">
-    <span id="controls" class="group">
-      <label class="sel">Codex <select id="codex" disabled></select></label>
-      <label class="sel">Page <select id="page" disabled title="● marks pages with indexed text; the number is how many passages"></select></label>
+    <button class="btn" id="back" title="Back to the pages of the codex (Esc)">← Pages</button>
+    <span class="group">
       <button class="btn" id="prev" title="Previous page ([)" aria-label="Previous page" disabled>‹</button>
       <button class="btn" id="next" title="Next page (])" aria-label="Next page" disabled>›</button>
     </span>
+    <span id="viewer-title"></span>
+    <span id="viewer-count"></span>
+    <a id="more-images" href="#" target="_blank" rel="noopener" hidden title="Other images of this page, in the images app"></a>
     <span class="group" role="group" aria-label="Regions shown">
       <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
       <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
       <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
+    </span>
+    <span class="group" role="group" aria-label="Text shown on hover">
+      <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
+      <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
     <span class="group">
       <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
@@ -124,7 +165,6 @@
   </div>
   <div id="viewer-wrap">
     <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
-    <p id="intro">Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.</p>
     <div id="viewer-note" hidden></div>
     <div id="viewer-error" role="alert" hidden></div>
     <div id="tip" hidden></div>
@@ -138,6 +178,7 @@
 <!-- @inline src/iiif.js -->
 <!-- @inline src/dse.js -->
 <!-- @inline src/images.js -->
+<!-- @inline src/illustrations.js -->
 <!-- @inline src/location.js -->
 <!-- @inline src/codices.js -->
 <!-- @inline src/locate.js -->

@@ -1,10 +1,10 @@
-// Browser UI for the codices app: choose a codex, then a page; the page image
+// Browser UI for the codices app: choose a codex, browse its pages as a light box of thumbnails, open one; the page image
 // of the DSE records is shown with a rectangle over each indexed text passage,
 // hovering a rectangle shows the diplomatic text, and clicking it copies the
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Address: `?page=<page URN>`, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
+// Address: `?page=<page URN>`, `?page=<codex URN>` for the light box of a codex, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
 // the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
@@ -13,7 +13,7 @@
   const TIP_MAX_CHARS = 700;
   const TIP_MAX_ITEMS = 4;
   const NS = 'http://www.w3.org/2000/svg';
-  const KIND = 'diplomatic';
+  const IMAGES_APP = 'https://neelsmith.github.io/hmt-apps/images.html';
 
   /** @type {Codex[]} */ let books = [];
   /** @type {Codex | null} */ let book = null;
@@ -23,10 +23,14 @@
   /** @type {Map<string, string>} */ let titles = new Map();
   /** @type {Map<string, PageRegion[]>} */ let bySurface = new Map();
   /** @type {Set<string>} */ let catalogImages = new Set();
+  /** @type {Map<string, string[]>} */ let illustrations = new Map();   // page URN to the URNs of its images in the illustration index
   /** @type {Map<string, Promise<{width: number, height: number}>>} */ const sizes = new Map();
   /** @type {any} */ let viewer = null;
   /** @type {any} */ let roiUi = null;   // regions of interest drawn on the open page image
-  let current = -1;            // index of the page in `book.pages`
+  let current = -1;            // index of the page in `book.pages`; -1 while the light box shows
+  /** @type {Codex | null} */ let gridOf = null;   // the codex whose thumbnails are in the grid
+  let renderToken = 0;         // identifies the latest grid, so late thumbnail events can be ignored
+  let tableScroll = 0;         // scroll position of the light box, kept while a page is open
   let openToken = 0;
   let lastTipKey = '';
 
@@ -42,10 +46,11 @@
     textIndex = buildTextIndex(rel);
     titles = catalogTitles(rel);
     bySurface = indexRegionsBySurface(rel).bySurface;
+    illustrations = illustrationsOf(rel);
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
     locator = createLocator(rel);
-    book = null; current = -1;
+    book = null; current = -1; gridOf = null; $('grid').textContent = '';
     const sel = $('codex');
     sel.textContent = '';
     sel.appendChild(new Option('Choose a codex…', ''));
@@ -75,23 +80,13 @@
 
   // --- menus -------------------------------------------------------------------
 
-  function chooseCodex(urn) {
-    book = books.find(c => c.urn === urn) ?? null;
-    const sel = $('page');
-    sel.textContent = '';
-    if (!book) { sel.disabled = true; return; }
-    sel.appendChild(new Option('Choose a page…', ''));
-    book.pages.forEach((p, i) => {
-      const n = pageView(p, regionsOn(p), catalogImages).regions.length;   // regions that will be drawn
-      // "●" marks pages with indexed text; a figure space keeps the others aligned with them
-      sel.appendChild(new Option(n ? `● ${p.short} · ${n}` : `\u2007  ${p.short}`, String(i)));
-    });
-    sel.disabled = false;
+  /** Make a codex the one whose pages are shown (or none). */
+  function selectBook(c) {
+    if (c !== book) { book = c; gridOf = null; $('grid').textContent = ''; $('find').value = ''; $('only-text').checked = false; tableScroll = 0; }
+    $('codex').value = c ? c.urn : '';
   }
 
   function syncControls() {
-    $('codex').value = book ? book.urn : '';
-    $('page').value = book && current >= 0 ? String(current) : '';
     $('prev').disabled = !book || current <= 0;
     $('next').disabled = !book || current < 0 || current >= book.pages.length - 1;
   }
@@ -116,24 +111,108 @@
   function route() {
     const params = readParams(location.search);
     setFocus(params.text);
+    const codex = params.page ? books.find(c => c.urn === params.page) : null;
+    if (codex) { selectBook(codex); showTable(); return; }   // the address names a codex: its light box
     const r = resolvePage(locator, params);
-    if (!r) { clear(); return; }
-    if ('error' in r) { clear(); setStatus(`${release.library.name}: ${r.error}`); return; }
+    if (!r) { selectBook(null); showTable(); return; }
+    if ('error' in r) { selectBook(null); showTable(r.error); return; }
     const canon = { page: r.page, text: focusKey ? params.text : null };
     if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
     showPage(r.page);
   }
 
-  function clear() {
+  // --- light box ----------------------------------------------------------------
+
+  /** @param {string} [message]  A note above the grid (or instead of it, when no codex is chosen). */
+  function showTable(message) {
     openToken++;
     if (viewer) { viewer.close(); roiUi.close(); }
     current = -1;
     hideTip();
-    $('intro').hidden = false;
-    $('viewer-note').hidden = true;
-    $('viewer-error').hidden = true;
-    document.title = 'Codices';
-    syncControls();
+    $('viewer-view').hidden = true;
+    $('table-view').hidden = false;
+    renderGrid(message);
+    $('table-view').scrollTop = tableScroll;
+    document.title = book ? `${book.label} – Codices` : 'Codices';
+  }
+
+  /** Every page of the codex as a thumbnail (the browser loads them as they scroll into view). */
+  function renderGrid(message) {
+    const grid = $('grid');
+    $('note').hidden = !message;
+    $('note').textContent = message || '';
+    const controls = ['find', 'only-text', 'cell-size'];
+    if (!book) {
+      grid.textContent = '';
+      gridOf = null;
+      $('intro').hidden = !!message;
+      $('shown').textContent = '';
+      $('empty').hidden = true;
+      for (const id of controls) $(id).disabled = true;
+      return;
+    }
+    $('intro').hidden = true;
+    for (const id of controls) $(id).disabled = false;
+    if (gridOf !== book) {
+      gridOf = book;
+      grid.textContent = '';
+      const frag = document.createDocumentFragment();
+      let loaded = 0, failed = 0;
+      const mine = ++renderToken;
+      const check = () => {
+        if (mine !== renderToken || loaded > 0 || failed < 6) return;   // the first thumbnails all failed
+        $('note').textContent = 'None of the thumbnails loaded. The image server may be unreachable, or these pages may not be served where this app expects them.';
+        $('note').hidden = false;
+      };
+      book.pages.forEach((page, k) => {
+        const view = pageView(page, regionsOn(page), catalogImages);
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'cell'; b.dataset.index = String(k); b.dataset.n = String(view.regions.length);
+        b.title = page.label || page.id;
+        const thumb = document.createElement('span');
+        thumb.className = 'thumb';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = '';
+        const service = view.image ? imageService(view.image) : null;
+        img.onload = () => {
+          loaded++;
+          if (img.naturalWidth && img.naturalHeight) thumb.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        };
+        img.onerror = () => { failed++; thumb.classList.add('missing'); check(); };
+        if (service) img.src = urlFor(service, 'full', `${THUMB_W},`); else { thumb.classList.add('missing'); failed++; check(); }
+        thumb.appendChild(img);
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl'; lbl.textContent = page.short;
+        b.append(thumb, lbl);
+        if (view.regions.length) {
+          const n = document.createElement('span');
+          n.className = 'badge'; n.textContent = String(view.regions.length);
+          n.title = `${plural(view.regions.length, 'indexed passage', 'indexed passages')}`;
+          b.appendChild(n);
+        }
+        frag.appendChild(b);
+      });
+      grid.appendChild(frag);
+    }
+    applyFilter();
+  }
+
+  /** Show the thumbnails that match the Find box and the "only pages with indexed text" box. */
+  function applyFilter() {
+    if (!book) return;
+    const q = $('find').value.trim().toLowerCase();
+    const only = $('only-text').checked;
+    const cells = $('grid').children;
+    let shown = 0;
+    book.pages.forEach((p, k) => {
+      const ok = (!q || `${p.short} ${p.label} ${p.id}`.toLowerCase().includes(q)) && (!only || cells[k].dataset.n !== '0');
+      cells[k].hidden = !ok;
+      if (ok) shown++;
+    });
+    $('shown').textContent = shown === book.pages.length
+      ? plural(book.pages.length, 'page', 'pages')
+      : `${shown.toLocaleString('en')} of ${plural(book.pages.length, 'page', 'pages')} shown`;
+    $('empty').hidden = shown > 0;
   }
 
   // --- the page ------------------------------------------------------------------
@@ -154,15 +233,27 @@
   async function showPage(urn) {
     const owner = books.find(c => c.urn === (collectionOfObject(urn) ?? ''));
     const idx = owner ? owner.pages.findIndex(p => p.urn === urn) : -1;
-    if (idx < 0) { clear(); setStatus(`${release.library.name}: no page ${urn} in this release`); return; }
-    if (owner !== book) chooseCodex(owner.urn);
+    if (idx < 0) { selectBook(null); showTable(`No page ${urn} in this release.`); return; }
+    selectBook(owner);
+    if (current < 0) tableScroll = $('table-view').scrollTop;
     current = idx;
     syncControls();
     const page = book.pages[idx];
     const token = ++openToken;
-    $('intro').hidden = true;
+    $('table-view').hidden = true;
+    $('viewer-view').hidden = false;
+    const title = $('viewer-title');
+    title.textContent = page.label || page.id;
+    const u = document.createElement('span');
+    u.className = 'urn'; u.textContent = page.urn;
+    title.append(' ', u);
+    $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
     hideTip();
+    const more = $('more-images');
+    const imgs = illustrations.get(page.urn) ?? [];
+    more.hidden = imgs.length === 0;
+    if (imgs.length) { more.textContent = plural(imgs.length, 'image', 'images'); more.href = imagesListUrl(imgs, IMAGES_APP); }
     document.title = `${page.label || page.id} – Codices`;
     const view = pageView(page, regionsOn(page), catalogImages);
     if (!viewer) { viewer = new IiifViewer($('viewer')); viewer.overlay.id = 'rois'; bindHover(); roiUi = new RoiUi(viewer, { button: $('roi-select'), panel: $('roi-panel') }); }
@@ -219,6 +310,9 @@
     hideTip();
   }
 
+  /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */
+  function kind() { return /** @type {HTMLInputElement} */ (document.querySelector('input[name=kind]:checked')).value; }
+
   // --- hover tooltip ---------------------------------------------------------------
 
   function hideTip() {
@@ -238,7 +332,7 @@
     div.appendChild(what);
     const body = document.createElement('div');
     body.className = 'greek'; body.lang = 'grc';
-    const { parts } = passageText(textIndex, passage, KIND);
+    const { parts } = passageText(textIndex, passage, kind());
     if (!parts.length) {
       body.className = 'none';
       body.textContent = 'Text not available in this release.';
@@ -261,7 +355,7 @@
 
   /** Full diplomatic text of a passage (lemma and comment of a scholion with a space between), or "". */
   function passageString(passage) {
-    return passageText(textIndex, passage, KIND).parts.map(p => p.text).join(' ');
+    return passageText(textIndex, passage, kind()).parts.map(p => p.text).join(' ');
   }
 
   /** Copy to the clipboard; falls back to a hidden textarea where the clipboard API is missing (e.g. some file:// pages). */
@@ -304,7 +398,7 @@
 
   function showTipAt(clientX, clientY) {
     const els = document.elementsFromPoint(clientX, clientY).filter(el => el.classList && el.classList.contains('roi'));
-    const key = els.map(el => el.dataset.passage).join('\n');
+    const key = els.map(el => el.dataset.passage).join('\n') + '|' + kind();
     const tip = $('tip');
     if (!els.length) { hideTip(); return; }
     if (key !== lastTipKey) {
@@ -351,17 +445,19 @@
   // --- wiring ----------------------------------------------------------------------
 
   $('codex').addEventListener('change', e => {
+    tableScroll = 0;
     const urn = e.target.value;
-    chooseCodex(urn);
-    current = -1;
-    if (urn) { openToken++; if (viewer) { viewer.close(); roiUi.close(); } syncControls(); $('intro').hidden = false; $('viewer-note').hidden = true; $('viewer-error').hidden = true; hideTip(); }
-    else { setQuery({}, false); clear(); }
-    $('intro').textContent = urn ? 'Choose a page. Hover over a rectangle to read its text; click to copy it.' : 'Choose a codex, then a page. Hover over a rectangle to read its text; click to copy it.';
-    if (urn) setQuery({}, true);
+    setQuery(urn ? { page: urn } : {}, false);
+    route();
   });
-  $('page').addEventListener('change', e => {
-    if (e.target.value !== '' && book) go(book.pages[Number(e.target.value)].urn, false);
+  $('find').addEventListener('input', applyFilter);
+  $('only-text').addEventListener('change', applyFilter);
+  $('cell-size').addEventListener('input', e => { $('grid').style.setProperty('--cell-w', e.target.value + 'px'); });
+  $('grid').addEventListener('click', e => {
+    const cell = e.target.closest('.cell');
+    if (cell && book) go(book.pages[Number(cell.dataset.index)].urn, false);
   });
+  $('back').addEventListener('click', () => { if (book) { setQuery({ page: book.urn }, false); route(); } });
   const step = d => { if (book && current >= 0 && book.pages[current + d]) go(book.pages[current + d].urn, true); };
   $('prev').addEventListener('click', () => step(-1));
   $('next').addEventListener('click', () => step(1));
@@ -369,11 +465,13 @@
   $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
   $('fit').addEventListener('click', () => viewer && viewer.fit());
   for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
+  for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
   window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward
   document.addEventListener('keydown', e => {
     if (current < 0 || e.target.closest('input, select') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
+    if (e.key === 'Escape' && book) { setQuery({ page: book.urn }, false); route(); }
+    else if (e.key === '[' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
     else if (e.key === ']' || e.key === 'PageDown') { e.preventDefault(); step(1); }
   });
 

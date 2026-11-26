@@ -2,9 +2,14 @@
 
 ## Repository version tag
 
-Current version:  **0.13.0**
+Current version:  **0.14.0**
 
-**0.13.0**, *No. 25, 2026*:
+**0.14.0**, *?*:
+
+- changes `codices.html` to select pages from a light box view rather than a menu
+- adds new `urns` parameter to `images.html` for working with a specified *list* of images. Adds interactive selection of images from light table view.
+
+**0.13.0**, *Nov. 25, 2026*:
 
 - changes response of image display apps `va-facsimile`, `codices` and `images` when both `image` and `text` are identified by URL parameters.
 - in `propernames`, displayed proper names are now live search links.
@@ -184,6 +189,11 @@ Current version:  **0.13.0**
 
 ### `images.html`
 
+**0.6.0**, *Nov. 26, 2026*: 
+
+- adds new `urns` parameter to work with a specified *list* of images.
+- adds interactive selection of images from light table view.
+
 
 **0.5.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
 
@@ -206,6 +216,11 @@ Current version:  **0.13.0**
 
 ### `codices.html`
 
+
+**0.4.0**, *Nov. 26, 2026*: 
+
+- changes UI to select pages from a light table view rather than a menu.
+- adds option of viewing diplomatic or normalized edition of text.
 
 
 **0.3.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
