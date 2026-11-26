@@ -4,7 +4,7 @@
 
 Current version:  **0.14.0**
 
-**0.14.0**, *?*:
+**0.14.0**, *Nov. 26, 2026*:
 
 - changes `codices.html` to select pages from a light box view rather than a menu
 - adds new `urns` parameter to `images.html` for working with a specified *list* of images. Adds interactive selection of images from light table view.
