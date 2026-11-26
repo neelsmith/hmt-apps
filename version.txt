@@ -1,5 +1,8 @@
 // facsimiles
-va-facsimile.html   0.5.2
+codices.html    0.4.0
+
+// images
+images.html  0.6.0
 
 // text browsing
 iliad-scholia.html  0.4.0
@@ -11,10 +14,6 @@ propernames.html    0.3.0
 stringsearch.html   0.3.0
 stringcounter.html   0.3.0
 lemmatizedsearch.html   0.3.0
-
-// images and pages
-images.html  0.6.0
-codices.html    0.4.0
 
 // editorial status
 dse-check.html  0.2.0

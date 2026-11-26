@@ -49,8 +49,10 @@ website:
         contents:
           - docs/index.qmd
           - "---"
-          - docs/va-facsimile/index.qmd
+          - docs/codices/index.qmd
           - "---"
+          - docs/images/index.qmd
+          - "---"          
           - docs/iliad-scholia/index.qmd
           - docs/all-scholia/index.qmd
           - docs/editorial/index.qmd          
@@ -59,9 +61,6 @@ website:
           - docs/stringcounter/index.qmd
           - docs/lemmatizedsearch/index.qmd
           - docs/propernames/index.qmd
-          - "---"
-          - docs/codices/index.qmd
-          - docs/images/index.qmd
           - "---"
           - docs/coverage/index.qmd          
           - docs/dse-check/index.qmd

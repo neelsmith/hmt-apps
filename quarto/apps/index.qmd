@@ -12,9 +12,14 @@ Each app displays an individual version number. Github release numbers refer to 
 
 :::
 
-## Facsmile views
+## Manuscript facsimiles
 
-1. [Venetus A facsimile](../va-facsimile.html): browse page images of the Venetus A, hover over indexed page to see textual edition
+1. [Codex facsimiles](../codices.html): browse a facsimile of a codex, see indexed images, and overlay texts where HMT editions exist.
+
+
+## Browsing images
+
+1. [Browse images](../images.html) from all HMT image collections.
 
 
 ## Browsing texts
@@ -31,10 +36,6 @@ Each app displays an individual version number. Github release numbers refer to 
 1. [Find texts by proper names](../propernames.html): find occurrences of personal, geographic and ethnic names and see their text in context.
 
 
-## Browsing physical artifacts and images
-
-1. [Codex browser](../codices.html): browse pages of a codex, see indexed images and texts.
-1. [Browse images](../images.html) from all image collections.
 
 ## Editorial status of the release
 

@@ -7,11 +7,18 @@
     "text": "Since these apps are self-contained HTML pages, you can download them and use them on your own computer, or follow the links below to use the current version installed on github pages."
   },
   {
-    "objectID": "apps/index.html#facsmile-views",
-    "href": "apps/index.html#facsmile-views",
+    "objectID": "apps/index.html#manuscript-facsimiles",
+    "href": "apps/index.html#manuscript-facsimiles",
     "title": "Apps to work with HMT data sets",
-    "section": "Facsmile views",
-    "text": "Facsmile views\n\nVenetus A facsimile: browse page images of the Venetus A, hover over indexed page to see textual edition"
+    "section": "Manuscript facsimiles",
+    "text": "Manuscript facsimiles\n\nCodex facsimiles: browse a facsimile of a codex, see indexed images, and overlay texts where HMT editions exist."
+  },
+  {
+    "objectID": "apps/index.html#browsing-images",
+    "href": "apps/index.html#browsing-images",
+    "title": "Apps to work with HMT data sets",
+    "section": "Browsing images",
+    "text": "Browsing images\n\nBrowse images from all HMT image collections."
   },
   {
     "objectID": "apps/index.html#browsing-texts",
@@ -26,13 +33,6 @@
     "title": "Apps to work with HMT data sets",
     "section": "Searching text contents",
     "text": "Searching text contents\n\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nLemmatized text search: search text of Iliad and scholia for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns’ LatinCy language models.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context."
-  },
-  {
-    "objectID": "apps/index.html#browsing-physical-artifacts-and-images",
-    "href": "apps/index.html#browsing-physical-artifacts-and-images",
-    "title": "Apps to work with HMT data sets",
-    "section": "Browsing physical artifacts and images",
-    "text": "Browsing physical artifacts and images\n\nCodex browser: browse pages of a codex, see indexed images and texts.\nBrowse images from all image collections."
   },
   {
     "objectID": "apps/index.html#editorial-status-of-the-release",
@@ -111,7 +111,7 @@
     "href": "docs/index.html",
     "title": "Documentation for individual apps",
     "section": "",
-    "text": "TipMore info\n\n\n\nFurther documentation is available for apps with full titles in the adjacent side bar (e.g., “Venetus A facsimile”); documentation for apps listed by file name (e.g., dse-check) is in progress but not yet available.",
+    "text": "TipMore info\n\n\n\nFurther documentation is available for apps with full titles in the adjacent side bar (e.g., “Browse images”); documentation for apps listed by file name (e.g., dse-check) is in progress but not yet available.",
     "crumbs": [
       "Docs",
       "Documentation for individual apps"
@@ -148,101 +148,6 @@
     "crumbs": [
       "Docs",
       "Documentation for individual apps"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html",
-    "href": "docs/va-facsimile/index.html",
-    "title": "Venetus A facsimile",
-    "section": "",
-    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript, and a zoomable page viewer showing edited text.",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html#summary",
-    "href": "docs/va-facsimile/index.html#summary",
-    "title": "Venetus A facsimile",
-    "section": "",
-    "text": "va-facsimile: a light table of the pages of the Venetus A manuscript, and a zoomable page viewer showing edited text.",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html#user-options-and-display",
-    "href": "docs/va-facsimile/index.html#user-options-and-display",
-    "title": "Venetus A facsimile",
-    "section": "User options and display",
-    "text": "User options and display\nIn light table view:\n\nFind (e.g. 12r, cover, flyleaf): search captions of images\nOnly pages with indexed text: limit pages in light table\nSize slider: adjust size of the thumbnails\nSelect a page to open it in single-image view.\n\nIn single-image view:\n\n‹ › (or [ ]): move to previous or next page.\n← Pages or Esc: return to light table.\nIliad, Scholia and Other checkboxes show or hide those texts.\ndiplomatic or normalized: text versopm shown when you hover (or tap) a region.\nNavigation: drag to pan; scroll or pinch to zoom; +, −, Fit (or +, -, 0).",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html#optional-url-parameters",
-    "href": "docs/va-facsimile/index.html#optional-url-parameters",
-    "title": "Venetus A facsimile",
-    "section": "Optional URL parameters",
-    "text": "Optional URL parameters\n\npage — a page URN, e.g. ?page=urn:cite2:hmt:msA.v1:12r.\nimage — an image URN, optionally with @x,y,w,h: opens the page that has that image.\ntext — a single passage URN with a DSE record on a Venetus A page: opens that page.\n\nIf multiple parameters are given, page takes priority, then image, then text.",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html#data-sources",
-    "href": "docs/va-facsimile/index.html#data-sources",
-    "title": "Venetus A facsimile",
-    "section": "Data sources",
-    "text": "Data sources\nFrom the HMT release:\n\n#!ctscatalog and #!ctsdata (the text of each region)\n#!citerelationset (DSE records)\nthe IIIF manifest vaimg.2017a.json from the hmt-archive repository on GitHub\n\nSaved copies of the manifest and/or the release dataset can be dropped on the page or chosen with the file picker (several files at once).\nIf the release fails to load, the app still shows the images from the IIIF manifest, but without indexed regions.",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/va-facsimile/index.html#output-options",
-    "href": "docs/va-facsimile/index.html#output-options",
-    "title": "Venetus A facsimile",
-    "section": "Output options",
-    "text": "Output options\nNone.",
-    "crumbs": [
-      "Docs",
-      "Venetus A facsimile"
-    ]
-  },
-  {
-    "objectID": "docs/commentary-check/index.html",
-    "href": "docs/commentary-check/index.html",
-    "title": "commentary-check",
-    "section": "",
-    "text": "App-specific docs not yet available",
-    "crumbs": [
-      "Docs",
-      "`commentary-check`"
-    ]
-  },
-  {
-    "objectID": "archive/index.html",
-    "href": "archive/index.html",
-    "title": "Where should I start?",
-    "section": "",
-    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia: try iliad-scholia.html\nif you want a fascimile view of our most completely edited manuscript, the Venetus A: try va-facsimile.html\nif you want to browse the HMT project’s collection of manuscripts images: try images.html"
-  },
-  {
-    "objectID": "docs/editorial/index.html",
-    "href": "docs/editorial/index.html",
-    "title": "editorial",
-    "section": "",
-    "text": "App-specific docs not yet available",
-    "crumbs": [
-      "Docs",
-      "`editorial`"
     ]
   },
   {
@@ -309,6 +214,35 @@
     "crumbs": [
       "Docs",
       "Browse images"
+    ]
+  },
+  {
+    "objectID": "docs/editorial/index.html",
+    "href": "docs/editorial/index.html",
+    "title": "editorial",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`editorial`"
+    ]
+  },
+  {
+    "objectID": "archive/index.html",
+    "href": "archive/index.html",
+    "title": "Where should I start?",
+    "section": "",
+    "text": "The HMT archive is large and complex. Rather than try to produce a comprehensive HMT app, I am experimenting with numerous small, focused apps. The list of currently running apps has grown to the point it might not be obvious how to get started. Here are some suggestions.\n\nif you want to read editions of the Iliad and scholia, try iliad-scholia.html\nif you want to browse manuscript fascimiles, try our most completely edited manuscript, the Venetus A.\nif you want to browse the HMT project’s collection of manuscript images, try images.html"
+  },
+  {
+    "objectID": "docs/commentary-check/index.html",
+    "href": "docs/commentary-check/index.html",
+    "title": "commentary-check",
+    "section": "",
+    "text": "App-specific docs not yet available",
+    "crumbs": [
+      "Docs",
+      "`commentary-check`"
     ]
   },
   {

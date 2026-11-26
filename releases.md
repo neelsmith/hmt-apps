@@ -79,28 +79,59 @@ Current version:  **0.14.0**
 **0.1.0**, *Nov. 17, 2026*: initial release. Shared code to parse a release of the HMT archive, and two initial apps, an *Iliad* + *scholia* reader, and a Venetus A facsimile reader.
 
 
-## Facsimile apps
+## Manuscript facsimiles
 
-### `va-facsimile.html`
-
-**0.5.2**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
-
-**0.5.1**, *Nov. 25, 2026*: hovering on an RoI displays the edited text; clicking on an RoI now copies to clipboard.
-
-**0.5.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
-
-**0.4.1**, *Nov. 24, 2026*:  corrects behavior for forming sequence of pages in facsimile.
-
-**0.4.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
-
-**0.3.0**, *Nov. 23, 2026*: adds options to open from reference to a page, an image or a text passage. Adds standard menu to top of page.
-
-**0.2.0**, *Nov. 19, 2026*: add option to use `urn` parameter to open with a specified passage
+### `codices.html`
 
 
-**0.1.1**, *Nov. 18, 2026*: link to github pages, use app-specific version.
 
-**0.1.0**, *Nov. 17, 2026*: from a lightbox view of Venetus A images, choose individual page to view, see text on hovering over highlighted area.
+**0.4.0**, *Nov. 26, 2026*: 
+
+- changes UI to select pages from a light table view rather than a menu.
+- adds option of viewing diplomatic or normalized edition of text.
+
+
+**0.3.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
+
+**0.3.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
+
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
+**0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
+
+
+
+
+## Apps starting from  images
+
+### `images.html`
+
+**0.6.0**, *Nov. 26, 2026*: 
+
+- adds new `urns` parameter to work with a specified *list* of images.
+- adds interactive selection of images from light table view.
+
+
+**0.5.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
+
+**0.5.0**, *Nov. 25, 2026*: adds optional display of indeed text to single image view.
+
+**0.4.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
+
+**0.3.1**, *Nov. 24, 2026*:  fixes a bug handling image URNs with RoI.
+
+**0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
+
+
+**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
+
+**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
+
+**0.1.0**, *Nov. 19, 2026*: browse all image collections.
+
+
 
 
 ## Text browsing apps
@@ -184,54 +215,6 @@ Current version:  **0.14.0**
 **0.1.0**, *Nov. 19, 2026*: initial release. See instances of proper names in texts.
 
 
-
-## Apps starting from physical artifacts and images
-
-### `images.html`
-
-**0.6.0**, *Nov. 26, 2026*: 
-
-- adds new `urns` parameter to work with a specified *list* of images.
-- adds interactive selection of images from light table view.
-
-
-**0.5.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
-
-**0.5.0**, *Nov. 25, 2026*: adds optional display of indeed text to single image view.
-
-**0.4.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
-
-**0.3.1**, *Nov. 24, 2026*:  fixes a bug handling image URNs with RoI.
-
-**0.3.0**, *Nov. 24, 2026*: adds search on captions;lightbox now displays *all* images with option to scale thumbnails' size.
-
-
-**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
-
-**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
-
-**0.1.0**, *Nov. 19, 2026*: browse all image collections.
-
-
-
-### `codices.html`
-
-
-**0.4.0**, *Nov. 26, 2026*: 
-
-- changes UI to select pages from a light table view rather than a menu.
-- adds option of viewing diplomatic or normalized edition of text.
-
-
-**0.3.1**, *Nov. 25, 2026*: app now honors `text` URL parameter even if `image` already given
-
-**0.3.0**, *Nov. 25, 2026*: adds support for interactively citing images with region of interest.
-
-**0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
-
-**0.1.1**, *Nov. 23, 2026*: Adds standard menu to top of page.
-
-**0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
 
 
 
