@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>DSE check, light table</title>
+<!-- @inline-style src/apps/codices/style.css -->
+<style>
+  .cell .badge.bad { background: var(--err); color: #fff; }
+  .cell .badge.ok { background: #1f6b3a; color: #fff; padding: 0 .35rem; }
+  #legend { color: var(--muted); font-size: .875rem; }
+  #legend .badge { position: static; display: inline-block; vertical-align: baseline; border-radius: 999px; padding: 0 .45rem; font-size: .75rem; line-height: 1.35; }
+  #legend .badge.bad { background: var(--err); color: #fff; }
+  #legend .badge.ok { background: #1f6b3a; color: #fff; }
+  #legend .badge.none, .cell .badge.none { background: #6b655c; color: #fff; }
+  #footer-note { padding: 0 1rem 2rem; color: var(--table-fg); opacity: .75; font-size: .8125rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DSE check, light table</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/dsecheck-viz/">Docs</a></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Codex <select id="codex" disabled></select></label>
+    <label>Find <input type="search" id="find" placeholder="part of a page name…" autocomplete="off" disabled></label>
+    <label><input type="checkbox" id="only-bad" disabled> Only pages with inconsistencies</label>
+    <label>Size <input type="range" id="cell-size" min="90" max="320" value="170" disabled></label>
+    <span id="shown"></span>
+    <span id="legend"><span class="badge bad">3</span> inconsistencies on the page · <span class="badge ok">✓</span> indexed text, none · <span class="badge none">0</span> no indexed text</span>
+  </div>
+  <p id="intro">Choose a codex. Its pages appear here, each with the number of DSE inconsistencies found on it (a check mark if the page has indexed text and no inconsistencies). Hover a page for the details; choose a page to open it in the codices app.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <p id="empty" hidden>No pages match.</p>
+  <p id="footer-note">
+    Inconsistencies on a page: DSE records naming the page whose passage is not in the release's texts; scholia no DSE record
+    names that comment on an <i>Iliad</i> line the DSE puts on the page (as in the by-page scholia check). A page no DSE record names (a cover, say) counts 0.
+  </p>
+</main>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/iiif.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/location.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/dse-check.js -->
+<!-- @inline src/scholia-check.js -->
+<!-- @inline src/page-problems.js -->
+<!-- @inline src/apps/dsecheck-viz/app.js -->
+</body>
+</html>

@@ -1,5 +1,6 @@
 // facsimiles
 codices.html    0.4.0
+codices-docs.html   0.1.0
 
 // images
 images.html  0.6.0
@@ -21,3 +22,4 @@ coverage.html   0.3.0
 commentary-check.html   0.1.0
 dsecheck-paginated.html 0.1.0
 dsecheck-books.html 0.1.0
+dsecheck-viz.html   0.1.0
