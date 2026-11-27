@@ -6,6 +6,6 @@ The HMT archive is large and complex. Rather than try to produce a comprehensive
 
 
 
-- if you want to read editions of the *Iliad* and *scholia*: try [iliad-scholia.html](https://neelsmith.github.io/hmt-apps/iliad-scholia.html)
-- if you want a fascimile view of our most completely edited manuscript, the Venetus A: try [va-facsimile.html](https://neelsmith.github.io/hmt-apps/va-facsimile.html)
-- if you want to browse the HMT project's collection of manuscripts images: try [images.html](https://neelsmith.github.io/hmt-apps/images.html)
+- if you want to read editions of the *Iliad* and *scholia*, try [iliad-scholia.html](https://neelsmith.github.io/hmt-apps/iliad-scholia.html)
+- if you want to [browse manuscript fascimiles](https://neelsmith.github.io/hmt-apps/codices.html),  try our most completely edited manuscript, [the Venetus A](https://neelsmith.github.io/hmt-apps/codices.html?page=urn:cite2:hmt:msA.v1:).
+- if you want to browse the HMT project's collection of manuscript images, try [images.html](https://neelsmith.github.io/hmt-apps/images.html)

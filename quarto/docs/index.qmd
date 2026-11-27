@@ -4,7 +4,7 @@ title: "Documentation for individual apps"
 
 
 ::: {.callout-tip title="More info"}
-Further documentation is available for apps with full titles in the adjacent side bar (e.g., "Venetus A facsimile"); documentation for apps listed by file name (e.g., `dse-check`) is in progress but not yet available. 
+Further documentation is available for apps with full titles in the adjacent side bar (e.g., "Browse images"); documentation for apps listed by file name (e.g., `dse-check`) is in progress but not yet available. 
 :::
 
 

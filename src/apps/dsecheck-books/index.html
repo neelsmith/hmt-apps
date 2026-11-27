@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Scholia without DSE records</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
+    --accent: #8a2f1d; --focus: #2a5bd7; --err: #a3201a; --ok: #1f6b3a; --okbg: #e3f2e7; --warnbg: #fbe9e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
+            --accent: #e0896f; --focus: #8fb0ff; --err: #ff8a80; --ok: #7fd49a; --okbg: #1e3326; --warnbg: #3a211d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 1.15rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0; }
+  #status { color: var(--muted); font-size: .875rem; }
+  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
+  .appmeta .home { margin-right: auto; }
+  .appmeta a, a { color: var(--accent); }
+  button { font: inherit; cursor: pointer; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
+  .btn:hover { border-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  main { max-width: 64rem; margin: 0 auto; padding: 1rem; }
+  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted); }
+  body.dragging #drop { border-color: var(--accent); }
+  #problem { color: var(--err); }
+  .note { color: var(--muted); font-size: .875rem; margin: 0 0 .25rem; }
+  .popover { position: absolute; z-index: 10; max-width: min(36rem, calc(100vw - 16px)); max-height: 60vh; overflow: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.25); padding: .4rem .7rem; font-size: .9375rem; pointer-events: none; }
+  .popover p { margin: .15rem 0; }
+  .popover .ex { display: inline-block; margin-right: .5rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; }
+  .popover .on { color: var(--muted); font-size: .8125rem; border-top: 1px solid var(--line); padding-top: .25rem; }
+  .popover .copied { color: var(--accent); font-size: .8125rem; border-top: 1px solid var(--line); padding-top: .25rem; }
+  .chip[tabindex] { cursor: copy; }
+  .chips { display: flex; flex-wrap: wrap; gap: .25rem; padding: .5rem 0; }
+  .chip { border: 1px solid var(--line); border-radius: 4px; padding: 0 .4rem; font: .8125rem ui-monospace, Menlo, monospace; background: var(--panel); }
+  .chip:hover { border-color: var(--accent); }
+  #books { display: flex; flex-wrap: wrap; gap: .3rem; margin: .75rem 0; padding: 0; list-style: none; }
+  #books button { display: flex; flex-direction: column; align-items: center; min-width: 3rem; padding: .2rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); line-height: 1.2; }
+  #books button:hover { border-color: var(--accent); }
+  #books button[aria-current=true] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  #books .n { font-size: .75rem; color: var(--muted); }
+  #books .zero { opacity: .55; }
+  #pager { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin: .5rem 0; }
+  #pager h2 { flex: 1 1 14rem; }
+  .badge { font-size: .8rem; border-radius: 999px; padding: .05rem .6rem; }
+  .badge.ok { background: var(--okbg); color: var(--ok); }
+  .badge.warn { background: var(--warnbg); color: var(--err); }
+  .vgroup { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: .75rem 0; padding: .5rem .9rem; }
+  .vgroup h3 { font-size: .95rem; margin: 0; font-weight: 600; }
+  .vgroup .n { color: var(--muted); font-weight: 400; font-size: .875rem; }
+  .more { margin: .25rem 0 .5rem; }
+  footer { color: var(--muted); font-size: .8125rem; padding: 1rem 0 2rem; }
+  @media (max-width: 40rem) { header { padding: .5rem .75rem; } main { padding: .75rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scholia without DSE records, by book of the <i>Iliad</i></h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/dsecheck-books/">Docs</a></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="report" hidden>
+  <p id="intro"></p>
+  <p class="note" id="warning" hidden></p>
+  <ul id="books" aria-label="Books of the Iliad"></ul>
+  <div id="pager">
+    <button class="btn" id="prev" title="Previous book ([)">‹ Previous book</button>
+    <h2 id="book-title"></h2>
+    <span id="book-badge" class="badge"></span>
+    <button class="btn" id="next" title="Next book (])">Next book ›</button>
+  </div>
+  <p class="note" id="book-note"></p>
+  <div id="groups"></div>
+  <footer>
+    A scholion is listed here if the editions have it and no DSE record names it (its lemma and comment are one passage; subreferences are ignored).
+    The book is the book of the <i>Iliad</i> passage the index of scholia says it comments on, not the number in the scholion's own reference; a scholion
+    that comments on passages of several books is listed under each of them, and one the index does not place is under "no book".
+    Hover over (or focus) a reference to read the scholion; click it to copy its diplomatic text. Findings are warnings only.
+  </footer>
+</main>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/location.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/dse-check.js -->
+<!-- @inline src/scholia-check.js -->
+<!-- @inline src/apps/dsecheck-books/app.js -->
+</body>
+</html>
