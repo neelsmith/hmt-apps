@@ -4,10 +4,11 @@
 
 Current version:  **0.14.0**
 
-**0.14.0**, *Nov. 26, 2026*:
+**0.14.0**, *Nov. 27, 2026*:
 
 - changes `codices.html` to select pages from a light box view rather than a menu
 - adds new `urns` parameter to `images.html` for working with a specified *list* of images. Adds interactive selection of images from light table view.
+- adds new utility apps `dsecheck-paginated.html` and `dsecheck-books.html`
 
 **0.13.0**, *Nov. 25, 2026*:
 
@@ -246,3 +247,14 @@ Current version:  **0.14.0**
 
 
 **0.1.0**, *Nov. 19, 2026*: Review consistency of DSE indexing.
+
+
+### `dsecheck-paginated.html`
+
+**0.1.0**, *Nov. 27, 2026*: Review consistency of DSE indexing and group results by  MS page.
+
+
+
+### `dsecheck-books.html`
+
+**0.1.0**, *Nov. 27, 2026*: Review consistency of DSE indexing and group results by *Iliad* book.
