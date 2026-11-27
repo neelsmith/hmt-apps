@@ -2,7 +2,12 @@
 
 ## Repository version tag
 
-Current version:  **0.14.0**
+Current version:  **0.14.1**
+
+
+**0.14.1**, *?*:
+
+- `dse-check.html` adds per-manuscript summary counts
 
 **0.14.0**, *Nov. 27, 2026*:
 

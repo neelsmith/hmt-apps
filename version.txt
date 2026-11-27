@@ -16,7 +16,7 @@ stringcounter.html   0.3.0
 lemmatizedsearch.html   0.3.0
 
 // editorial status
-dse-check.html  0.2.0
+dse-check.html  0.2.1
 coverage.html   0.3.0
 commentary-check.html   0.1.0
 dsecheck-paginated.html 0.1.0

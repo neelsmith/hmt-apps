@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Codices: documents</title>
+<!-- @inline-style src/apps/codices/style.css -->
+<style>
+  /* One colour for each document on the page (a text version: the Iliad of the Venetus A, each zone of its scholia, ...). */
+  .roi.doc { fill: var(--c); stroke: var(--c); }
+  .roi.doc-hidden { display: none; }
+  #doc-bar { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; align-items: center; padding: .4rem 1rem; border-bottom: 1px solid var(--line); background: var(--bg); font-size: .875rem; }
+  #doc-bar .doc-head { font-weight: 600; }
+  #doc-bar label { display: inline-flex; gap: .3rem; align-items: center; }
+  #doc-bar .chip { border-color: var(--c); background: color-mix(in srgb, var(--c) 20%, transparent); }
+  #doc-bar .n { color: var(--muted); }
+  #doc-bar .btn { padding: .05rem .5rem; font-size: .8125rem; }
+  #doc-bar .none { color: var(--muted); }
+  @media (max-width: 40rem) { #doc-bar { padding: .4rem .75rem; } }
+</style>
+<!-- @inline-style src/roi.css -->
+</head>
+<body data-layers="documents">
+<header>
+  <h1>Codices: documents</h1>
+  <span id="status" role="status">Loading the current HMT release…</span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices-docs/">Docs</a></span>
+</header>
+
+<div id="drop" hidden>
+  <p id="problem"></p>
+  <p>You can load a saved copy of the release instead (<code>hmt-current.cex</code>): drop it here or <input type="file" id="file" accept=".cex,.txt,text/plain">.</p>
+</div>
+
+<main id="table-view">
+  <div id="controls">
+    <label class="coll">Codex <select id="codex" disabled></select></label>
+    <label>Find <input type="search" id="find" placeholder="part of a page name…" autocomplete="off" disabled></label>
+    <label><input type="checkbox" id="only-text" disabled> Only pages with indexed text</label>
+    <label>Size <input type="range" id="cell-size" min="90" max="320" value="170" disabled></label>
+    <span id="shown"></span>
+  </div>
+  <p id="intro">Choose a codex. Its pages appear here; choose a page to open it. A number on a page is how many indexed text passages it has.</p>
+  <p id="note" hidden></p>
+  <div id="grid"></div>
+  <p id="empty" hidden>No pages match.</p>
+</main>
+
+<section id="viewer-view" hidden>
+  <div id="viewer-bar">
+    <button class="btn" id="back" title="Back to the pages of the codex (Esc)">← Pages</button>
+    <span class="group">
+      <button class="btn" id="prev" title="Previous page ([)" aria-label="Previous page" disabled>‹</button>
+      <button class="btn" id="next" title="Next page (])" aria-label="Next page" disabled>›</button>
+    </span>
+    <span id="viewer-title"></span>
+    <span id="viewer-count"></span>
+    <a id="more-images" href="#" target="_blank" rel="noopener" hidden title="Other images of this page, in the images app"></a>
+    <span class="group" role="group" aria-label="Text shown on hover">
+      <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
+      <label><input type="radio" name="kind" value="normalized">normalized</label>
+    </span>
+    <span class="group">
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
+      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
+    </span>
+  </div>
+  <div id="doc-bar" role="group" aria-label="Documents on this page"></div>
+  <div id="viewer-wrap">
+    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
+    <div id="viewer-note" hidden></div>
+    <div id="viewer-error" role="alert" hidden></div>
+    <div id="tip" hidden></div>
+    <div id="copied" role="status" hidden></div>
+  </div>
+  <div id="roi-panel" hidden></div>
+</section>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/iiif.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/illustrations.js -->
+<!-- @inline src/location.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/locate.js -->
+<!-- @inline src/pan-zoom.js -->
+<!-- @inline src/image-viewer.js -->
+<!-- @inline src/roi.js -->
+<!-- @inline src/roi-tool.js -->
+<!-- @inline src/roi-panel.js -->
+<!-- @inline src/apps/codices/app.js -->
+</body>
+</html>

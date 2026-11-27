@@ -73,6 +73,9 @@ import { codices } from './codices.js';
  * @property {number} pages       Pages in the codex model.
  * @property {number} covered     Pages named as the surface of at least one DSE record.
  * @property {number} uncovered   Pages no DSE record names (the sum of the runs).
+ * @property {number} records     DSE records whose surface is a page of this codex.
+ * @property {number} badRecords  Of those, records with a problem (passage not a CTS URN or not in the text, or image not in the catalog).
+ * @property {number} inconsistencies  `badRecords` plus the runs of pages without records.
  * @property {PageRun[]} runs     In codex order.
  */
 
@@ -191,16 +194,23 @@ export function checkDse(release) {
   const rows = set ? set.rows : [];
   /** @type {Set<string>} surfaces (pages) that at least one record names */
   const surfaces = new Set();
+  /** @type {Map<string, {records: number, bad: number}>} per surface */
+  const surfaceStats = new Map();
   rows.forEach((row, i) => {
     /** @type {DseRecord} */
     const rec = { passage: (row.passage ?? '').trim(), imageroi: (row.imageroi ?? '').trim(), surface: (row.surface ?? '').trim(), row: i + 1 };
 
     if (rec.surface) surfaces.add(rec.surface);
+    const stat = surfaceStats.get(rec.surface) ?? { records: 0, bad: 0 };
+    stat.records++;
+    surfaceStats.set(rec.surface, stat);
+    let bad = false;
 
     // -- the passage
     const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(rec.passage);
     if (!m || !m[2]) {
       badPassages.push(rec);
+      bad = true;
     } else {
       const version = ctsVersionOf(m[1]);
       const ref = baseRef(m[2]);
@@ -209,19 +219,21 @@ export function checkDse(release) {
       let n = named.get(version);
       if (!n) { n = new Set(); named.set(version, n); }
       n.add(ref);
-      if (!textRefs.get(version)?.has(ref)) v.unknown.push({ ...rec, ref });
+      if (!textRefs.get(version)?.has(ref)) { v.unknown.push({ ...rec, ref }); bad = true; }
     }
 
     // -- the image
     const at = rec.imageroi.indexOf('@');
     const image = (at < 0 ? rec.imageroi : rec.imageroi.slice(0, at)).trim();
     if (!image) {
+      stat.bad++;   // a record without an image is a problem too
       const p = problems.get('') ?? { image: '', kind: /** @type {'none'} */ ('none'), collection: '', records: [] };
       p.records.push(rec); problems.set('', p);
       return;
     }
     images.add(image);
     if (!catalogItems.has(image)) {
+      bad = true;
       let p = problems.get(image);
       if (!p) {
         const collection = image.slice(0, image.lastIndexOf(':') + 1);
@@ -230,6 +242,7 @@ export function checkDse(release) {
       }
       p.records.push(rec);
     }
+    if (bad) stat.bad++;
   });
 
   for (const [version, v] of versions) {
@@ -245,7 +258,7 @@ export function checkDse(release) {
 
   return {
     found: !!set,
-    codices: codexCoverage(release, surfaces),
+    codices: codexCoverage(release, surfaces, surfaceStats),
     iliadPages: iliadProblemPages(release, [...versions.values()]),
     records: rows.length,
     versions: [...versions.values()],
@@ -328,9 +341,10 @@ function joinPages(urns, info) {
  * surface.  A codex that no record mentions at all is one run from its first page to its last.
  * @param {import('./hmt-release.js').HmtRelease} release
  * @param {Set<string>} surfaces  Surfaces named by DSE records.
+ * @param {Map<string, {records: number, bad: number}>} [stats]  Records and records with problems, by surface.
  * @returns {CodexCoverage[]}
  */
-export function codexCoverage(release, surfaces) {
+export function codexCoverage(release, surfaces, stats = new Map()) {
   /** @type {CodexCoverage[]} */
   const out = [];
   for (const codex of codices(release)) {
@@ -339,15 +353,18 @@ export function codexCoverage(release, surfaces) {
     const runs = [];
     /** @type {PageRun | null} */
     let run = null;
-    let covered = 0;
+    let covered = 0, records = 0, badRecords = 0;
     for (const p of codex.pages) {
+      const st = stats.get(p.urn);
+      if (st) { records += st.records; badRecords += st.bad; }
       if (surfaces.has(p.urn)) { covered++; run = null; continue; }
       /** @type {PageRef} */
       const ref = { urn: p.urn, id: p.id, label: p.short || p.id };
       if (run) { run.to = ref; run.count++; }
       else { run = { from: ref, to: ref, count: 1 }; runs.push(run); }
     }
-    out.push({ urn: codex.urn, label: codex.label, pages: codex.pages.length, covered, uncovered: codex.pages.length - covered, runs });
+    out.push({ urn: codex.urn, label: codex.label, pages: codex.pages.length, covered, uncovered: codex.pages.length - covered, runs,
+      records, badRecords, inconsistencies: badRecords + runs.length });
   }
   return out;
 }
