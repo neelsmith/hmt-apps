@@ -203,7 +203,7 @@
     $('notes').textContent = notes.join(' ');
     $('notes').hidden = notes.length === 0;
     $('legend').textContent = r.columns.length > 1
-      ? `Shaded words differ from ${v.label}; ‸ marks a word it has that the version lacks (hover for the word). The ${kind} text is compared word by word, ignoring punctuation.`
+      ? `Shaded words differ from ${v.label}; ‸ marks a word it has that the version lacks (hover for the word). The ${kind} text is compared word by word, ignoring punctuation and case.`
       : `No other version has a line of this passage.`;
 
     shownColumns = r.columns;

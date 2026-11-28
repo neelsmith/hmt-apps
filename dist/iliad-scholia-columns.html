@@ -83,6 +83,10 @@
   #page .line .ref { flex: 0 0 4.5rem; }
   #page .byms { margin: 0 0 .4rem 4.5rem; }
   .loose-note { color: var(--muted); font-size: .875rem; margin: 1.25rem 0 .5rem; }
+/* The status line above the form: one compact line (the box also holds the load error and the drop zone when needed). */
+#loading-panel { padding: .3rem .75rem; margin-bottom: .6rem; }
+#loading-panel #status { margin: 0; }
+#loading-panel #load-error:not([hidden]), #loading-panel #drop:not([hidden]) { margin: .4rem 0 .2rem; }
 </style>
 <style>
 /* Parallel columns of the versions of the Iliad (the base styles are src/apps/iliad-scholia/style.css, inlined before this). */
@@ -1891,18 +1895,18 @@ function hasDifference(segments) {
 // @ts-check
 /**
  * The parallel columns of `iliad-scholia-columns.html`: a passage of the *Iliad* in a reference version, with the same
- * lines of every other version of the *Iliad* that has them, the words that differ from the reference marked (punctuation ignored), and for
+ * lines of every other version of the *Iliad* that has them, the words that differ from the reference marked (punctuation and case ignored), and for
  * each line of each version the scholia indexed to that version.  No DOM access.
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
  */
 
 
-/** A word without its punctuation (and elision marks), for comparing; a word that is all punctuation stays as it is. @param {string} w */
-const colKey = w => w.replace(/[\p{P}\p{Sk}]/gu, '') || w;
+/** A word without its punctuation (and elision marks) and in lower case, for comparing; a word that is all punctuation stays as it is. @param {string} w */
+const colKey = w => (w.replace(/[\p{P}\p{Sk}]/gu, '') || w).toLowerCase();
 
 /**
- * Compare a line with the reference line, word by word, ignoring punctuation: the segments hold the words as each text
+ * Compare a line with the reference line, word by word, ignoring punctuation and case: the segments hold the words as each text
  * has them (equal stretches in the line's own spelling, with its punctuation).
  * @param {string} ref @param {string} line
  * @returns {import('./interweave.js').Segment[]}
@@ -3019,7 +3023,7 @@ function createPageView(data) {
     $('notes').textContent = notes.join(' ');
     $('notes').hidden = notes.length === 0;
     $('legend').textContent = r.columns.length > 1
-      ? `Shaded words differ from ${v.label}; ‸ marks a word it has that the version lacks (hover for the word). The ${kind} text is compared word by word, ignoring punctuation.`
+      ? `Shaded words differ from ${v.label}; ‸ marks a word it has that the version lacks (hover for the word). The ${kind} text is compared word by word, ignoring punctuation and case.`
       : `No other version has a line of this passage.`;
 
     shownColumns = r.columns;

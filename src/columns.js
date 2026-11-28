@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * The parallel columns of `iliad-scholia-columns.html`: a passage of the *Iliad* in a reference version, with the same
- * lines of every other version of the *Iliad* that has them, the words that differ from the reference marked (punctuation ignored), and for
+ * lines of every other version of the *Iliad* that has them, the words that differ from the reference marked (punctuation and case ignored), and for
  * each line of each version the scholia indexed to that version.  No DOM access.
  *
  * Convention for inlining (see scripts/build.js): imports are single-line.
@@ -9,11 +9,11 @@
 import { resolveRange, commentarySpans, annotateRange } from './iliad-scholia.js';
 import { weave } from './interweave.js';
 
-/** A word without its punctuation (and elision marks), for comparing; a word that is all punctuation stays as it is. @param {string} w */
-const colKey = w => w.replace(/[\p{P}\p{Sk}]/gu, '') || w;
+/** A word without its punctuation (and elision marks) and in lower case, for comparing; a word that is all punctuation stays as it is. @param {string} w */
+const colKey = w => (w.replace(/[\p{P}\p{Sk}]/gu, '') || w).toLowerCase();
 
 /**
- * Compare a line with the reference line, word by word, ignoring punctuation: the segments hold the words as each text
+ * Compare a line with the reference line, word by word, ignoring punctuation and case: the segments hold the words as each text
  * has them (equal stretches in the line's own spelling, with its punctuation).
  * @param {string} ref @param {string} line
  * @returns {import('./interweave.js').Segment[]}

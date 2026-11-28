@@ -556,3 +556,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - iliad-scholia-columns: punctuation is ignored when comparing words (`compareLines` in `src/columns.js`: Unicode punctuation and elision marks dropped from the comparison key only; each text shown as written; accents still count).
 - iliad-scholia-columns: columns can be closed and reopened (`#colbar` checkboxes, × in the headings; `closed` set in app.js; cells carry `data-v`; browser-checked, scratchpad `ui-test-cols2.js`).
 - iliad-scholia-columns: the Text (diplomatic/normalized) radios are on the same line as the version menu (`.row` in index.html).
+- iliad-scholia-columns: the comparison is also case-insensitive (`colKey` lower-cases; each text still shown as written).
+
+## Compact status box (2026-11-28)
+- The status box above the form (`#loading-panel`) in the apps that share `src/apps/iliad-scholia/style.css` (iliad-scholia, all-scholia, editorial, iliad-scholia-image, iliad-scholia-columns) is now one compact line (about 36 px high, was about 90): smaller padding, no paragraph margins. With a load error and the drop zone it grows as needed. The other apps already keep their status line in the header. Browser-checked (scratchpad `ui-test-panel.js`).

@@ -105,3 +105,9 @@ test('compareLines: punctuation is ignored, and each text keeps its own', () => 
   assert.deepEqual(compareLines('· ἄειδε', '· ἄειδε'), [{ text: '· ἄειδε' }], 'a word of punctuation only');
   assert.deepEqual(compareLines('ἄειδε θεὰ', 'ἄειδε θεά'), [{ text: 'ἄειδε' }, { base: 'θεὰ', alt: 'θεά' }], 'accents still count');
 });
+
+test('compareLines: case is ignored, accents are not', () => {
+  assert.deepEqual(compareLines('Μῆνιν ἄειδε Θεὰ', 'μῆνιν ἄειδε θεὰ'), [{ text: 'μῆνιν ἄειδε θεὰ' }], 'capital vs small');
+  assert.deepEqual(compareLines('ΜΗΝΙΝ αειδε', 'μηνιν αειδε'), [{ text: 'μηνιν αειδε' }], 'all capitals');
+  assert.deepEqual(compareLines('Μῆνιν', 'μηνιν'), [{ base: 'Μῆνιν', alt: 'μηνιν' }], 'accents still count');
+});
