@@ -2,7 +2,15 @@
 
 ## Repository version tag
 
-Current version:  **0.14.0**
+Current version:  **0.15.0**
+
+
+**0.15.0**, *Nov. 28, 2026*:
+
+
+- adds new apps `dsecheck-viz.html`, `iliad-scholia-image.html` and `iliad-scholia-columns.html`
+- `dse-check.html` adds per-manuscript summary counts
+- corrections to handling of URL parameters in `codices.html`
 
 **0.14.0**, *Nov. 27, 2026*:
 
@@ -80,10 +88,12 @@ Current version:  **0.14.0**
 **0.1.0**, *Nov. 17, 2026*: initial release. Shared code to parse a release of the HMT archive, and two initial apps, an *Iliad* + *scholia* reader, and a Venetus A facsimile reader.
 
 
-## Manuscript facsimiles
+## Facsimiles views
 
 ### `codices.html`
 
+
+**0.4.1**, *Nov. 26, 2026*:  corrects handling of URL parameters for `image` and `text`.
 
 
 **0.4.0**, *Nov. 26, 2026*: 
@@ -102,8 +112,9 @@ Current version:  **0.14.0**
 
 **0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
 
+### `iliad-scholia-image.html`
 
-
+**0.1.0**, *Nov. 28, 2026*: interleaved view of text passages and documentary images.
 
 ## Apps starting from  images
 
@@ -166,6 +177,13 @@ Current version:  **0.14.0**
 **0.2.0**, *Nov. 24, 2026*: Adds uniform bookmarking with `page`, `image` or `text` parameters.
 
 **0.1.0**, *Nov. 18, 2026*: Browse *Iliad* and *scholia* texts, see diplomatic transcription with interleaved normalized text.
+
+
+### `iliad-scholia-columns.html`
+
+
+**0.1.0**, *Nov. 28, 2026*: Browse multiple versions of *Iliad* and *scholia* in parallel column view.
+
 
 ## Text searching apps
 

@@ -1,0 +1,5 @@
+---
+title: "`dsecheck-paginated`"
+---
+
+*App-specific docs not yet available*

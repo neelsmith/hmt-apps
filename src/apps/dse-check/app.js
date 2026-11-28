@@ -316,6 +316,18 @@
     }
     root.appendChild(g4);
 
+    // summary line by manuscript
+    const bs = $('by-ms');
+    bs.textContent = '';
+    bs.hidden = !c.codices.length || !c.found;
+    for (const x of c.codices.filter(x => x.records || x.inconsistencies)) {
+      const li = el('li');
+      li.appendChild(el('strong', '', `${x.label}: `));
+      li.appendChild(document.createTextNode(`${plural(x.records, 'DSE record', 'DSE records')}, `));
+      li.appendChild(el('span', x.inconsistencies ? 'flag' : 'ok', x.inconsistencies ? plural(x.inconsistencies, 'inconsistency', 'inconsistencies') : 'no inconsistencies'));
+      bs.appendChild(li);
+    }
+
     $('intro').textContent = c.found
       ? `${plural(c.records, 'DSE record', 'DSE records')} checked against the editions and the image catalog.`
       : 'This release has no DSE relation set; nothing to check.';

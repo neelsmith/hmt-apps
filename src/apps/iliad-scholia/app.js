@@ -13,6 +13,7 @@
   const MAX_PAGES = 40;
   const WOVEN = document.body.dataset.text === 'interwoven';
   const ALL = document.body.dataset.scholia === 'all';
+  const ROI_PICS = document.body.dataset.roi === 'image';   // iliad-scholia-image: the picture of each region under its text
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -24,6 +25,7 @@
   /** The manuscript pages of the passages (from the DSE records), and the view that shows one. */
   /** @type {any} */ let pageView = null;
   /** @type {any} */ let locator = null;
+  /** @type {((pk: string) => HTMLElement | null) | null} */ let roiPics = null;
   /** @type {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}} */ let pageIndex = { surfacesOf: new Map(), passagesOn: new Map() };
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -36,6 +38,7 @@
     spanCache.clear();
     pageIndex = indexPages(rel);
     locator = createLocator(rel);
+    if (ROI_PICS) roiPics = createRoiImages(rel, location.protocol);
     const pageLabels = new Map();
     for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
     pageView = createPageView({
@@ -233,7 +236,7 @@
     }
     const o = {
       textKind: () => cur.kind, isHit: () => false, hitLabel: '', hitNoun: '', scroll: false,
-      skipEmpty: true, onNavigate: openPage,
+      skipEmpty: true, onNavigate: openPage, extra: roiPics || undefined,
       fillText(el, pk) {
         el.lang = 'grc';
         const base = passageText(textIndex, pk, cur.kind).parts;

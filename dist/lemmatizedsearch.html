@@ -2119,6 +2119,7 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
  * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
  * @property {boolean} [skipEmpty]                     Previous/Next go to the nearest page with indexed passages (default: the page next door).
+ * @property {(pk: string) => HTMLElement | null} [extra]   Something shown below the text of an Iliad line and in the body of a scholion (a picture of its region, say); null for none.
  * @property {(surface: string) => void} [onNavigate]  Called with the page Previous/Next chose; the app shows it.  Default: the view shows it in place.
  */
 
@@ -2203,6 +2204,8 @@ function createPageView(data) {
     d.appendChild(sm);
     const body = pvEl('div', 'body greek');
     o.fillText(body, pk);
+    const more = o.extra ? o.extra(pk) : null;
+    if (more) body.appendChild(more);
     d.appendChild(body);
     return d;
   }
@@ -2284,6 +2287,8 @@ function createPageView(data) {
         o.fillText(t, pk);
         row.appendChild(t);
         box.appendChild(row);
+        const pic = o.extra ? o.extra(pk) : null;
+        if (pic) box.appendChild(pic);
         const attached = byLine.get(refOf(pk));
         if (!attached) continue;
         const panel = pvEl('div', 'panel');

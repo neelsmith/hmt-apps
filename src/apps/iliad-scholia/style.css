@@ -75,3 +75,7 @@
   #page .line .ref { flex: 0 0 4.5rem; }
   #page .byms { margin: 0 0 .4rem 4.5rem; }
   .loose-note { color: var(--muted); font-size: .875rem; margin: 1.25rem 0 .5rem; }
+/* The status line above the form: one compact line (the box also holds the load error and the drop zone when needed). */
+#loading-panel { padding: .3rem .75rem; margin-bottom: .6rem; }
+#loading-panel #status { margin: 0; }
+#loading-panel #load-error:not([hidden]), #loading-panel #drop:not([hidden]) { margin: .4rem 0 .2rem; }

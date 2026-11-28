@@ -4,10 +4,19 @@
 // text to the clipboard.  Uses the shared sources
 // inlined ahead of this file (see index.html).
 //
-// Address: `?page=<page URN>`, `?page=<codex URN>` for the light box of a codex, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
-// the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
+// With <body data-layers="documents"> (the codices-docs page) the Iliad / Scholia / Other checkboxes are replaced by a
+// list of the documents on the open page (each text version with a region there: the Iliad of the Venetus A, each zone
+// of its scholia, ...), each with its own colour, region count and checkbox.
+//
+// Address (no `#`), in this order of priority: `?page=<codex URN>` opens the light box of the codex, `?page=<page URN>` the
+// page; `?image=<image URN>` the page with that image (a region on the URN, `…@x,y,w,h`, is marked and every text group
+// starts off); `?text=<passage URN>` the page of the passage (of the start of a range).  The address of an `image` is
+// kept as given; the others become `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
+  const DOCS = document.body.dataset.layers === 'documents';
+  /** One colour per document, in the order of `docOrder`. */
+  const DOC_COLORS = ['#e0452c', '#2f7de1', '#2fa36b', '#c9891a', '#9b4fd1', '#d1478f', '#1fa3b5', '#7a8a1f', '#e0702c', '#5a63d6', '#b0523a', '#4d8f5d'];
   const proto = location.protocol;
   const THUMB_W = 240;
   const TIP_MAX_CHARS = 700;
@@ -33,6 +42,9 @@
   let tableScroll = 0;         // scroll position of the light box, kept while a page is open
   let openToken = 0;
   let lastTipKey = '';
+  /** @type {Map<string, string>} */ let docLabels = new Map();   // version URN to "Work — version"
+  /** @type {Map<string, number>} */ let docOrder = new Map();      // every document with a region in the release, in display order
+  /** @type {Set<string>} */ let hiddenDocs = new Set();            // documents the reader has switched off (kept from page to page)
 
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
   const urlFor = (service, region, size) => matchProtocol(iiifImageUrl(service, region, size), proto);
@@ -47,6 +59,7 @@
     titles = catalogTitles(rel);
     bySurface = indexRegionsBySurface(rel).bySurface;
     illustrations = illustrationsOf(rel);
+    if (DOCS) setupDocuments(rel);
     catalogImages = new Set(imageCollections(rel).flatMap(c => c.items.map(i => i.urn)));
     books = codices(rel);
     locator = createLocator(rel);
@@ -96,6 +109,7 @@
   /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
     focusKey = '';
+    startRoi = null;
     setQuery({ page: urn }, replace);
     showPage(urn);
   }
@@ -103,21 +117,34 @@
 
   /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
   let focusKey = '';
+  /** The region of an `image` address (`…@x,y,w,h`), to mark on that image when its page opens. @type {{image: string, roi: any} | null} */
+  let startRoi = null;
+  /** Every text group (document) off, so a marked region is easy to see. */
+  function hideLayers() {
+    if (DOCS) hiddenDocs = new Set(docOrder.keys());
+    else for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
   function setFocus(text) {
     focusKey = text ? firstPassageKey(text) || '' : '';
-    if (focusKey) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+    if (focusKey) hideLayers();   // the passage's own region stays
   }
 
   function route() {
     const params = readParams(location.search);
+    startRoi = null;
     setFocus(params.text);
     const codex = params.page ? books.find(c => c.urn === params.page) : null;
     if (codex) { selectBook(codex); showTable(); return; }   // the address names a codex: its light box
     const r = resolvePage(locator, params);
     if (!r) { selectBook(null); showTable(); return; }
     if ('error' in r) { selectBook(null); showTable(r.error); return; }
-    const canon = { page: r.page, text: focusKey ? params.text : null };
-    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    if (r.via === 'image') {   // the address stays the address of the image
+      const placed = parseImageRoi(/** @type {string} */ (params.image));
+      if (placed) { startRoi = placed; hideLayers(); }
+    } else {
+      const canon = { page: r.page, text: focusKey ? params.text : null };
+      if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    }
     showPage(r.page);
   }
 
@@ -249,6 +276,7 @@
     title.append(' ', u);
     $('viewer-count').textContent = `${idx + 1} of ${book.pages.length} · ${book.label}`;
     $('viewer-error').hidden = true;
+    if (DOCS) $('doc-bar').textContent = '';
     hideTip();
     const more = $('more-images');
     const imgs = illustrations.get(page.urn) ?? [];
@@ -273,7 +301,9 @@
         placeholders: [urlFor(service, 'full', `${THUMB_W},`)],
       });
       drawRegions(view.regions, width, height);
-      roiUi.open(view.image);
+      if (DOCS) renderDocs(view.regions);
+      roiUi.open(view.image, startRoi && startRoi.image === view.image ? [startRoi.roi] : []);
+      startRoi = null;
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
@@ -296,8 +326,9 @@
       const p = roiToRect(r.roi, width, height);
       rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
       rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
-      rect.setAttribute('class', `roi ${passageKind(r.passage)}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
+      rect.setAttribute('class', `${DOCS ? 'roi doc' : `roi ${passageKind(r.passage)}`}${focusKey && dseKey(r.passage) === focusKey ? ' target' : ''}`);
       rect.dataset.passage = r.passage;
+      if (DOCS) { const d = docOf(r.passage); rect.dataset.doc = d; rect.style.setProperty('--c', docColor(d)); }
       frag.appendChild(rect);
     }
     overlay.appendChild(frag);
@@ -306,8 +337,80 @@
 
   function applyLayers() {
     if (!viewer) return;
-    for (const k of ['iliad', 'scholia', 'other']) viewer.overlay.classList.toggle(`hide-${k}`, !$(`show-${k}`).checked);
+    if (DOCS) for (const el of viewer.overlay.querySelectorAll('.roi')) el.classList.toggle('doc-hidden', hiddenDocs.has(el.dataset.doc));
+    else for (const k of ['iliad', 'scholia', 'other']) viewer.overlay.classList.toggle(`hide-${k}`, !$(`show-${k}`).checked);
     hideTip();
+  }
+
+  // --- documents on a page (codices-docs) ------------------------------------------
+
+  /** The document of a passage: its version URN (`urn:cts:greekLit:tlg5026.msAint.hmt:`). @param {string} passage */
+  const docOf = passage => ctsVersionOf(passage) || passage;
+  const docColor = d => DOC_COLORS[(docOrder.get(d) ?? 0) % DOC_COLORS.length];
+  const docLabel = d => docLabels.get(d) || d;
+
+  /** Names and an order for the documents of the release: the Iliad, then scholia, then other texts, each in catalog order. */
+  function setupDocuments(rel) {
+    docLabels = new Map(rel.ctsCatalog().map(c => [c.urn, `${c.workTitle} — ${c.versionLabel}`]));
+    const catalogAt = new Map(rel.ctsCatalog().map((c, i) => [c.urn, i]));
+    const rank = { iliad: 0, scholia: 1, other: 2 };
+    const all = new Set();
+    for (const regions of bySurface.values()) for (const r of regions) all.add(docOf(r.passage));
+    const sorted = [...all].sort((a, b) => rank[passageKind(a)] - rank[passageKind(b)]
+      || (catalogAt.get(a) ?? 1e9) - (catalogAt.get(b) ?? 1e9) || a.localeCompare(b));
+    docOrder = new Map(sorted.map((d, i) => [d, i]));
+  }
+
+  /**
+   * List the documents that have a region on the open page, with a checkbox, a colour and a count for each.
+   * @param {PageRegion[]} regions
+   */
+  /** The list of documents is folded up (kept from page to page). */
+  let docsFolded = false;
+  function renderDocs(regions) {
+    const bar = $('doc-bar');
+    bar.textContent = '';
+    /** @type {Map<string, number>} */
+    const counts = new Map();
+    for (const r of regions) counts.set(docOf(r.passage), (counts.get(docOf(r.passage)) ?? 0) + 1);
+    const docs = [...counts.keys()].sort((a, b) => (docOrder.get(a) ?? 1e9) - (docOrder.get(b) ?? 1e9));
+    if (!docs.length) { const n = document.createElement('span'); n.className = 'none'; n.textContent = 'No indexed documents on this page.'; bar.appendChild(n); return; }
+    const head = document.createElement('button');
+    head.type = 'button'; head.className = 'doc-head';
+    head.title = 'Fold up or unfold the list of documents';
+    const sayHead = () => {
+      const shown = docs.filter(d => !hiddenDocs.has(d)).length;
+      head.textContent = `${docsFolded ? '▸' : '▾'} ${plural(docs.length, 'document', 'documents')}${docsFolded ? ` · ${shown} shown` : ':'}`;
+      head.setAttribute('aria-expanded', String(!docsFolded));
+      bar.classList.toggle('folded', docsFolded);
+    };
+    head.addEventListener('click', () => { docsFolded = !docsFolded; sayHead(); });
+    bar.appendChild(head);
+    for (const d of docs) {
+      const label = document.createElement('label');
+      label.title = d;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !hiddenDocs.has(d); cb.dataset.doc = d;
+      cb.addEventListener('change', () => { if (cb.checked) hiddenDocs.delete(d); else hiddenDocs.add(d); applyLayers(); sayHead(); });
+      const chip = document.createElement('span');
+      chip.className = 'chip'; chip.style.setProperty('--c', docColor(d));
+      const n = document.createElement('span');
+      n.className = 'n'; n.textContent = `(${counts.get(d)})`;
+      label.append(cb, chip, ' ', docLabel(d), ' ', n);
+      bar.appendChild(label);
+    }
+    for (const [text, on] of [['All', true], ['None', false]]) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn'; b.textContent = text;
+      b.addEventListener('click', () => {
+        for (const d of docs) if (on) hiddenDocs.delete(d); else hiddenDocs.add(d);
+        for (const cb of bar.querySelectorAll('input[type=checkbox]')) cb.checked = on;
+        applyLayers();
+        sayHead();
+      });
+      bar.appendChild(b);
+    }
+    sayHead();
   }
 
   /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */
@@ -464,7 +567,7 @@
   $('zoom-in').addEventListener('click', () => viewer && viewer.zoomBy(1.5));
   $('zoom-out').addEventListener('click', () => viewer && viewer.zoomBy(1 / 1.5));
   $('fit').addEventListener('click', () => viewer && viewer.fit());
-  for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
+  if (!DOCS) for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).addEventListener('change', applyLayers);
   for (const r of document.querySelectorAll('input[name=kind]')) r.addEventListener('change', hideTip);
 
   window.addEventListener('popstate', () => { if (books.length) route(); });   // Back, Forward

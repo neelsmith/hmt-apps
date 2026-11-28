@@ -128,12 +128,18 @@ test('resolvePage and resolveImage: precedence and errors', () => {
   const n = { text: null, page: null, image: null };
   assert.equal(resolvePage(loc, n), null);
   assert.equal(resolveImage(loc, n), null);
-  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R' }), { page: P + '1r' }, 'image beats page, which is then ignored');
-  assert.ok('error' in resolvePage(loc, { ...n, page: P + '1r', image: IMG + 'NOPE' }), 'a bad image is an error, not a fall back to the page');
-  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R', text: MSA + '1.2' }), { page: P + '1r' }, 'text does not change the page of an image');
-  assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1V', text: MSA + '1.1' }), { page: P + '1v' }, 'image beats text');
-  assert.deepEqual(resolvePage(loc, { ...n, text: MSA + '1.2' }), { page: P + '1r' });
-  assert.deepEqual(resolvePage(loc, { ...n, page: P + '9r', text: MSA + '1.2' }), { page: P + '1r' }, 'a bad page falls through');
+  const via = (page, v) => ({ page, via: v });
+  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', image: IMG + 'I1R' }), via(P + '2r', 'page'), 'page beats image');
+  assert.deepEqual(resolvePage(loc, { ...n, page: P + '2r', text: MSA + '1.2' }), via(P + '2r', 'page'), 'page beats text');
+  assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1R' }), via(P + '1r', 'image'));
+  assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1R@0.2,0.3,0.1,0.1' }), via(P + '1r', 'image'), 'a region on the image URN is not part of the image');
+  assert.ok('error' in resolvePage(loc, { ...n, image: IMG + 'NOPE' }), 'a bad image is an error');
+  assert.ok('error' in resolvePage(loc, { ...n, page: P + '9r', image: IMG + 'NOPE' }), 'a bad page and a bad image: an error');
+  assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1R', text: MSA + '1.2' }), via(P + '1r', 'image'), 'text does not change the page of an image');
+  assert.deepEqual(resolvePage(loc, { ...n, image: IMG + 'I1V', text: MSA + '1.1' }), via(P + '1v', 'image'), 'image beats text');
+  assert.deepEqual(resolvePage(loc, { ...n, text: MSA + '1.2' }), via(P + '1r', 'text'));
+  assert.deepEqual(resolvePage(loc, { ...n, text: MSA + '1.1-1.2' }), via(P + '1r', 'text'), 'a range: its start');
+  assert.deepEqual(resolvePage(loc, { ...n, page: P + '9r', text: MSA + '1.2' }), via(P + '1r', 'text'), 'a bad page falls through');
   assert.ok('error' in resolvePage(loc, { ...n, text: MSA + '2.2' }));
   assert.deepEqual(resolveImage(loc, { ...n, image: IMG + 'X', page: P + '1r' }), { image: IMG + 'X' }, 'image as given');
   assert.deepEqual(resolveImage(loc, { ...n, image: IMG + 'I1R@0.214,0.5184,0.171,0.0225' }),

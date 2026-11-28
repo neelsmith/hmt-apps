@@ -5,113 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="app-version" content="@@VERSION@@">
 <title>Codices</title>
+<!-- @inline-style src/apps/codices/style.css -->
 <style>
-  :root {
-    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #6b655c; --line: #e4dfd5; --panel: #ffffff;
-    --accent: #8a2f1d; --accent-fg: #fff; --focus: #2a5bd7; --err: #a3201a;
-    --table: #2b2a28; --table-fg: #ece7de; --cell: #3a3835;
-    --c-iliad: #e0452c; --c-scholia: #2f7de1; --c-other: #2fa36b;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #1a1816; --fg: #ece7de; --muted: #a39b8d; --line: #3a362f; --panel: #23201d;
-            --accent: #e0896f; --accent-fg: #1a1816; --focus: #8fb0ff; --err: #ff8a80;
-            --table: #121110; --cell: #23211f; }
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-         display: flex; flex-direction: column; }
-  header { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: baseline; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
-  h1 { font-size: 1.15rem; margin: 0; }
-  #status { color: var(--muted); font-size: .875rem; }
-  .appmeta { order: -1; flex: 0 0 100%; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .25rem 1rem; font-size: .875rem; color: var(--muted); }
-  .appmeta .home { margin-right: auto; }
-  .appmeta a { color: var(--accent); }
-  button, select, input { font: inherit; }
-  button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; padding: .3rem .7rem; }
-  .btn:hover:not(:disabled) { border-color: var(--accent); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
-  [hidden] { display: none !important; }
-
-  /* ---- viewer ---- */
-  #viewer-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  #viewer-bar { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; padding: .5rem 1rem;
-         border-bottom: 1px solid var(--line); background: var(--bg); }
-  #viewer-title { font-weight: 600; flex: 1 1 12rem; min-width: 0; }
-  .group { display: inline-flex; gap: .4rem; align-items: center; }
-  .group label { display: inline-flex; gap: .3rem; align-items: center; font-size: .875rem; }
-  .chip { width: .8rem; height: .8rem; border-radius: 2px; display: inline-block; border: 2px solid; }
-  .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
-  .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
-  .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
-  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
-  #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
-  #viewer.dragging { cursor: grabbing; }
-  #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
-         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
-  .roi { fill-opacity: .13; stroke-width: 1.5px; vector-effect: non-scaling-stroke; pointer-events: all; }
-  .roi.iliad { fill: var(--c-iliad); stroke: var(--c-iliad); }
-  .roi.scholia { fill: var(--c-scholia); stroke: var(--c-scholia); }
-  .roi.other { fill: var(--c-other); stroke: var(--c-other); }
-  .roi.hot { fill-opacity: .38; stroke-width: 3px; }
-  #rois.hide-iliad .roi.iliad, #rois.hide-scholia .roi.scholia, #rois.hide-other .roi.other { display: none; }
-  #rois.hide-all .roi { display: none; }
-  .roi.target { fill-opacity: .3; stroke-width: 3px; display: inline !important; }
-  #tip { position: absolute; z-index: 5; max-width: min(34rem, calc(100% - 1rem)); max-height: 60%; overflow: hidden;
-         background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
-         padding: .45rem .65rem; box-shadow: 0 4px 16px #0006; pointer-events: none; font-size: .9375rem; }
-  #tip .item + .item { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
-  #tip .what { font: .8125rem ui-monospace, monospace; color: var(--muted); }
-  #tip .what b { font-weight: 700; color: var(--fg); }
-  .greek { font-family: "Gentium Plus", "Cardo", "Palatino Linotype", "Times New Roman", serif; font-size: 1.1rem; line-height: 1.5; }
-  #tip .lemma { font-weight: 700; }
-  #tip .none { color: var(--muted); font-style: italic; }
-
-  /* ---- light box of the pages of a codex ---- */
-  #table-view { flex: 1; overflow: auto; background: var(--table); color: var(--table-fg); display: flex; flex-direction: column; }
-  #controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center;
-         padding: .6rem 1rem; background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); }
-  #controls label { display: inline-flex; gap: .4rem; align-items: center; }
-  #controls .coll { flex: 1 1 20rem; min-width: 0; }
-  #codex { flex: 1; min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); padding: .3rem .5rem; }
-  #find { padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); width: 11rem; }
-  #shown { color: var(--muted); font-size: .875rem; }
-  #intro, #note { padding: 2rem 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
-  #note { padding: .75rem 1rem 0; color: #ffb4a8; opacity: 1; }
-  #grid { --cell-w: 170px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), 1fr)); gap: .75rem; padding: 1rem; }
-  .cell { position: relative; display: flex; flex-direction: column; gap: .3rem; align-items: stretch; padding: .4rem; border: 1px solid transparent;
-          border-radius: 6px; background: var(--cell); color: inherit; text-align: center; }
-  .cell:hover { border-color: var(--accent); }
-  .cell .thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; background: #0003; overflow: hidden; }
-  .cell img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
-  .cell .thumb.missing img { display: none; }
-  .cell .thumb.missing::after { content: "no image"; font-size: .75rem; opacity: .6; }
-  .cell .lbl { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cell .badge { position: absolute; top: .6rem; right: .6rem; background: var(--accent); color: var(--accent-fg); border-radius: 999px;
-          padding: 0 .45rem; font-size: .75rem; line-height: 1.35; box-shadow: 0 1px 4px #0008; }
-  #empty { padding: 1rem; text-align: center; color: var(--table-fg); opacity: .8; }
-  .roi { cursor: pointer; }
-  #copied { position: absolute; right: .75rem; top: .6rem; z-index: 6; background: var(--ok-bg, #1f6b3a); color: #fff; padding: .2rem .6rem;
-         border-radius: 4px; font-size: .8125rem; pointer-events: none; max-width: calc(100% - 1.5rem); }
-  #copied.bad { background: #a3201a; }
-  #viewer-title .urn { font: 400 .75rem ui-monospace, Menlo, monospace; color: var(--muted); margin-left: .35rem; overflow-wrap: anywhere; }
-  #more-images { color: var(--accent); font-size: .875rem; white-space: nowrap; }
-  #viewer-count { color: var(--muted); font-size: .875rem; }
-  #viewer-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; text-align: center; color: #ffb4a8; background: #1b1a19; }
-
-  /* ---- loading / errors ---- */
-  #drop { margin: 1rem; padding: 1rem; border: 2px dashed var(--line); border-radius: 8px; text-align: center; color: var(--muted);
-          background: var(--bg); }
-  body.dragging #drop { border-color: var(--accent); }
-  #drop input[type=file] { max-width: 100%; }
-  #problem { color: var(--err); }
-  @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar, #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
+  /* One colour for each document on the page (a text version: the Iliad of the Venetus A, each zone of its scholia, ...). */
+  .roi.doc { fill: var(--c); stroke: var(--c); }
+  .roi.doc-hidden { display: none; }
+  #doc-bar { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; align-items: center; padding: .4rem 1rem; border-bottom: 1px solid var(--line); background: var(--bg); font-size: .875rem; }
+  #doc-bar .doc-head { font: inherit; font-weight: 600; background: none; border: 0; padding: 0; color: var(--fg); cursor: pointer; }
+  #doc-bar .doc-head:hover { color: var(--accent); }
+  #doc-bar.folded label, #doc-bar.folded .btn { display: none; }
+  #doc-bar label { display: inline-flex; gap: .3rem; align-items: center; }
+  #doc-bar .chip { border-color: var(--c); background: color-mix(in srgb, var(--c) 20%, transparent); }
+  #doc-bar .n { color: var(--muted); }
+  #doc-bar .btn { padding: .05rem .5rem; font-size: .8125rem; }
+  #doc-bar .none { color: var(--muted); }
+  @media (max-width: 40rem) { #doc-bar { padding: .4rem .75rem; } }
 </style>
 <!-- @inline-style src/roi.css -->
 </head>
-<body>
+<body data-layers="documents">
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
@@ -147,28 +59,26 @@
     <span id="viewer-title"></span>
     <span id="viewer-count"></span>
     <a id="more-images" href="#" target="_blank" rel="noopener" hidden title="Other images of this page, in the images app"></a>
-    <span class="group" role="group" aria-label="Regions shown">
-      <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
-      <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
-      <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
-    </span>
     <span class="group" role="group" aria-label="Text shown on hover">
       <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
       <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
-    <span class="group">
-      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
-      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
-      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
-      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
-    </span>
   </div>
-  <div id="viewer-wrap">
-    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
-    <div id="viewer-note" hidden></div>
-    <div id="viewer-error" role="alert" hidden></div>
-    <div id="tip" hidden></div>
-    <div id="copied" role="status" hidden></div>
+  <div id="doc-bar" role="group" aria-label="Documents on this page"></div>
+  <div id="viewer-row">
+    <div id="tools" role="toolbar" aria-label="Image tools" aria-orientation="vertical">
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
+    </div>
+    <div id="viewer-wrap">
+      <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
+      <div id="viewer-note" hidden></div>
+      <div id="viewer-error" role="alert" hidden></div>
+      <div id="tip" hidden></div>
+      <div id="copied" role="status" hidden></div>
+    </div>
   </div>
   <div id="roi-panel" hidden></div>
 </section>

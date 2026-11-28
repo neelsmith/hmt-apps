@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="@@VERSION@@">
+<title>Iliad + scholia, in columns</title>
+<!-- @inline-style src/apps/iliad-scholia/style.css -->
+<!-- @inline-style src/apps/iliad-scholia-columns/style.css -->
+</head>
+<body>
+<main>
+  <p class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version @@VERSION@@</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/iliad-scholia-columns/">Docs</a></p>
+  <h1><em>Iliad</em> + <em>scholia</em>, in columns</h1>
+  <p class="sub">Read a passage of the <em>Iliad</em> in one version, with the same lines of every other version that has them in columns beside it. Words that differ from the chosen (reference) version are shaded. The scholia of each version are shown with that version.</p>
+
+  <div class="card" id="loading-panel">
+    <p id="status" role="status">Loading the current HMT release…</p>
+    <div id="load-error" hidden></div>
+    <div id="drop" hidden>
+      Load a release file you have saved (<code>hmt-current.cex</code>): drop it here or
+      <input type="file" id="file" accept=".cex,.txt,text/plain">
+    </div>
+  </div>
+
+  <form class="card" id="form" autocomplete="off">
+    <div class="field">
+      <div class="row">
+        <div>
+          <label for="version">Reference version of the <em>Iliad</em></label>
+          <select id="version" disabled></select>
+        </div>
+        <div class="shrink" id="kind-field" hidden>
+          <fieldset class="radios"><legend>Text</legend><span id="kinds"></span></fieldset>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="row">
+        <div>
+          <label for="ref">Passage</label>
+          <input type="text" id="ref" value="9.1-9.20" spellcheck="false" aria-describedby="ref-hint" disabled>
+        </div>
+        <div class="shrink"><button class="go" id="go" disabled>Show</button></div>
+      </div>
+      <p class="hint" id="ref-hint">
+        A line (<span class="examples"><button type="button">9.5</button></span>),
+        a range (<span class="examples"><button type="button">9.1-9.20</button></span>),
+        or a whole book (<span class="examples"><button type="button">9</button></span>).
+        Lines follow the order of the edition.
+      </p>
+      <p class="hint" id="coverage"></p>
+      <p id="error" role="alert"></p>
+    </div>
+  </form>
+
+  <section id="results" hidden aria-live="polite">
+    <p id="summary"></p>
+    <p id="notes"></p>
+    <p id="legend" class="hint"></p>
+    <div id="colbar" role="group" aria-label="Columns shown" hidden></div>
+    <div id="cols-wrap"><div id="cols" role="table" aria-label="The passage in each version"></div></div>
+  </section>
+</main>
+
+<!-- @inline src/hmt-release.js -->
+<!-- @inline src/text-index.js -->
+<!-- @inline src/dse.js -->
+<!-- @inline src/images.js -->
+<!-- @inline src/location.js -->
+<!-- @inline src/codices.js -->
+<!-- @inline src/locate.js -->
+<!-- @inline src/iliad-scholia.js -->
+<!-- @inline src/interweave.js -->
+<!-- @inline src/columns.js -->
+<!-- @inline src/propernames.js -->
+<!-- @inline src/page-view.js -->
+<!-- @inline src/apps/iliad-scholia-columns/app.js -->
+</body>
+</html>

@@ -53,6 +53,8 @@
   .entry { border-top: 1px solid var(--line); padding: .4rem .9rem; }
   .entry summary { cursor: pointer; }
   .entry .n { color: var(--muted); font-size: .875rem; }
+  ul.byms { list-style: none; margin: 0 0 1rem; padding: .5rem .9rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  ul.byms .ok { color: var(--ok); }
   .flag { color: var(--err); font-size: .875rem; }
   .chips { display: flex; flex-wrap: wrap; gap: .25rem; padding: .5rem 0; }
   .chip { border: 1px solid var(--line); border-radius: 4px; padding: 0 .4rem; font: .8125rem ui-monospace, Menlo, monospace; }
@@ -76,6 +78,7 @@
 </div>
 
 <main id="report" hidden>
+  <ul id="by-ms" class="byms"></ul>
   <p id="intro"></p>
   <p><button class="btn" id="csv">Download report as CSV</button></p>
   <h2>By text</h2>
@@ -90,6 +93,8 @@
     Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar
     (diplomatic or normalized); a scholion's lemma and comment are one passage. Subreferences (<code>1.1@word</code>) are ignored.
     A codex page counts as covered if any record names it as its surface; the runs of pages that no record names are listed in codex order.
+    In the summary by manuscript, records are counted by the codex page they name as surface; inconsistencies are those records
+    whose passage is not in the editions or whose image is not in the catalog, plus the runs of pages without records.
     Findings are warnings only.
   </footer>
 </main>

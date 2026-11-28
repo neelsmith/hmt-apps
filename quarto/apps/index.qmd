@@ -15,7 +15,7 @@ Each app displays an individual version number. Github release numbers refer to 
 ## Manuscript facsimiles
 
 1. [Codex facsimiles](../codices.html): browse a facsimile of a codex, see indexed images, and overlay texts where HMT editions exist.
-
+1. [Interwoven text/image](../iliad-scholia-text.html): an  edition juxtaposing text with documentary images linked to code facsimiles.
 
 ## Browsing images
 
@@ -27,6 +27,7 @@ Each app displays an individual version number. Github release numbers refer to 
 1. [*Iliad* + *scholia* reader](../iliad-scholia.html): select passage of the *Iliad* and view any *scholia* on the selected lines
 1. [Cross-manuscript *scholia* reader](../all-scholia.html): select passage of the *Iliad* in a given version, and view passage together with *scholia* from *all* edited versions
 1. [Interwoven diplomatic/normalized reader](../editorial.html): read *Iliad* and *scholia* texts in diplomatic transcription with editorial normalizations in parentheses.
+1. [Side-by-side reader](../iliad-scholia-columns.html): read *Iliad* and *scholia* texts in parallel versions across manuscripts.
 
 ## Searching text contents
 
@@ -42,5 +43,8 @@ Each app displays an individual version number. Github release numbers refer to 
 
 1. See [summaries of editorial work](../coverage.html) in each manuscript.
 1. Find [referential inconsistencies](../dse-check.html) in  editorial indexing.
+1. [Book-by-book summaries](../dsecheck-books.html) of indexing inconsistencies.
+1. [Page-by-page summaries](../dsecheck-paginated.html) of indexing inconsistencies.
+1. [Light tray image browser](../dsecheck-paginated.html) of indexing inconsistencies.
 1. Find [referential inconsistencies](../commentary-check.html) in indexing of *scholia* to *Iliad*
 

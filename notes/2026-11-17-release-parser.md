@@ -517,3 +517,46 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - The by-book app is now `dsecheck-books.html` (`src/apps/dsecheck-books/`, docs link `docs/dsecheck-books/`); nothing else about it changed. Notes: `notes/app-docs/dsecheck-books.md`.
 - New `dsecheck-paginated.html` (`src/apps/dsecheck-paginated/`): same missing-scholia list, grouped by the manuscript page of the *Iliad* line commented on. `scholia-check.js` gained `scholiaMissingByPage(release)` (shares `missingScholia` with the by-book function); `MissingScholion.targets` holds the commented-on passages with their *Iliad* edition. Page = `surface` of the DSE record for that *Iliad* passage in the same edition (no matching by bare reference, so several MSS are not mixed); order and labels from the codex model. Menu + prev/next, `?page=<surface URN | id | none>`. Current release: 1,993 scholia without a DSE record; 295 entries (294 pages plus "No page", which has 330). Tests in `test/scholia-check.test.js`.
 - **version.txt needs two lines** (yours): `dsecheck-books.html  0.1.0` and `dsecheck-paginated.html  0.1.0`. `dsecheck-paginated` was previously the by-book app, so check any link or bookmark to it.
+
+## codices-docs.html (2026-11-27)
+
+- New app `codices-docs.html` (`src/apps/codices-docs/index.html`): `codices.html` with the Iliad/Scholia/Other checkboxes replaced by a list of the documents (text versions) with regions on the open page, each with its own colour, count and checkbox, plus All/None. Details in `notes/app-docs/codices-docs.md`.
+- Shared script `src/apps/codices/app.js` with `data-layers="documents"` on the body (as `data-text` / `data-scholia` for the scholia apps); the codices CSS moved to `src/apps/codices/style.css` (shared via `@inline-style`).
+- **`version.txt` (user-owned) needs a line `codices-docs.html  0.1.0`**; until then `npm run build` skips the app and `test/build.test.js` fails ("every app … has a version"). `dist/codices-docs.html` was built by hand as 0.1.0.
+- Tests: browser only (Chromium, synthetic release with an Iliad and two scholia zones on one page): list, order, counts, colours, toggles, All/None, persistence across pages, no-text page, `?text=`, codices.html unaffected. Not run against the real release. Nothing committed.
+
+## iliad-scholia-image.html: the reader with RoI pictures
+
+- New app `src/apps/iliad-scholia-image/index.html` over the unchanged iliad-scholia code: `<body data-roi="image">` makes `app.js` pass `extra: createRoiImages(...)` to the shared page view (`PageOptions.extra`, called for each Iliad line and each scholion body). `src/roi-images.js` + `.css`; tests in `test/roi-images.test.js`; browser-checked with a mocked image service (picture directly under 26 of 27 lines of 1.1-1.10, scholia carry theirs, folded ones not fetched).
+- **version.txt needs a line** (yours): `iliad-scholia-image.html  0.1.0`.
+- iliad-scholia-image: each picture links to `images.html?image=<image URN>@x,y,w,h` (`imageRoiLink` in `src/roi-images.js`); the region is written from the parsed RoI numbers.
+
+## codices-docs.html replaces codices.html (2026-11-28)
+
+- `src/apps/codices/index.html` is now the former `codices-docs` page (names changed: title "Codices", docs link `docs/codices/`); `src/apps/codices-docs/`, `dist/codices-docs.html` and `notes/app-docs/codices-docs.md` are removed, its notes folded into `notes/app-docs/codices.md`. `app.js` and `style.css` are unchanged; the old checkbox mode is now unused.
+- **`version.txt` (user-owned): delete the `codices-docs.html` line** (`codices.html` keeps its own). Also for you: `docs/` and `quarto/` still have pages for `codices-docs` if you made them; links elsewhere to `codices-docs.html` should point to `codices.html`.
+
+## codices.html: URL parameters (2026-11-28)
+
+- Priority is now `page` > `image` > `text` (`resolvePage` in `src/locate.js`, which also returns `via`). `page`: codex URN = light box, page URN = single-page view (a bad `page` falls through). `image` (a region on the URN no longer stops it resolving: the `@…` is stripped before looking the image up): single-page view of its page; with a region it is marked through `roiUi.open(image, [roi])` and every document starts off (`hideLayers`, shared with `text`); the address of an `image` is not rewritten (it would lose the image). `text`: page of the passage, start of a range; address becomes `?page=…&text=…`. Tests in `test/locate.test.js`; browser-checked (scratchpad `ui-test-cdx3.js`).
+
+## codices.html: foldable documents bar (2026-11-28)
+
+- The heading of the documents bar is now a button (`.doc-head`, `aria-expanded`) that folds the list (`#doc-bar.folded`, CSS in index.html; `docsFolded` in app.js, kept page to page). Folded, it says how many documents are shown. Browser-checked (scratchpad `ui-test-cdx4.js`).
+
+## codices.html: tools column (2026-11-28)
+
+- The zoom (+/−), Fit and Select buttons moved from the page bar into a narrow vertical column (`#tools`) at the left of the image (`#viewer-row` holds it and `#viewer-wrap`; CSS in `src/apps/codices/style.css`). Ids and behaviour unchanged. Browser-checked (scratchpad `ui-test-cdx5.js`).
+
+## iliad-scholia-columns.html: versions of the Iliad in parallel columns (2026-11-28)
+
+- New app `src/apps/iliad-scholia-columns/` over new `src/columns.js` (`createColumns(versions, textIndex, pairs)` returns, for a reference version, kind and passage: refs, a column per version with a line of it, per line text, scholia for that version (`commentarySpans` + `annotateRange` on that version's text) and `weave(referenceLine, line)` segments; tests `test/columns.test.js`). The reference version's range decides the rows; other versions' extra lines are not shown. Real release: 9.1-9.20 gives Venetus A, Venetus B and Escorial Upsilon 1.1 (only books 8-10 are shared; book 1 has Venetus A alone). Notes: `notes/app-docs/iliad-scholia-columns.md`. `version.txt` already has the line.
+- iliad-scholia-columns: the Passage box starts with `9.1-9.20` (a range three versions share).
+- iliad-scholia-columns: the clickable examples are now 9.5, 9.1-9.20 and 9 (book 9 is shared by three versions; a whole book is capped at 600 lines, with a note).
+- iliad-scholia-columns: punctuation is ignored when comparing words (`compareLines` in `src/columns.js`: Unicode punctuation and elision marks dropped from the comparison key only; each text shown as written; accents still count).
+- iliad-scholia-columns: columns can be closed and reopened (`#colbar` checkboxes, × in the headings; `closed` set in app.js; cells carry `data-v`; browser-checked, scratchpad `ui-test-cols2.js`).
+- iliad-scholia-columns: the Text (diplomatic/normalized) radios are on the same line as the version menu (`.row` in index.html).
+- iliad-scholia-columns: the comparison is also case-insensitive (`colKey` lower-cases; each text still shown as written).
+
+## Compact status box (2026-11-28)
+- The status box above the form (`#loading-panel`) in the apps that share `src/apps/iliad-scholia/style.css` (iliad-scholia, all-scholia, editorial, iliad-scholia-image, iliad-scholia-columns) is now one compact line (about 36 px high, was about 90): smaller padding, no paragraph margins. With a load error and the drop zone it grows as needed. The other apps already keep their status line in the header. Browser-checked (scratchpad `ui-test-panel.js`).
