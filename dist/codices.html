@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.4.0">
+<meta name="app-version" content="0.4.1">
 <title>Codices</title>
 <style>
   :root {
@@ -46,7 +46,10 @@
   .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
   .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
   .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
-  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
+  #viewer-row { flex: 1; display: flex; min-height: 0; }
+  #tools { flex: 0 0 auto; display: flex; flex-direction: column; gap: .35rem; align-items: stretch; padding: .5rem .35rem; border-right: 1px solid var(--line); background: var(--bg); }
+  #tools .btn { min-width: 2.6rem; padding: .25rem .3rem; font-size: .8125rem; text-align: center; }
+  #viewer-wrap { position: relative; flex: 1; min-width: 0; min-height: 0; background: #1b1a19; }
   #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
   #viewer.dragging { cursor: grabbing; }
   #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;
@@ -155,7 +158,7 @@
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.4.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/codices/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -191,20 +194,22 @@
       <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
       <label><input type="radio" name="kind" value="normalized">normalized</label>
     </span>
-    <span class="group">
-      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
-      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
-      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
-      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
-    </span>
   </div>
   <div id="doc-bar" role="group" aria-label="Documents on this page"></div>
-  <div id="viewer-wrap">
-    <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
-    <div id="viewer-note" hidden></div>
-    <div id="viewer-error" role="alert" hidden></div>
-    <div id="tip" hidden></div>
-    <div id="copied" role="status" hidden></div>
+  <div id="viewer-row">
+    <div id="tools" role="toolbar" aria-label="Image tools" aria-orientation="vertical">
+      <button class="btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button class="btn" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">−</button>
+      <button class="btn" id="fit" title="Fit page (0)">Fit</button>
+      <button class="btn" id="roi-select" title="Mark regions" disabled>Select</button>
+    </div>
+    <div id="viewer-wrap">
+      <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
+      <div id="viewer-note" hidden></div>
+      <div id="viewer-error" role="alert" hidden></div>
+      <div id="tip" hidden></div>
+      <div id="copied" role="status" hidden></div>
+    </div>
   </div>
   <div id="roi-panel" hidden></div>
 </section>

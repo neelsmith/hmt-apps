@@ -46,7 +46,10 @@
   .chip.iliad { border-color: var(--c-iliad); background: color-mix(in srgb, var(--c-iliad) 20%, transparent); }
   .chip.scholia { border-color: var(--c-scholia); background: color-mix(in srgb, var(--c-scholia) 20%, transparent); }
   .chip.other { border-color: var(--c-other); background: color-mix(in srgb, var(--c-other) 20%, transparent); }
-  #viewer-wrap { position: relative; flex: 1; min-height: 0; background: #1b1a19; }
+  #viewer-row { flex: 1; display: flex; min-height: 0; }
+  #tools { flex: 0 0 auto; display: flex; flex-direction: column; gap: .35rem; align-items: stretch; padding: .5rem .35rem; border-right: 1px solid var(--line); background: var(--bg); }
+  #tools .btn { min-width: 2.6rem; padding: .25rem .3rem; font-size: .8125rem; text-align: center; }
+  #viewer-wrap { position: relative; flex: 1; min-width: 0; min-height: 0; background: #1b1a19; }
   #viewer { position: absolute; inset: 0; cursor: grab; outline-offset: -2px; }
   #viewer.dragging { cursor: grabbing; }
   #viewer-note { position: absolute; left: .75rem; bottom: .6rem; background: #000a; color: #fff; padding: .15rem .5rem;

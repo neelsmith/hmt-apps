@@ -91,6 +91,8 @@ Current version:  **0.15.0**
 ### `codices.html`
 
 
+**0.4.1**, *Nov. 26, 2026*:  corrects handling of URL parameters for `image` and `text`.
+
 
 **0.4.0**, *Nov. 26, 2026*: 
 

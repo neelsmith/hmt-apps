@@ -543,3 +543,7 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## codices.html: foldable documents bar (2026-11-28)
 
 - The heading of the documents bar is now a button (`.doc-head`, `aria-expanded`) that folds the list (`#doc-bar.folded`, CSS in index.html; `docsFolded` in app.js, kept page to page). Folded, it says how many documents are shown. Browser-checked (scratchpad `ui-test-cdx4.js`).
+
+## codices.html: tools column (2026-11-28)
+
+- The zoom (+/−), Fit and Select buttons moved from the page bar into a narrow vertical column (`#tools`) at the left of the image (`#viewer-row` holds it and `#viewer-wrap`; CSS in `src/apps/codices/style.css`). Ids and behaviour unchanged. Browser-checked (scratchpad `ui-test-cdx5.js`).

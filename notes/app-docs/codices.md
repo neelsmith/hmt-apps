@@ -31,7 +31,7 @@ Query-string parameters (`?name=value`), never `#` tags.
 
 - Choose a **Codex**: its pages appear as a **light box** of thumbnails, in order, like the images app. A number on a page is how many indexed text passages it has. **Find** narrows the pages by name, **Only pages with indexed text** hides the rest, and **Size** changes the thumbnails. Choose a page to open it (the single-page view below); **← Pages** or Esc returns to the light box, with its Find text and scroll position kept. In the page view step with **‹ ›** or the `[` `]` keys.
 - The page image is shown with a rectangle over each indexed passage; the **documents bar** under the page controls lists every document (text version) with a region on the open page, each with its own colour, count and checkbox, plus All/None (see "Documents bar" below); it replaced the Iliad / Scholia / Other checkboxes. Hovering a rectangle shows its diplomatic text.
-- Drag to pan; scroll or pinch to zoom; **+**, **−**, **Fit** (or `+`, `-`, `0`).
+- Drag to pan; scroll or pinch to zoom; or use the narrow **tools column** at the left of the image: **+**, **−**, **Fit** and **Select** (keys `+`, `-`, `0`). They moved there from the top bar to leave the image more height.
 
 ## Marking regions of interest
 
