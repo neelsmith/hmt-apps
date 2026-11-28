@@ -1,0 +1,23 @@
+/* Parallel columns of the versions of the Iliad (the base styles are src/apps/iliad-scholia/style.css, inlined before this). */
+main { max-width: none; }
+#form { max-width: 56rem; }
+#results { margin-top: 1rem; }
+#cols-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+#cols { display: grid; grid-template-columns: 4.25rem repeat(var(--n, 2), minmax(15rem, 1fr)); min-width: min-content; }
+#cols > * { border-bottom: 1px solid var(--line); padding: .3rem .6rem .3rem 0; min-width: 0; }
+#cols .colhead { position: sticky; top: 0; z-index: 2; background: var(--bg); font-weight: 600; font-size: .875rem; padding-top: .45rem; border-bottom: 2px solid var(--line); }
+#cols .colhead small { display: block; color: var(--muted); font-weight: 400; font-size: .75rem; }
+#cols .colhead.reflabel { color: var(--accent); }
+#cols .rowref { color: var(--muted); font: .875rem ui-monospace, monospace; padding-left: .1rem; }
+#cols .cell .greek { display: block; }
+#cols .cell.missing { color: var(--muted); }
+#cols .cell.refcol { background: var(--cur); padding-left: .5rem; }
+.diff { background: color-mix(in srgb, var(--accent) 13%, transparent); border-bottom: 1px dotted var(--accent); border-radius: 2px; }
+.gap { color: var(--accent); font-size: .75em; vertical-align: super; cursor: help; padding: 0 .05em; }
+#cols .badge { margin-top: .2rem; border: 0; border-radius: 999px; padding: 0 .6rem; background: var(--badge); color: var(--badge-fg); font-size: .8125rem; font-weight: 600; }
+#cols .badge[aria-expanded=true] { background: var(--accent); color: var(--accent-fg); }
+#cols .scholia { margin: .3rem 0 .1rem .2rem; padding-left: .6rem; border-left: 3px solid var(--line); font-size: .95rem; }
+#cols .scholia .scholion { margin: .3rem 0; }
+#cols .scholia .scholion .id { color: var(--muted); font: .8125rem ui-monospace, monospace; }
+#cols .scholia .lemma { font-weight: 600; }
+a.plink { color: inherit; text-decoration-color: var(--line); }

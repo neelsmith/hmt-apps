@@ -547,3 +547,10 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 ## codices.html: tools column (2026-11-28)
 
 - The zoom (+/−), Fit and Select buttons moved from the page bar into a narrow vertical column (`#tools`) at the left of the image (`#viewer-row` holds it and `#viewer-wrap`; CSS in `src/apps/codices/style.css`). Ids and behaviour unchanged. Browser-checked (scratchpad `ui-test-cdx5.js`).
+
+## iliad-scholia-columns.html: versions of the Iliad in parallel columns (2026-11-28)
+
+- New app `src/apps/iliad-scholia-columns/` over new `src/columns.js` (`createColumns(versions, textIndex, pairs)` returns, for a reference version, kind and passage: refs, a column per version with a line of it, per line text, scholia for that version (`commentarySpans` + `annotateRange` on that version's text) and `weave(referenceLine, line)` segments; tests `test/columns.test.js`). The reference version's range decides the rows; other versions' extra lines are not shown. Real release: 9.1-9.20 gives Venetus A, Venetus B and Escorial Upsilon 1.1 (only books 8-10 are shared; book 1 has Venetus A alone). Notes: `notes/app-docs/iliad-scholia-columns.md`. `version.txt` already has the line.
+- iliad-scholia-columns: the Passage box starts with `9.1-9.20` (a range three versions share).
+- iliad-scholia-columns: the clickable examples are now 9.5, 9.1-9.20 and 9 (book 9 is shared by three versions; a whole book is capped at 600 lines, with a note).
+- iliad-scholia-columns: punctuation is ignored when comparing words (`compareLines` in `src/columns.js`: Unicode punctuation and elision marks dropped from the comparison key only; each text shown as written; accents still count).
