@@ -33,7 +33,7 @@ Each app displays an individual version number. Github release numbers refer to 
 
 1. [Simple text search](../stringsearch.html): search text of *Iliad* and *scholia* for strings of text.
 1. [Count results of string search](../stringcounter.html): search text of *Iliad* and *scholia* for strings of text, tabulate frequencies, optionally explore individual passages.
-1. [Lemmatized text search](../lemmatizedsearch.html): search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).
+1. [Lemmatized text search](../lemmatizedsearch.html): search text of *Iliad* and *scholia* for text identified by lemma, optionally explore individual passages. Lemmatizations derived using Patrick Burns' [LatinCy language models](https://latincy.github.io/latincy-book/).
 1. [Find texts by proper names](../propernames.html): find occurrences of personal, geographic and ethnic names and see their text in context.
 
 
