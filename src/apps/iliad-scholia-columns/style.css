@@ -26,3 +26,7 @@ a.plink { color: inherit; text-decoration-color: var(--line); }
 #colbar label { display: inline-flex; gap: .3rem; align-items: center; }
 #cols .colhead .close { float: right; margin-left: .4rem; border: 0; background: transparent; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0 .2rem; border-radius: 4px; }
 #cols .colhead .close:hover { color: var(--accent); background: var(--badge); }
+#kind-field .radios label { margin-right: .75rem; }
+#kind-field .radios label:last-child { margin-right: 0; }
+#kind-field legend { margin-bottom: .25rem; }
+#kind-field { padding-bottom: .45rem; }
