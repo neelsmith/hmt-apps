@@ -1,0 +1,8 @@
+/* Pictures of regions of interest under the text (see src/roi-images.js). */
+.roi-pics { margin: .15rem 0 .5rem 4.5rem; }
+.roi-pic { margin: .2rem 0; padding: 0; }
+.roi-pic img { display: block; max-width: 100%; height: auto; min-height: 1.25rem; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); }
+.roi-pic.missing img { min-width: 8rem; color: var(--muted); font-size: .8125rem; }
+.scholion .body .roi-pics { margin-left: 0; }
+@media (max-width: 36rem) { .roi-pics { margin-left: 0; } }
+.roi-pic a { display: block; }

@@ -524,3 +524,9 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - Shared script `src/apps/codices/app.js` with `data-layers="documents"` on the body (as `data-text` / `data-scholia` for the scholia apps); the codices CSS moved to `src/apps/codices/style.css` (shared via `@inline-style`).
 - **`version.txt` (user-owned) needs a line `codices-docs.html  0.1.0`**; until then `npm run build` skips the app and `test/build.test.js` fails ("every app … has a version"). `dist/codices-docs.html` was built by hand as 0.1.0.
 - Tests: browser only (Chromium, synthetic release with an Iliad and two scholia zones on one page): list, order, counts, colours, toggles, All/None, persistence across pages, no-text page, `?text=`, codices.html unaffected. Not run against the real release. Nothing committed.
+
+## iliad-scholia-image.html: the reader with RoI pictures
+
+- New app `src/apps/iliad-scholia-image/index.html` over the unchanged iliad-scholia code: `<body data-roi="image">` makes `app.js` pass `extra: createRoiImages(...)` to the shared page view (`PageOptions.extra`, called for each Iliad line and each scholion body). `src/roi-images.js` + `.css`; tests in `test/roi-images.test.js`; browser-checked with a mocked image service (picture directly under 26 of 27 lines of 1.1-1.10, scholia carry theirs, folded ones not fetched).
+- **version.txt needs a line** (yours): `iliad-scholia-image.html  0.1.0`.
+- iliad-scholia-image: each picture links to `images.html?image=<image URN>@x,y,w,h` (`imageRoiLink` in `src/roi-images.js`); the region is written from the parsed RoI numbers.

@@ -8,7 +8,7 @@ Current version:  **0.15.0**
 **0.15.0**, *?*:
 
 - `dse-check.html` adds per-manuscript summary counts
-- adds new app `dsecheck-viz.html`
+- adds new apps `dsecheck-viz.html`, `iliad-scholia-image.html`
 
 **0.14.0**, *Nov. 27, 2026*:
 
@@ -86,7 +86,7 @@ Current version:  **0.15.0**
 **0.1.0**, *Nov. 17, 2026*: initial release. Shared code to parse a release of the HMT archive, and two initial apps, an *Iliad* + *scholia* reader, and a Venetus A facsimile reader.
 
 
-## Manuscript facsimiles
+## Facsimiles views
 
 ### `codices.html`
 
@@ -108,8 +108,9 @@ Current version:  **0.15.0**
 
 **0.1.0**, *Nov. 19, 2026*: initial release.  Browse codices, view texts on a page.
 
+### `iliad-scholia-image.html`
 
-
+**0.1.0**, *Nov. 28, 2026*: interleaved view of text passages and documentary images.
 
 ## Apps starting from  images
 

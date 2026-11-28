@@ -2329,6 +2329,7 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
  * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
  * @property {boolean} [skipEmpty]                     Previous/Next go to the nearest page with indexed passages (default: the page next door).
+ * @property {(pk: string) => HTMLElement | null} [extra]   Something shown below the text of an Iliad line and in the body of a scholion (a picture of its region, say); null for none.
  * @property {(surface: string) => void} [onNavigate]  Called with the page Previous/Next chose; the app shows it.  Default: the view shows it in place.
  */
 
@@ -2413,6 +2414,8 @@ function createPageView(data) {
     d.appendChild(sm);
     const body = pvEl('div', 'body greek');
     o.fillText(body, pk);
+    const more = o.extra ? o.extra(pk) : null;
+    if (more) body.appendChild(more);
     d.appendChild(body);
     return d;
   }
@@ -2494,6 +2497,8 @@ function createPageView(data) {
         o.fillText(t, pk);
         row.appendChild(t);
         box.appendChild(row);
+        const pic = o.extra ? o.extra(pk) : null;
+        if (pic) box.appendChild(pic);
         const attached = byLine.get(refOf(pk));
         if (!attached) continue;
         const panel = pvEl('div', 'panel');
@@ -2702,6 +2707,7 @@ function hasDifference(segments) {
   const MAX_PAGES = 40;
   const WOVEN = document.body.dataset.text === 'interwoven';
   const ALL = document.body.dataset.scholia === 'all';
+  const ROI_PICS = document.body.dataset.roi === 'image';   // iliad-scholia-image: the picture of each region under its text
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -2713,6 +2719,7 @@ function hasDifference(segments) {
   /** The manuscript pages of the passages (from the DSE records), and the view that shows one. */
   /** @type {any} */ let pageView = null;
   /** @type {any} */ let locator = null;
+  /** @type {((pk: string) => HTMLElement | null) | null} */ let roiPics = null;
   /** @type {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}} */ let pageIndex = { surfacesOf: new Map(), passagesOn: new Map() };
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -2725,6 +2732,7 @@ function hasDifference(segments) {
     spanCache.clear();
     pageIndex = indexPages(rel);
     locator = createLocator(rel);
+    if (ROI_PICS) roiPics = createRoiImages(rel, location.protocol);
     const pageLabels = new Map();
     for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
     pageView = createPageView({
@@ -2922,7 +2930,7 @@ function hasDifference(segments) {
     }
     const o = {
       textKind: () => cur.kind, isHit: () => false, hitLabel: '', hitNoun: '', scroll: false,
-      skipEmpty: true, onNavigate: openPage,
+      skipEmpty: true, onNavigate: openPage, extra: roiPics || undefined,
       fillText(el, pk) {
         el.lang = 'grc';
         const base = passageText(textIndex, pk, cur.kind).parts;
