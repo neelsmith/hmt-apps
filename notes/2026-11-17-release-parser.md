@@ -554,3 +554,4 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - iliad-scholia-columns: the Passage box starts with `9.1-9.20` (a range three versions share).
 - iliad-scholia-columns: the clickable examples are now 9.5, 9.1-9.20 and 9 (book 9 is shared by three versions; a whole book is capped at 600 lines, with a note).
 - iliad-scholia-columns: punctuation is ignored when comparing words (`compareLines` in `src/columns.js`: Unicode punctuation and elision marks dropped from the comparison key only; each text shown as written; accents still count).
+- iliad-scholia-columns: columns can be closed and reopened (`#colbar` checkboxes, × in the headings; `closed` set in app.js; cells carry `data-v`; browser-checked, scratchpad `ui-test-cols2.js`).

@@ -21,3 +21,8 @@ main { max-width: none; }
 #cols .scholia .scholion .id { color: var(--muted); font: .8125rem ui-monospace, monospace; }
 #cols .scholia .lemma { font-weight: 600; }
 a.plink { color: inherit; text-decoration-color: var(--line); }
+#colbar { display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; margin: 0 0 .5rem; font-size: .875rem; }
+#colbar .lbl { font-weight: 600; }
+#colbar label { display: inline-flex; gap: .3rem; align-items: center; }
+#cols .colhead .close { float: right; margin-left: .4rem; border: 0; background: transparent; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0 .2rem; border-radius: 4px; }
+#cols .colhead .close:hover { color: var(--accent); background: var(--badge); }

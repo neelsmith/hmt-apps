@@ -8,6 +8,9 @@
   /** @type {Map<string, any>} */ let textIndex = new Map();
   /** @type {any[]} */ let versions = [];
   /** @type {any} */ let build = null;
+  /** Versions whose column is closed (kept while the page is open; the reference column cannot be closed). */
+  const closed = new Set();
+  /** @type {any} */ let shownColumns = [];
 
   function setStatus(msg) { $('status').textContent = msg; }
   const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`;
@@ -163,6 +166,24 @@
     return cell;
   }
 
+  /** Open or close a version's column. @param {string} urn @param {boolean} open */
+  function setOpen(urn, open) {
+    if (open) closed.delete(urn); else closed.add(urn);
+    applyColumns();
+  }
+  /** Show the columns that are open: the cells and headings, the check boxes, and the grid. */
+  function applyColumns() {
+    const box = $('cols');
+    let n = 0;
+    shownColumns.forEach((c, i) => {
+      const hide = i > 0 && closed.has(c.urn);
+      if (!hide) n++;
+      for (const e of box.querySelectorAll('[data-v]')) if (e.dataset.v === c.urn) e.hidden = hide;
+      for (const cb of $('colbar').querySelectorAll('input')) if (cb.value === c.urn) cb.checked = !hide;
+    });
+    box.style.setProperty('--n', String(n));
+  }
+
   function show() {
     $('error').textContent = '';
     const v = currentVersion();
@@ -185,9 +206,22 @@
       ? `Shaded words differ from ${v.label}; ‸ marks a word it has that the version lacks (hover for the word). The ${kind} text is compared word by word, ignoring punctuation.`
       : `No other version has a line of this passage.`;
 
+    shownColumns = r.columns;
+    const bar = $('colbar');
+    bar.textContent = '';
+    bar.hidden = r.columns.length < 2;
+    bar.appendChild(el('span', 'lbl', 'Columns:'));
+    r.columns.forEach((c, i) => {
+      const label = el('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = c.urn; cb.checked = true; cb.disabled = i === 0;
+      cb.addEventListener('change', () => setOpen(c.urn, cb.checked));
+      label.title = i === 0 ? `${c.label} is the reference version` : c.label;
+      label.append(cb, ' ', shortVersionLabel(c.label));
+      bar.appendChild(label);
+    });
     const box = $('cols');
     box.textContent = '';
-    box.style.setProperty('--n', String(r.columns.length));
     const head = el('div', 'colhead');
     head.setAttribute('role', 'columnheader');
     head.textContent = 'Line';
@@ -196,6 +230,13 @@
       const h = el('div', `colhead${i === 0 ? ' reflabel' : ''}`);
       h.setAttribute('role', 'columnheader');
       h.title = c.label;
+      h.dataset.v = c.urn;
+      if (i > 0) {
+        const x = el('button', 'close', '×');
+        x.type = 'button'; x.title = `Close the ${shortVersionLabel(c.label)} column`; x.setAttribute('aria-label', x.title);
+        x.addEventListener('click', () => setOpen(c.urn, false));
+        h.appendChild(x);
+      }
       h.append(shortVersionLabel(c.label));
       const sub = el('small', '', i === 0 ? 'reference' : c.different ? `${plural(c.different, 'line differs', 'lines differ')}` : 'same text');
       h.appendChild(sub);
@@ -206,8 +247,9 @@
       rr.setAttribute('role', 'rowheader');
       rr.appendChild(pvPassageLink(v.urn + ref, ref));
       box.appendChild(rr);
-      r.columns.forEach((c, i) => box.appendChild(cellFor(c, ref, c.lines.get(ref), i === 0)));
+      r.columns.forEach((c, i) => { const cell = cellFor(c, ref, c.lines.get(ref), i === 0); cell.dataset.v = c.urn; box.appendChild(cell); });
     }
+    applyColumns();
     $('results').hidden = false;
     const refText = v.texts.find(t => t.kind === kind) || v.texts[0];
     setQuery({ text: refText.urn + input.trim() }, true);   // the address is now a bookmark of this passage
