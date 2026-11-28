@@ -32,7 +32,7 @@
     "href": "apps/index.html#searching-text-contents",
     "title": "Apps to work with HMT data sets",
     "section": "Searching text contents",
-    "text": "Searching text contents\n\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nLemmatized text search: search text of Iliad and scholia for text identified by lemma, optionally explore individual passages. Lemmatizations dervied using Patrick Burns’ LatinCy language models.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context."
+    "text": "Searching text contents\n\nSimple text search: search text of Iliad and scholia for strings of text.\nCount results of string search: search text of Iliad and scholia for strings of text, tabulate frequencies, optionally explore individual passages.\nLemmatized text search: search text of Iliad and scholia for text identified by lemma, optionally explore individual passages. Lemmatizations derived using Patrick Burns’ LatinCy language models.\nFind texts by proper names: find occurrences of personal, geographic and ethnic names and see their text in context."
   },
   {
     "objectID": "apps/index.html#editorial-status-of-the-release",
