@@ -8,8 +8,10 @@
 // list of the documents on the open page (each text version with a region there: the Iliad of the Venetus A, each zone
 // of its scholia, ...), each with its own colour, region count and checkbox.
 //
-// Address: `?page=<page URN>`, `?page=<codex URN>` for the light box of a codex, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
-// the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
+// Address (no `#`), in this order of priority: `?page=<codex URN>` opens the light box of the codex, `?page=<page URN>` the
+// page; `?image=<image URN>` the page with that image (a region on the URN, `…@x,y,w,h`, is marked and every text group
+// starts off); `?text=<passage URN>` the page of the passage (of the start of a range).  The address of an `image` is
+// kept as given; the others become `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
   const DOCS = document.body.dataset.layers === 'documents';
@@ -107,6 +109,7 @@
   /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
     focusKey = '';
+    startRoi = null;
     setQuery({ page: urn }, replace);
     showPage(urn);
   }
@@ -114,24 +117,34 @@
 
   /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
   let focusKey = '';
+  /** The region of an `image` address (`…@x,y,w,h`), to mark on that image when its page opens. @type {{image: string, roi: any} | null} */
+  let startRoi = null;
+  /** Every text group (document) off, so a marked region is easy to see. */
+  function hideLayers() {
+    if (DOCS) hiddenDocs = new Set(docOrder.keys());
+    else for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
   function setFocus(text) {
     focusKey = text ? firstPassageKey(text) || '' : '';
-    if (focusKey) {
-      if (DOCS) hiddenDocs = new Set(docOrder.keys());   // every document starts off; the passage's own region stays
-      else for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
-    }
+    if (focusKey) hideLayers();   // the passage's own region stays
   }
 
   function route() {
     const params = readParams(location.search);
+    startRoi = null;
     setFocus(params.text);
     const codex = params.page ? books.find(c => c.urn === params.page) : null;
     if (codex) { selectBook(codex); showTable(); return; }   // the address names a codex: its light box
     const r = resolvePage(locator, params);
     if (!r) { selectBook(null); showTable(); return; }
     if ('error' in r) { selectBook(null); showTable(r.error); return; }
-    const canon = { page: r.page, text: focusKey ? params.text : null };
-    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    if (r.via === 'image') {   // the address stays the address of the image
+      const placed = parseImageRoi(/** @type {string} */ (params.image));
+      if (placed) { startRoi = placed; hideLayers(); }
+    } else {
+      const canon = { page: r.page, text: focusKey ? params.text : null };
+      if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    }
     showPage(r.page);
   }
 
@@ -289,7 +302,8 @@
       });
       drawRegions(view.regions, width, height);
       if (DOCS) renderDocs(view.regions);
-      roiUi.open(view.image);
+      roiUi.open(view.image, startRoi && startRoi.image === view.image ? [startRoi.roi] : []);
+      startRoi = null;
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
@@ -351,6 +365,8 @@
    * List the documents that have a region on the open page, with a checkbox, a colour and a count for each.
    * @param {PageRegion[]} regions
    */
+  /** The list of documents is folded up (kept from page to page). */
+  let docsFolded = false;
   function renderDocs(regions) {
     const bar = $('doc-bar');
     bar.textContent = '';
@@ -359,15 +375,23 @@
     for (const r of regions) counts.set(docOf(r.passage), (counts.get(docOf(r.passage)) ?? 0) + 1);
     const docs = [...counts.keys()].sort((a, b) => (docOrder.get(a) ?? 1e9) - (docOrder.get(b) ?? 1e9));
     if (!docs.length) { const n = document.createElement('span'); n.className = 'none'; n.textContent = 'No indexed documents on this page.'; bar.appendChild(n); return; }
-    const head = document.createElement('span');
-    head.className = 'doc-head'; head.textContent = plural(docs.length, 'document', 'documents') + ':';
+    const head = document.createElement('button');
+    head.type = 'button'; head.className = 'doc-head';
+    head.title = 'Fold up or unfold the list of documents';
+    const sayHead = () => {
+      const shown = docs.filter(d => !hiddenDocs.has(d)).length;
+      head.textContent = `${docsFolded ? '▸' : '▾'} ${plural(docs.length, 'document', 'documents')}${docsFolded ? ` · ${shown} shown` : ':'}`;
+      head.setAttribute('aria-expanded', String(!docsFolded));
+      bar.classList.toggle('folded', docsFolded);
+    };
+    head.addEventListener('click', () => { docsFolded = !docsFolded; sayHead(); });
     bar.appendChild(head);
     for (const d of docs) {
       const label = document.createElement('label');
       label.title = d;
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.checked = !hiddenDocs.has(d); cb.dataset.doc = d;
-      cb.addEventListener('change', () => { if (cb.checked) hiddenDocs.delete(d); else hiddenDocs.add(d); applyLayers(); });
+      cb.addEventListener('change', () => { if (cb.checked) hiddenDocs.delete(d); else hiddenDocs.add(d); applyLayers(); sayHead(); });
       const chip = document.createElement('span');
       chip.className = 'chip'; chip.style.setProperty('--c', docColor(d));
       const n = document.createElement('span');
@@ -382,9 +406,11 @@
         for (const d of docs) if (on) hiddenDocs.delete(d); else hiddenDocs.add(d);
         for (const cb of bar.querySelectorAll('input[type=checkbox]')) cb.checked = on;
         applyLayers();
+        sayHead();
       });
       bar.appendChild(b);
     }
+    sayHead();
   }
 
   /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */

@@ -1379,23 +1379,25 @@ function createLocator(release) {
 /** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
 
 /**
- * The page to open for the parameters of an address.  An `image` decides alone: `page` is then ignored, and the page
- * is the page with that image (among several, one the `text` is on, else the first).  Without an `image`, `page`
- * comes first, then `text` (the first of these that gives a page of the release wins).
+ * The page to open for the parameters of an address, in this order of priority: `page` (when it names a page of the
+ * release), then `image` (the page with that image; among several, one the `text` is on, else the first), then `text`
+ * (the page of its passage, or of the start of a range).  A `page` that names no page falls through to the others.
+ * `via` says which parameter gave the page.
  * @param {Locator} loc
  * @param {LocationParams} p
- * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ * @returns {{page: string, via: 'page' | 'image' | 'text'} | {error: string} | null}  Null if no parameter is given.
  */
 function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page, via: 'page' };
   if (p.image) {
-    const pages = loc.pagesOfImage(p.image);
+    const base = p.image.split('@')[0];
+    const pages = loc.pagesOfImage(base);
     const onText = p.text ? loc.pagesOfPassage(p.text) : [];
     const page = pages.find(x => onText.includes(x)) ?? pages[0];
-    return page ? { page } : { error: `No page of a codex in this release goes with ${p.image}.` };
+    return page ? { page, via: 'image' } : { error: `No page of a codex in this release goes with ${p.image}.` };
   }
-  if (p.page && loc.isPage(p.page)) return { page: p.page };
   const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
-  if (fromText) return { page: fromText };
+  if (fromText) return { page: fromText, via: 'text' };
   const given = p.page || p.text;
   if (!given) return null;
   return { error: `No page of a codex in this release goes with ${given}.` };

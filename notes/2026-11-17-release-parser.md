@@ -530,3 +530,16 @@ Update (propernames): the scholia of a page are interleaved with the Iliad line 
 - New app `src/apps/iliad-scholia-image/index.html` over the unchanged iliad-scholia code: `<body data-roi="image">` makes `app.js` pass `extra: createRoiImages(...)` to the shared page view (`PageOptions.extra`, called for each Iliad line and each scholion body). `src/roi-images.js` + `.css`; tests in `test/roi-images.test.js`; browser-checked with a mocked image service (picture directly under 26 of 27 lines of 1.1-1.10, scholia carry theirs, folded ones not fetched).
 - **version.txt needs a line** (yours): `iliad-scholia-image.html  0.1.0`.
 - iliad-scholia-image: each picture links to `images.html?image=<image URN>@x,y,w,h` (`imageRoiLink` in `src/roi-images.js`); the region is written from the parsed RoI numbers.
+
+## codices-docs.html replaces codices.html (2026-11-28)
+
+- `src/apps/codices/index.html` is now the former `codices-docs` page (names changed: title "Codices", docs link `docs/codices/`); `src/apps/codices-docs/`, `dist/codices-docs.html` and `notes/app-docs/codices-docs.md` are removed, its notes folded into `notes/app-docs/codices.md`. `app.js` and `style.css` are unchanged; the old checkbox mode is now unused.
+- **`version.txt` (user-owned): delete the `codices-docs.html` line** (`codices.html` keeps its own). Also for you: `docs/` and `quarto/` still have pages for `codices-docs` if you made them; links elsewhere to `codices-docs.html` should point to `codices.html`.
+
+## codices.html: URL parameters (2026-11-28)
+
+- Priority is now `page` > `image` > `text` (`resolvePage` in `src/locate.js`, which also returns `via`). `page`: codex URN = light box, page URN = single-page view (a bad `page` falls through). `image` (a region on the URN no longer stops it resolving: the `@…` is stripped before looking the image up): single-page view of its page; with a region it is marked through `roiUi.open(image, [roi])` and every document starts off (`hideLayers`, shared with `text`); the address of an `image` is not rewritten (it would lose the image). `text`: page of the passage, start of a range; address becomes `?page=…&text=…`. Tests in `test/locate.test.js`; browser-checked (scratchpad `ui-test-cdx3.js`).
+
+## codices.html: foldable documents bar (2026-11-28)
+
+- The heading of the documents bar is now a button (`.doc-head`, `aria-expanded`) that folds the list (`#doc-bar.folded`, CSS in index.html; `docsFolded` in app.js, kept page to page). Folded, it says how many documents are shown. Browser-checked (scratchpad `ui-test-cdx4.js`).

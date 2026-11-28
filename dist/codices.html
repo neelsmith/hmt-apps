@@ -110,6 +110,21 @@
   @media (max-width: 40rem) { header { padding: .5rem .75rem; } #viewer-bar, #controls { padding: .5rem .75rem; } #find { width: 8rem; } #grid { --cell-w: 130px; gap: .5rem; padding: .75rem; } }
 </style>
 <style>
+  /* One colour for each document on the page (a text version: the Iliad of the Venetus A, each zone of its scholia, ...). */
+  .roi.doc { fill: var(--c); stroke: var(--c); }
+  .roi.doc-hidden { display: none; }
+  #doc-bar { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; align-items: center; padding: .4rem 1rem; border-bottom: 1px solid var(--line); background: var(--bg); font-size: .875rem; }
+  #doc-bar .doc-head { font: inherit; font-weight: 600; background: none; border: 0; padding: 0; color: var(--fg); cursor: pointer; }
+  #doc-bar .doc-head:hover { color: var(--accent); }
+  #doc-bar.folded label, #doc-bar.folded .btn { display: none; }
+  #doc-bar label { display: inline-flex; gap: .3rem; align-items: center; }
+  #doc-bar .chip { border-color: var(--c); background: color-mix(in srgb, var(--c) 20%, transparent); }
+  #doc-bar .n { color: var(--muted); }
+  #doc-bar .btn { padding: .05rem .5rem; font-size: .8125rem; }
+  #doc-bar .none { color: var(--muted); }
+  @media (max-width: 40rem) { #doc-bar { padding: .4rem .75rem; } }
+</style>
+<style>
 /* Regions of interest drawn on an image (roi-tool.js) and their list (roi-panel.js). */
 .iiif-viewer.roi-draw { cursor: crosshair; }
 #viewer.roi-draw, #viewer.roi-draw.dragging { cursor: crosshair; }   /* more specific than the apps' own `#viewer { cursor: grab }` */
@@ -136,7 +151,7 @@
 #roi-panel .roi-hint { margin: .3rem 0 0; color: var(--muted); font-size: .8125rem; }
 </style>
 </head>
-<body>
+<body data-layers="documents">
 <header>
   <h1>Codices</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
@@ -172,11 +187,6 @@
     <span id="viewer-title"></span>
     <span id="viewer-count"></span>
     <a id="more-images" href="#" target="_blank" rel="noopener" hidden title="Other images of this page, in the images app"></a>
-    <span class="group" role="group" aria-label="Regions shown">
-      <label><input type="checkbox" id="show-iliad" checked><span class="chip iliad"></span>Iliad</label>
-      <label><input type="checkbox" id="show-scholia" checked><span class="chip scholia"></span>Scholia</label>
-      <label><input type="checkbox" id="show-other" checked><span class="chip other"></span>Other</label>
-    </span>
     <span class="group" role="group" aria-label="Text shown on hover">
       <label><input type="radio" name="kind" value="diplomatic" checked>diplomatic</label>
       <label><input type="radio" name="kind" value="normalized">normalized</label>
@@ -188,6 +198,7 @@
       <button class="btn" id="fit" title="Fit page (0)">Fit</button>
     </span>
   </div>
+  <div id="doc-bar" role="group" aria-label="Documents on this page"></div>
   <div id="viewer-wrap">
     <div id="viewer" aria-label="Page image. Drag to pan, scroll or pinch to zoom, Shift-drag to mark a region."></div>
     <div id="viewer-note" hidden></div>
@@ -1468,23 +1479,25 @@ function createLocator(release) {
 /** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
 
 /**
- * The page to open for the parameters of an address.  An `image` decides alone: `page` is then ignored, and the page
- * is the page with that image (among several, one the `text` is on, else the first).  Without an `image`, `page`
- * comes first, then `text` (the first of these that gives a page of the release wins).
+ * The page to open for the parameters of an address, in this order of priority: `page` (when it names a page of the
+ * release), then `image` (the page with that image; among several, one the `text` is on, else the first), then `text`
+ * (the page of its passage, or of the start of a range).  A `page` that names no page falls through to the others.
+ * `via` says which parameter gave the page.
  * @param {Locator} loc
  * @param {LocationParams} p
- * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ * @returns {{page: string, via: 'page' | 'image' | 'text'} | {error: string} | null}  Null if no parameter is given.
  */
 function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page, via: 'page' };
   if (p.image) {
-    const pages = loc.pagesOfImage(p.image);
+    const base = p.image.split('@')[0];
+    const pages = loc.pagesOfImage(base);
     const onText = p.text ? loc.pagesOfPassage(p.text) : [];
     const page = pages.find(x => onText.includes(x)) ?? pages[0];
-    return page ? { page } : { error: `No page of a codex in this release goes with ${p.image}.` };
+    return page ? { page, via: 'image' } : { error: `No page of a codex in this release goes with ${p.image}.` };
   }
-  if (p.page && loc.isPage(p.page)) return { page: p.page };
   const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
-  if (fromText) return { page: fromText };
+  if (fromText) return { page: fromText, via: 'text' };
   const given = p.page || p.text;
   if (!given) return null;
   return { error: `No page of a codex in this release goes with ${given}.` };
@@ -2472,8 +2485,10 @@ class RoiUi {
 // list of the documents on the open page (each text version with a region there: the Iliad of the Venetus A, each zone
 // of its scholia, ...), each with its own colour, region count and checkbox.
 //
-// Address: `?page=<page URN>`, `?page=<codex URN>` for the light box of a codex, or `?image=<image URN>` or `?text=<passage URN>`, which are turned into a page through
-// the DSE records and the catalog (no `#`); the address is rewritten as `?page=…`.  Links, bookmarks and Back work.
+// Address (no `#`), in this order of priority: `?page=<codex URN>` opens the light box of the codex, `?page=<page URN>` the
+// page; `?image=<image URN>` the page with that image (a region on the URN, `…@x,y,w,h`, is marked and every text group
+// starts off); `?text=<passage URN>` the page of the passage (of the start of a range).  The address of an `image` is
+// kept as given; the others become `?page=…`.  Links, bookmarks and Back work.
 (function () {
   const $ = id => document.getElementById(id);
   const DOCS = document.body.dataset.layers === 'documents';
@@ -2571,6 +2586,7 @@ class RoiUi {
   /** Show a page (by URN) and put it in the address of the page. */
   function go(urn, replace) {
     focusKey = '';
+    startRoi = null;
     setQuery({ page: urn }, replace);
     showPage(urn);
   }
@@ -2578,24 +2594,34 @@ class RoiUi {
 
   /** Passage (DSE key) the address asks for with `text`: its regions stay visible, and the layers start off. */
   let focusKey = '';
+  /** The region of an `image` address (`…@x,y,w,h`), to mark on that image when its page opens. @type {{image: string, roi: any} | null} */
+  let startRoi = null;
+  /** Every text group (document) off, so a marked region is easy to see. */
+  function hideLayers() {
+    if (DOCS) hiddenDocs = new Set(docOrder.keys());
+    else for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
+  }
   function setFocus(text) {
     focusKey = text ? firstPassageKey(text) || '' : '';
-    if (focusKey) {
-      if (DOCS) hiddenDocs = new Set(docOrder.keys());   // every document starts off; the passage's own region stays
-      else for (const k of ['iliad', 'scholia', 'other']) $(`show-${k}`).checked = false;
-    }
+    if (focusKey) hideLayers();   // the passage's own region stays
   }
 
   function route() {
     const params = readParams(location.search);
+    startRoi = null;
     setFocus(params.text);
     const codex = params.page ? books.find(c => c.urn === params.page) : null;
     if (codex) { selectBook(codex); showTable(); return; }   // the address names a codex: its light box
     const r = resolvePage(locator, params);
     if (!r) { selectBook(null); showTable(); return; }
     if ('error' in r) { selectBook(null); showTable(r.error); return; }
-    const canon = { page: r.page, text: focusKey ? params.text : null };
-    if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    if (r.via === 'image') {   // the address stays the address of the image
+      const placed = parseImageRoi(/** @type {string} */ (params.image));
+      if (placed) { startRoi = placed; hideLayers(); }
+    } else {
+      const canon = { page: r.page, text: focusKey ? params.text : null };
+      if (decodeURIComponent(location.search) !== decodeURIComponent(formatQuery(canon))) setQuery(canon, true);   // the canonical address
+    }
     showPage(r.page);
   }
 
@@ -2753,7 +2779,8 @@ class RoiUi {
       });
       drawRegions(view.regions, width, height);
       if (DOCS) renderDocs(view.regions);
-      roiUi.open(view.image);
+      roiUi.open(view.image, startRoi && startRoi.image === view.image ? [startRoi.roi] : []);
+      startRoi = null;
       viewer.root.focus({ preventScroll: true });
       const bits = [page.label || page.id];
       if (view.regions.length) bits.push(plural(view.regions.length, 'indexed passage', 'indexed passages'));
@@ -2815,6 +2842,8 @@ class RoiUi {
    * List the documents that have a region on the open page, with a checkbox, a colour and a count for each.
    * @param {PageRegion[]} regions
    */
+  /** The list of documents is folded up (kept from page to page). */
+  let docsFolded = false;
   function renderDocs(regions) {
     const bar = $('doc-bar');
     bar.textContent = '';
@@ -2823,15 +2852,23 @@ class RoiUi {
     for (const r of regions) counts.set(docOf(r.passage), (counts.get(docOf(r.passage)) ?? 0) + 1);
     const docs = [...counts.keys()].sort((a, b) => (docOrder.get(a) ?? 1e9) - (docOrder.get(b) ?? 1e9));
     if (!docs.length) { const n = document.createElement('span'); n.className = 'none'; n.textContent = 'No indexed documents on this page.'; bar.appendChild(n); return; }
-    const head = document.createElement('span');
-    head.className = 'doc-head'; head.textContent = plural(docs.length, 'document', 'documents') + ':';
+    const head = document.createElement('button');
+    head.type = 'button'; head.className = 'doc-head';
+    head.title = 'Fold up or unfold the list of documents';
+    const sayHead = () => {
+      const shown = docs.filter(d => !hiddenDocs.has(d)).length;
+      head.textContent = `${docsFolded ? '▸' : '▾'} ${plural(docs.length, 'document', 'documents')}${docsFolded ? ` · ${shown} shown` : ':'}`;
+      head.setAttribute('aria-expanded', String(!docsFolded));
+      bar.classList.toggle('folded', docsFolded);
+    };
+    head.addEventListener('click', () => { docsFolded = !docsFolded; sayHead(); });
     bar.appendChild(head);
     for (const d of docs) {
       const label = document.createElement('label');
       label.title = d;
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.checked = !hiddenDocs.has(d); cb.dataset.doc = d;
-      cb.addEventListener('change', () => { if (cb.checked) hiddenDocs.delete(d); else hiddenDocs.add(d); applyLayers(); });
+      cb.addEventListener('change', () => { if (cb.checked) hiddenDocs.delete(d); else hiddenDocs.add(d); applyLayers(); sayHead(); });
       const chip = document.createElement('span');
       chip.className = 'chip'; chip.style.setProperty('--c', docColor(d));
       const n = document.createElement('span');
@@ -2846,9 +2883,11 @@ class RoiUi {
         for (const d of docs) if (on) hiddenDocs.delete(d); else hiddenDocs.add(d);
         for (const cb of bar.querySelectorAll('input[type=checkbox]')) cb.checked = on;
         applyLayers();
+        sayHead();
       });
       bar.appendChild(b);
     }
+    sayHead();
   }
 
   /** The text shown on hover and copied on click: `diplomatic` or `normalized`. */

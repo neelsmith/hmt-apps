@@ -1,15 +1,15 @@
 // facsimiles
 codices.html    0.4.0
-codices-docs.html   0.1.0
+iliad-scholia-image.html    0.1.0
 
 // images
 images.html  0.6.0
 
 // text browsing
 iliad-scholia.html  0.4.0
-iliad-scholia-image.html    0.1.0
 editorial.html  0.3.0
 all-scholia.html    0.4.0
+iliad-scholia-columns.html  0.1.0
 
 // text searching
 propernames.html    0.3.0
