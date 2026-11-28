@@ -40,6 +40,7 @@ Each app displays an individual version number. Github release numbers refer to 
 
 ## Editorial status of the release
 
+Utilities to help the HMT team identify and clean up issues in the HMT project's archival data sets.
 
 1. See [summaries of editorial work](../coverage.html) in each manuscript.
 1. Find [referential inconsistencies](../dse-check.html) in  editorial indexing.
