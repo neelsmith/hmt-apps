@@ -83,6 +83,10 @@
   #page .line .ref { flex: 0 0 4.5rem; }
   #page .byms { margin: 0 0 .4rem 4.5rem; }
   .loose-note { color: var(--muted); font-size: .875rem; margin: 1.25rem 0 .5rem; }
+/* The status line above the form: one compact line (the box also holds the load error and the drop zone when needed). */
+#loading-panel { padding: .3rem .75rem; margin-bottom: .6rem; }
+#loading-panel #status { margin: 0; }
+#loading-panel #load-error:not([hidden]), #loading-panel #drop:not([hidden]) { margin: .4rem 0 .2rem; }
 </style>
 <style>
 /* The text of a manuscript page: Iliad lines, each with the scholia of the page that comment on it (see src/page-view.js).
@@ -1379,23 +1383,25 @@ function createLocator(release) {
 /** @typedef {{text: string | null, page: string | null, image: string | null}} LocationParams */
 
 /**
- * The page to open for the parameters of an address.  An `image` decides alone: `page` is then ignored, and the page
- * is the page with that image (among several, one the `text` is on, else the first).  Without an `image`, `page`
- * comes first, then `text` (the first of these that gives a page of the release wins).
+ * The page to open for the parameters of an address, in this order of priority: `page` (when it names a page of the
+ * release), then `image` (the page with that image; among several, one the `text` is on, else the first), then `text`
+ * (the page of its passage, or of the start of a range).  A `page` that names no page falls through to the others.
+ * `via` says which parameter gave the page.
  * @param {Locator} loc
  * @param {LocationParams} p
- * @returns {{page: string} | {error: string} | null}  Null if no parameter is given.
+ * @returns {{page: string, via: 'page' | 'image' | 'text'} | {error: string} | null}  Null if no parameter is given.
  */
 function resolvePage(loc, p) {
+  if (p.page && loc.isPage(p.page)) return { page: p.page, via: 'page' };
   if (p.image) {
-    const pages = loc.pagesOfImage(p.image);
+    const base = p.image.split('@')[0];
+    const pages = loc.pagesOfImage(base);
     const onText = p.text ? loc.pagesOfPassage(p.text) : [];
     const page = pages.find(x => onText.includes(x)) ?? pages[0];
-    return page ? { page } : { error: `No page of a codex in this release goes with ${p.image}.` };
+    return page ? { page, via: 'image' } : { error: `No page of a codex in this release goes with ${p.image}.` };
   }
-  if (p.page && loc.isPage(p.page)) return { page: p.page };
   const fromText = p.text ? loc.pagesOfPassage(p.text)[0] : '';
-  if (fromText) return { page: fromText };
+  if (fromText) return { page: fromText, via: 'text' };
   const given = p.page || p.text;
   if (!given) return null;
   return { error: `No page of a codex in this release goes with ${given}.` };
@@ -2329,6 +2335,7 @@ const pvPlural = (/** @type {number} */ n, /** @type {string} */ one, /** @type 
  * @property {string} hitNoun                          "name", "match": "Fold scholia without the name"; empty: "Fold scholia".
  * @property {boolean} [scroll]                        Scroll the first chosen passage into view (default true).
  * @property {boolean} [skipEmpty]                     Previous/Next go to the nearest page with indexed passages (default: the page next door).
+ * @property {(pk: string) => HTMLElement | null} [extra]   Something shown below the text of an Iliad line and in the body of a scholion (a picture of its region, say); null for none.
  * @property {(surface: string) => void} [onNavigate]  Called with the page Previous/Next chose; the app shows it.  Default: the view shows it in place.
  */
 
@@ -2413,6 +2420,8 @@ function createPageView(data) {
     d.appendChild(sm);
     const body = pvEl('div', 'body greek');
     o.fillText(body, pk);
+    const more = o.extra ? o.extra(pk) : null;
+    if (more) body.appendChild(more);
     d.appendChild(body);
     return d;
   }
@@ -2494,6 +2503,8 @@ function createPageView(data) {
         o.fillText(t, pk);
         row.appendChild(t);
         box.appendChild(row);
+        const pic = o.extra ? o.extra(pk) : null;
+        if (pic) box.appendChild(pic);
         const attached = byLine.get(refOf(pk));
         if (!attached) continue;
         const panel = pvEl('div', 'panel');
@@ -2702,6 +2713,7 @@ function hasDifference(segments) {
   const MAX_PAGES = 40;
   const WOVEN = document.body.dataset.text === 'interwoven';
   const ALL = document.body.dataset.scholia === 'all';
+  const ROI_PICS = document.body.dataset.roi === 'image';   // iliad-scholia-image: the picture of each region under its text
   const $ = id => document.getElementById(id);
 
   /** @type {any} */ let release = null;
@@ -2713,6 +2725,7 @@ function hasDifference(segments) {
   /** The manuscript pages of the passages (from the DSE records), and the view that shows one. */
   /** @type {any} */ let pageView = null;
   /** @type {any} */ let locator = null;
+  /** @type {((pk: string) => HTMLElement | null) | null} */ let roiPics = null;
   /** @type {{surfacesOf: Map<string, string[]>, passagesOn: Map<string, string[]>}} */ let pageIndex = { surfacesOf: new Map(), passagesOn: new Map() };
 
   function setStatus(msg) { $('status').textContent = msg; }
@@ -2725,6 +2738,7 @@ function hasDifference(segments) {
     spanCache.clear();
     pageIndex = indexPages(rel);
     locator = createLocator(rel);
+    if (ROI_PICS) roiPics = createRoiImages(rel, location.protocol);
     const pageLabels = new Map();
     for (const c of codices(rel)) for (const p of c.pages) pageLabels.set(p.urn, `${c.label}, ${p.short}`);
     pageView = createPageView({
@@ -2922,7 +2936,7 @@ function hasDifference(segments) {
     }
     const o = {
       textKind: () => cur.kind, isHit: () => false, hitLabel: '', hitNoun: '', scroll: false,
-      skipEmpty: true, onNavigate: openPage,
+      skipEmpty: true, onNavigate: openPage, extra: roiPics || undefined,
       fillText(el, pk) {
         el.lang = 'grc';
         const base = passageText(textIndex, pk, cur.kind).parts;

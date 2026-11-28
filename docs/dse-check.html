@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.2.1">
 <title>DSE check</title>
 <style>
   :root {
@@ -53,6 +53,8 @@
   .entry { border-top: 1px solid var(--line); padding: .4rem .9rem; }
   .entry summary { cursor: pointer; }
   .entry .n { color: var(--muted); font-size: .875rem; }
+  ul.byms { list-style: none; margin: 0 0 1rem; padding: .5rem .9rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  ul.byms .ok { color: var(--ok); }
   .flag { color: var(--err); font-size: .875rem; }
   .chips { display: flex; flex-wrap: wrap; gap: .25rem; padding: .5rem 0; }
   .chip { border: 1px solid var(--line); border-radius: 4px; padding: 0 .4rem; font: .8125rem ui-monospace, Menlo, monospace; }
@@ -67,7 +69,7 @@
 <header>
   <h1>DSE check</h1>
   <span id="status" role="status">Loading the current HMT release…</span>
-  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.0</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/dse-check/">Docs</a></span>
+  <span class="appmeta"><a class="home" href="https://neelsmith.github.io/hmt-apps/">← HMT apps home</a><span class="version">Version 0.2.1</span><a class="docs" href="https://neelsmith.github.io/hmt-apps/docs/dse-check/">Docs</a></span>
 </header>
 
 <div id="drop" hidden>
@@ -76,6 +78,7 @@
 </div>
 
 <main id="report" hidden>
+  <ul id="by-ms" class="byms"></ul>
   <p id="intro"></p>
   <p><button class="btn" id="csv">Download report as CSV</button></p>
   <h2>By text</h2>
@@ -90,6 +93,8 @@
     Passages are compared by version: a line counts as in the DSE if any record names it, in either exemplar
     (diplomatic or normalized); a scholion's lemma and comment are one passage. Subreferences (<code>1.1@word</code>) are ignored.
     A codex page counts as covered if any record names it as its surface; the runs of pages that no record names are listed in codex order.
+    In the summary by manuscript, records are counted by the codex page they name as surface; inconsistencies are those records
+    whose passage is not in the editions or whose image is not in the catalog, plus the runs of pages without records.
     Findings are warnings only.
   </footer>
 </main>
@@ -1179,6 +1184,9 @@ function pageNeighbours(list) {
  * @property {number} pages       Pages in the codex model.
  * @property {number} covered     Pages named as the surface of at least one DSE record.
  * @property {number} uncovered   Pages no DSE record names (the sum of the runs).
+ * @property {number} records     DSE records whose surface is a page of this codex.
+ * @property {number} badRecords  Of those, records with a problem (passage not a CTS URN or not in the text, or image not in the catalog).
+ * @property {number} inconsistencies  `badRecords` plus the runs of pages without records.
  * @property {PageRun[]} runs     In codex order.
  */
 
@@ -1192,6 +1200,7 @@ function pageNeighbours(list) {
  * @property {number} imagesChecked       Distinct image URNs the records refer to.
  * @property {number} catalogImages       Images in the image catalog.
  * @property {CodexCoverage[]} codices    Every codex of the release with at least one page.
+ * @property {Map<string, {records: number, bad: number, badText: number}>} surfaces  By surface (page) URN: DSE records naming it, how many of them have a problem, and how many name a passage that is not in the release's texts.
  * @property {IliadProblemPages[]} iliadPages  Pages with DSE records for Iliad lines not in the text, by manuscript and book.
  */
 
@@ -1297,16 +1306,23 @@ function checkDse(release) {
   const rows = set ? set.rows : [];
   /** @type {Set<string>} surfaces (pages) that at least one record names */
   const surfaces = new Set();
+  /** @type {Map<string, {records: number, bad: number, badText: number}>} per surface */
+  const surfaceStats = new Map();
   rows.forEach((row, i) => {
     /** @type {DseRecord} */
     const rec = { passage: (row.passage ?? '').trim(), imageroi: (row.imageroi ?? '').trim(), surface: (row.surface ?? '').trim(), row: i + 1 };
 
     if (rec.surface) surfaces.add(rec.surface);
+    const stat = surfaceStats.get(rec.surface) ?? { records: 0, bad: 0, badText: 0 };
+    stat.records++;
+    surfaceStats.set(rec.surface, stat);
+    let bad = false;
 
     // -- the passage
     const m = /^(urn:cts:[^:]+:[^:]+:)(.*)$/.exec(rec.passage);
     if (!m || !m[2]) {
       badPassages.push(rec);
+      bad = true; stat.badText++;
     } else {
       const version = ctsVersionOf(m[1]);
       const ref = baseRef(m[2]);
@@ -1315,19 +1331,21 @@ function checkDse(release) {
       let n = named.get(version);
       if (!n) { n = new Set(); named.set(version, n); }
       n.add(ref);
-      if (!textRefs.get(version)?.has(ref)) v.unknown.push({ ...rec, ref });
+      if (!textRefs.get(version)?.has(ref)) { v.unknown.push({ ...rec, ref }); bad = true; stat.badText++; }
     }
 
     // -- the image
     const at = rec.imageroi.indexOf('@');
     const image = (at < 0 ? rec.imageroi : rec.imageroi.slice(0, at)).trim();
     if (!image) {
+      stat.bad++;   // a record without an image is a problem too
       const p = problems.get('') ?? { image: '', kind: /** @type {'none'} */ ('none'), collection: '', records: [] };
       p.records.push(rec); problems.set('', p);
       return;
     }
     images.add(image);
     if (!catalogItems.has(image)) {
+      bad = true;
       let p = problems.get(image);
       if (!p) {
         const collection = image.slice(0, image.lastIndexOf(':') + 1);
@@ -1336,6 +1354,7 @@ function checkDse(release) {
       }
       p.records.push(rec);
     }
+    if (bad) stat.bad++;
   });
 
   for (const [version, v] of versions) {
@@ -1351,9 +1370,10 @@ function checkDse(release) {
 
   return {
     found: !!set,
-    codices: codexCoverage(release, surfaces),
+    codices: codexCoverage(release, surfaces, surfaceStats),
     iliadPages: iliadProblemPages(release, [...versions.values()]),
     records: rows.length,
+    surfaces: surfaceStats,
     versions: [...versions.values()],
     badPassages,
     imageProblems: [...problems.values()],
@@ -1434,9 +1454,10 @@ function joinPages(urns, info) {
  * surface.  A codex that no record mentions at all is one run from its first page to its last.
  * @param {import('./hmt-release.js').HmtRelease} release
  * @param {Set<string>} surfaces  Surfaces named by DSE records.
+ * @param {Map<string, {records: number, bad: number, badText: number}>} [stats]  Records and records with problems, by surface.
  * @returns {CodexCoverage[]}
  */
-function codexCoverage(release, surfaces) {
+function codexCoverage(release, surfaces, stats = new Map()) {
   /** @type {CodexCoverage[]} */
   const out = [];
   for (const codex of codices(release)) {
@@ -1445,15 +1466,18 @@ function codexCoverage(release, surfaces) {
     const runs = [];
     /** @type {PageRun | null} */
     let run = null;
-    let covered = 0;
+    let covered = 0, records = 0, badRecords = 0;
     for (const p of codex.pages) {
+      const st = stats.get(p.urn);
+      if (st) { records += st.records; badRecords += st.bad; }
       if (surfaces.has(p.urn)) { covered++; run = null; continue; }
       /** @type {PageRef} */
       const ref = { urn: p.urn, id: p.id, label: p.short || p.id };
       if (run) { run.to = ref; run.count++; }
       else { run = { from: ref, to: ref, count: 1 }; runs.push(run); }
     }
-    out.push({ urn: codex.urn, label: codex.label, pages: codex.pages.length, covered, uncovered: codex.pages.length - covered, runs });
+    out.push({ urn: codex.urn, label: codex.label, pages: codex.pages.length, covered, uncovered: codex.pages.length - covered, runs,
+      records, badRecords, inconsistencies: badRecords + runs.length });
   }
   return out;
 }
@@ -1818,6 +1842,18 @@ function reportCsv(check) {
       g4.appendChild(d);
     }
     root.appendChild(g4);
+
+    // summary line by manuscript
+    const bs = $('by-ms');
+    bs.textContent = '';
+    bs.hidden = !c.codices.length || !c.found;
+    for (const x of c.codices.filter(x => x.records || x.inconsistencies)) {
+      const li = el('li');
+      li.appendChild(el('strong', '', `${x.label}: `));
+      li.appendChild(document.createTextNode(`${plural(x.records, 'DSE record', 'DSE records')}, `));
+      li.appendChild(el('span', x.inconsistencies ? 'flag' : 'ok', x.inconsistencies ? plural(x.inconsistencies, 'inconsistency', 'inconsistencies') : 'no inconsistencies'));
+      bs.appendChild(li);
+    }
 
     $('intro').textContent = c.found
       ? `${plural(c.records, 'DSE record', 'DSE records')} checked against the editions and the image catalog.`
